@@ -5,13 +5,59 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
+import { CreateRoleDto } from './dto/create-role.dto';
 import { FindOrganizationsQueryDto } from './dto/find-organizations-query.dto';
 import { InviteOrganizationUserDto } from './dto/invite-organization-user.dto';
+import {
+  defaultRolePermissions,
+  ROLE_PERMISSION_ACTIONS,
+  ROLE_PERMISSION_GROUPS,
+  RolePermissionAction,
+  RolePermissionGroup,
+  RolePermissionSet,
+} from './dto/permission-groups';
 import { OrganizationUserRole } from './dto/organization-user-role';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { OrganizationPrismaRepository } from './organization.prisma-repository';
 import { UpdateOrganizationSettingsDto } from './dto/update-organization-settings.dto';
 import { UpdateOrganizationUserDto } from './dto/update-organization-user.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
+
+type RoleRecord = {
+  id: string;
+  organizationId: string;
+  name: string;
+  description: string;
+  permissions: string;
+  isSystem: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type SystemRoleSeed = {
+  name: OrganizationUserRole;
+  description: string;
+  permissions: RolePermissionSet;
+};
+
+const SYSTEM_ROLE_SEEDS: SystemRoleSeed[] = [
+  {
+    name: 'Administrator',
+    description: 'Full access across all ClientOS modules and settings.',
+    permissions: permissionPreset('all'),
+  },
+  {
+    name: 'Manager',
+    description:
+      'Operational management access for planning, execution, and approvals.',
+    permissions: permissionPreset('manager'),
+  },
+  {
+    name: 'Staff',
+    description: 'Execution-focused access for day-to-day task delivery.',
+    permissions: permissionPreset('staff'),
+  },
+];
 
 @Injectable()
 export class OrganizationService {
@@ -239,6 +285,133 @@ export class OrganizationService {
     await this.repository.removeMembership(organizationId, targetUserId);
   }
 
+  async listRoles(userId: string, organizationId: string) {
+    await this.ensureOrganizationAccess(userId, organizationId);
+    await this.findOne(organizationId);
+
+    const roles = await this.ensureSystemRoles(organizationId);
+    const counts = await this.repository.countMembershipsByRoleNames(
+      organizationId,
+      roles.map((role) => role.name),
+    );
+
+    return {
+      data: roles.map((role) =>
+        this.toRoleResponse(role, counts.get(role.name) ?? 0),
+      ),
+    };
+  }
+
+  async findRoleById(userId: string, organizationId: string, roleId: string) {
+    await this.ensureOrganizationAccess(userId, organizationId);
+    await this.findOne(organizationId);
+    await this.ensureSystemRoles(organizationId);
+
+    const role = await this.repository.findRoleById(roleId);
+
+    if (!role || role.organizationId !== organizationId) {
+      throw new NotFoundException('Role not found');
+    }
+
+    const counts = await this.repository.countMembershipsByRoleNames(
+      organizationId,
+      [role.name],
+    );
+
+    return this.toRoleResponse(role, counts.get(role.name) ?? 0);
+  }
+
+  async createRole(userId: string, organizationId: string, dto: CreateRoleDto) {
+    await this.ensureOrganizationAccess(userId, organizationId);
+    await this.findOne(organizationId);
+    await this.ensureSystemRoles(organizationId);
+
+    const normalizedName = this.normalizeRoleName(dto.name);
+    const duplicate = await this.repository.findRoleByName(
+      organizationId,
+      normalizedName,
+    );
+
+    if (duplicate) {
+      throw new BadRequestException('A role with this name already exists');
+    }
+
+    const normalizedPermissions = this.normalizePermissionSet(dto.permissions);
+    const created = await this.repository.createRole(
+      organizationId,
+      {
+        ...dto,
+        name: normalizedName,
+      },
+      JSON.stringify(normalizedPermissions),
+    );
+
+    return this.toRoleResponse(created, 0);
+  }
+
+  async updateRole(
+    userId: string,
+    organizationId: string,
+    roleId: string,
+    dto: UpdateRoleDto,
+  ) {
+    await this.ensureOrganizationAccess(userId, organizationId);
+    await this.findOne(organizationId);
+    await this.ensureSystemRoles(organizationId);
+
+    const existing = await this.repository.findRoleById(roleId);
+
+    if (!existing || existing.organizationId !== organizationId) {
+      throw new NotFoundException('Role not found');
+    }
+
+    const normalizedName = this.normalizeRoleName(dto.name);
+    const duplicate = await this.repository.findRoleByName(
+      organizationId,
+      normalizedName,
+      roleId,
+    );
+
+    if (duplicate) {
+      throw new BadRequestException('A role with this name already exists');
+    }
+
+    const normalizedPermissions = this.normalizePermissionSet(dto.permissions);
+    const updated = await this.repository.updateRole(
+      roleId,
+      {
+        ...dto,
+        name: normalizedName,
+      },
+      JSON.stringify(normalizedPermissions),
+    );
+
+    const counts = await this.repository.countMembershipsByRoleNames(
+      organizationId,
+      [updated.name],
+    );
+
+    return this.toRoleResponse(updated, counts.get(updated.name) ?? 0);
+  }
+
+  async deleteRole(userId: string, organizationId: string, roleId: string) {
+    await this.ensureOrganizationAccess(userId, organizationId);
+    await this.findOne(organizationId);
+    await this.ensureSystemRoles(organizationId);
+
+    const existing = await this.repository.findRoleById(roleId);
+
+    if (!existing || existing.organizationId !== organizationId) {
+      throw new NotFoundException('Role not found');
+    }
+
+    if (existing.isSystem) {
+      throw new BadRequestException('System roles cannot be deleted');
+    }
+
+    await this.repository.deleteRole(roleId);
+  }
+
   async update(id: string, data: UpdateOrganizationDto) {
     await this.findOne(id);
 
@@ -279,6 +452,77 @@ export class OrganizationService {
     throw new BadRequestException('Invalid role value');
   }
 
+  private normalizeRoleName(name: string) {
+    const value = name.trim();
+
+    if (!value) {
+      throw new BadRequestException('Role name is required');
+    }
+
+    return value;
+  }
+
+  private normalizePermissionSet(raw: Record<string, Record<string, boolean>>) {
+    const normalized = defaultRolePermissions();
+
+    for (const group of ROLE_PERMISSION_GROUPS) {
+      const sourceGroup = raw[group];
+
+      if (!sourceGroup || typeof sourceGroup !== 'object') {
+        continue;
+      }
+
+      for (const action of ROLE_PERMISSION_ACTIONS) {
+        normalized[group][action] = Boolean(sourceGroup[action]);
+      }
+    }
+
+    return normalized;
+  }
+
+  private parsePermissionSet(raw: string): RolePermissionSet {
+    try {
+      const parsed = JSON.parse(raw) as Record<string, Record<string, boolean>>;
+      return this.normalizePermissionSet(parsed);
+    } catch {
+      return defaultRolePermissions();
+    }
+  }
+
+  private async ensureSystemRoles(organizationId: string) {
+    const existing = await this.repository.listRoles(organizationId);
+    const existingNames = new Set(existing.map((role) => role.name));
+
+    for (const seed of SYSTEM_ROLE_SEEDS) {
+      if (existingNames.has(seed.name)) {
+        continue;
+      }
+
+      await this.repository.createSystemRole(
+        organizationId,
+        seed.name,
+        seed.description,
+        JSON.stringify(seed.permissions),
+      );
+    }
+
+    return this.repository.listRoles(organizationId);
+  }
+
+  private toRoleResponse(role: RoleRecord, userCount: number) {
+    return {
+      id: role.id,
+      organizationId: role.organizationId,
+      name: role.name,
+      description: role.description,
+      userCount,
+      isSystem: role.isSystem,
+      permissions: this.parsePermissionSet(role.permissions),
+      createdAt: role.createdAt,
+      updatedAt: role.updatedAt,
+    };
+  }
+
   private toOrganizationUser(membership: {
     id: string;
     userId: string;
@@ -302,4 +546,50 @@ export class OrganizationService {
       updatedAt: membership.updatedAt,
     };
   }
+}
+
+function permissionPreset(type: 'all' | 'manager' | 'staff') {
+  const map = defaultRolePermissions();
+
+  for (const group of ROLE_PERMISSION_GROUPS) {
+    for (const action of ROLE_PERMISSION_ACTIONS) {
+      map[group][action] = false;
+    }
+  }
+
+  if (type === 'all') {
+    for (const group of ROLE_PERMISSION_GROUPS) {
+      for (const action of ROLE_PERMISSION_ACTIONS) {
+        map[group][action] = true;
+      }
+    }
+
+    return map;
+  }
+
+  if (type === 'manager') {
+    for (const group of ROLE_PERMISSION_GROUPS) {
+      map[group].View = true;
+      map[group].Create = true;
+      map[group].Edit = true;
+      map[group].Delete = group === 'Tasks' || group === 'Calendar';
+    }
+
+    map.Settings.Delete = false;
+    map.Roles.Delete = false;
+    return map;
+  }
+
+  for (const group of ROLE_PERMISSION_GROUPS) {
+    map[group].View = true;
+    map[group].Create = group === 'Tasks' || group === 'Calendar';
+    map[group].Edit = group === 'Tasks' || group === 'Calendar';
+    map[group].Delete = false;
+  }
+
+  map.Users.View = false;
+  map.Roles.View = false;
+  map.Settings.View = false;
+
+  return map;
 }

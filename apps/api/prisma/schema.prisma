@@ -70,6 +70,7 @@ model Organization {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   memberships  Membership[]
+  roles        Role[]
   contacts     Contact[]
   events       Event[]
   quotations   Quotation[]
@@ -78,6 +79,22 @@ model Organization {
   outboxEvents OutboxEvent[]
 
   @@index([slug])
+}
+
+model Role {
+  id             String       @id @default(uuid())
+  organizationId String
+  name           String
+  description    String
+  permissions    String
+  isSystem       Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([isSystem])
 }
 
 model Membership {

@@ -2,11 +2,13 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { OrganizationService } from './organization.service';
 import { OrganizationPrismaRepository } from './organization.prisma-repository';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
+import { CreateRoleDto } from './dto/create-role.dto';
 import { FindOrganizationsQueryDto } from './dto/find-organizations-query.dto';
 import { InviteOrganizationUserDto } from './dto/invite-organization-user.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { UpdateOrganizationSettingsDto } from './dto/update-organization-settings.dto';
 import { UpdateOrganizationUserDto } from './dto/update-organization-user.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
 
 describe('OrganizationService', () => {
   let service: OrganizationService;
@@ -24,6 +26,14 @@ describe('OrganizationService', () => {
     createMembership: jest.Mock;
     updateMembership: jest.Mock;
     removeMembership: jest.Mock;
+    countMembershipsByRoleNames: jest.Mock;
+    listRoles: jest.Mock;
+    findRoleById: jest.Mock;
+    findRoleByName: jest.Mock;
+    createRole: jest.Mock;
+    createSystemRole: jest.Mock;
+    updateRole: jest.Mock;
+    deleteRole: jest.Mock;
     updateSettings: jest.Mock;
     updateLogo: jest.Mock;
     update: jest.Mock;
@@ -45,6 +55,14 @@ describe('OrganizationService', () => {
       createMembership: jest.fn(),
       updateMembership: jest.fn(),
       removeMembership: jest.fn(),
+      countMembershipsByRoleNames: jest.fn(),
+      listRoles: jest.fn(),
+      findRoleById: jest.fn(),
+      findRoleByName: jest.fn(),
+      createRole: jest.fn(),
+      createSystemRole: jest.fn(),
+      updateRole: jest.fn(),
+      deleteRole: jest.fn(),
       updateSettings: jest.fn(),
       updateLogo: jest.fn(),
       update: jest.fn(),
@@ -424,5 +442,214 @@ describe('OrganizationService', () => {
       'org-1',
       'target-1',
     );
+  });
+
+  it('lists roles with system flag and user count', async () => {
+    repository.findMembership.mockResolvedValue({
+      id: 'membership-actor',
+      userId: 'actor-1',
+      organizationId: 'org-1',
+    });
+    repository.findById.mockResolvedValue({
+      id: 'org-1',
+      name: 'EventOS',
+      slug: 'eventos',
+    });
+    repository.listRoles.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      {
+        id: 'role-1',
+        organizationId: 'org-1',
+        name: 'Administrator',
+        description: 'System role',
+        permissions: JSON.stringify({}),
+        isSystem: true,
+        createdAt: new Date('2026-07-30T00:00:00.000Z'),
+        updatedAt: new Date('2026-07-30T00:00:00.000Z'),
+      },
+    ]);
+    repository.countMembershipsByRoleNames.mockResolvedValue(
+      new Map([['Administrator', 2]]),
+    );
+
+    await expect(service.listRoles('actor-1', 'org-1')).resolves.toEqual({
+      data: [
+        expect.objectContaining({
+          name: 'Administrator',
+          userCount: 2,
+          isSystem: true,
+        }),
+      ],
+    });
+
+    expect(repository.createSystemRole).toHaveBeenCalled();
+  });
+
+  it('creates a custom role after duplicate check', async () => {
+    const payload: CreateRoleDto = {
+      name: 'Field Coordinator',
+      description: 'Coordinates field execution',
+      permissions: {
+        Dashboard: {
+          View: true,
+          Create: false,
+          Edit: false,
+          Delete: false,
+        },
+      },
+    };
+
+    repository.findMembership.mockResolvedValue({
+      id: 'membership-actor',
+      userId: 'actor-1',
+      organizationId: 'org-1',
+    });
+    repository.findById.mockResolvedValue({
+      id: 'org-1',
+      name: 'EventOS',
+      slug: 'eventos',
+    });
+    repository.listRoles.mockResolvedValue([
+      {
+        id: 'role-1',
+        organizationId: 'org-1',
+        name: 'Administrator',
+        description: 'System role',
+        permissions: JSON.stringify({}),
+        isSystem: true,
+        createdAt: new Date('2026-07-30T00:00:00.000Z'),
+        updatedAt: new Date('2026-07-30T00:00:00.000Z'),
+      },
+    ]);
+    repository.findRoleByName.mockResolvedValue(null);
+    repository.createRole.mockResolvedValue({
+      id: 'role-2',
+      organizationId: 'org-1',
+      name: 'Field Coordinator',
+      description: 'Coordinates field execution',
+      permissions: JSON.stringify({}),
+      isSystem: false,
+      createdAt: new Date('2026-07-30T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-30T00:00:00.000Z'),
+    });
+
+    await expect(
+      service.createRole('actor-1', 'org-1', payload),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        name: 'Field Coordinator',
+        isSystem: false,
+      }),
+    );
+  });
+
+  it('updates a role and keeps user count', async () => {
+    const payload: UpdateRoleDto = {
+      name: 'Manager',
+      description: 'Updated manager role',
+      permissions: {
+        Dashboard: {
+          View: true,
+          Create: true,
+          Edit: true,
+          Delete: false,
+        },
+      },
+    };
+
+    repository.findMembership.mockResolvedValue({
+      id: 'membership-actor',
+      userId: 'actor-1',
+      organizationId: 'org-1',
+    });
+    repository.findById.mockResolvedValue({
+      id: 'org-1',
+      name: 'EventOS',
+      slug: 'eventos',
+    });
+    repository.listRoles.mockResolvedValue([
+      {
+        id: 'role-1',
+        organizationId: 'org-1',
+        name: 'Administrator',
+        description: 'System role',
+        permissions: JSON.stringify({}),
+        isSystem: true,
+        createdAt: new Date('2026-07-30T00:00:00.000Z'),
+        updatedAt: new Date('2026-07-30T00:00:00.000Z'),
+      },
+    ]);
+    repository.findRoleById.mockResolvedValue({
+      id: 'role-2',
+      organizationId: 'org-1',
+      name: 'Ops Manager',
+      description: 'Old description',
+      permissions: JSON.stringify({}),
+      isSystem: false,
+      createdAt: new Date('2026-07-30T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-30T00:00:00.000Z'),
+    });
+    repository.findRoleByName.mockResolvedValue(null);
+    repository.updateRole.mockResolvedValue({
+      id: 'role-2',
+      organizationId: 'org-1',
+      name: 'Manager',
+      description: 'Updated manager role',
+      permissions: JSON.stringify({}),
+      isSystem: false,
+      createdAt: new Date('2026-07-30T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-30T00:00:00.000Z'),
+    });
+    repository.countMembershipsByRoleNames.mockResolvedValue(
+      new Map([['Manager', 4]]),
+    );
+
+    await expect(
+      service.updateRole('actor-1', 'org-1', 'role-2', payload),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: 'role-2',
+        name: 'Manager',
+        userCount: 4,
+      }),
+    );
+  });
+
+  it('prevents deleting system roles', async () => {
+    repository.findMembership.mockResolvedValue({
+      id: 'membership-actor',
+      userId: 'actor-1',
+      organizationId: 'org-1',
+    });
+    repository.findById.mockResolvedValue({
+      id: 'org-1',
+      name: 'EventOS',
+      slug: 'eventos',
+    });
+    repository.listRoles.mockResolvedValue([
+      {
+        id: 'role-1',
+        organizationId: 'org-1',
+        name: 'Administrator',
+        description: 'System role',
+        permissions: JSON.stringify({}),
+        isSystem: true,
+        createdAt: new Date('2026-07-30T00:00:00.000Z'),
+        updatedAt: new Date('2026-07-30T00:00:00.000Z'),
+      },
+    ]);
+    repository.findRoleById.mockResolvedValue({
+      id: 'role-1',
+      organizationId: 'org-1',
+      name: 'Administrator',
+      description: 'System role',
+      permissions: JSON.stringify({}),
+      isSystem: true,
+      createdAt: new Date('2026-07-30T00:00:00.000Z'),
+      updatedAt: new Date('2026-07-30T00:00:00.000Z'),
+    });
+
+    await expect(
+      service.deleteRole('actor-1', 'org-1', 'role-1'),
+    ).rejects.toThrow('System roles cannot be deleted');
   });
 });

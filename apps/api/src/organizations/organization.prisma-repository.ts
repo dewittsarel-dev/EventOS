@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
+import { CreateRoleDto } from './dto/create-role.dto';
 import { FindOrganizationsQueryDto } from './dto/find-organizations-query.dto';
 import { InviteOrganizationUserDto } from './dto/invite-organization-user.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { UpdateOrganizationSettingsDto } from './dto/update-organization-settings.dto';
 import { UpdateOrganizationUserDto } from './dto/update-organization-user.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
 
 type OrganizationRecord = {
   id: string;
@@ -46,6 +48,17 @@ type UserRecord = {
   email: string;
   name: string | null;
   passwordHash: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type RoleRecord = {
+  id: string;
+  organizationId: string;
+  name: string;
+  description: string;
+  permissions: string;
+  isSystem: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -147,6 +160,40 @@ type OrganizationClient = {
         name?: string | null;
       };
     }) => Promise<UserRecord>;
+  };
+  role: {
+    findMany: (args: {
+      where: { organizationId: string };
+      orderBy: { name: 'asc' };
+    }) => Promise<RoleRecord[]>;
+    findUnique: (args: { where: { id: string } }) => Promise<RoleRecord | null>;
+    findFirst: (args: {
+      where: {
+        organizationId: string;
+        name?: string;
+        id?: {
+          not: string;
+        };
+      };
+    }) => Promise<RoleRecord | null>;
+    create: (args: {
+      data: {
+        organizationId: string;
+        name: string;
+        description: string;
+        permissions: string;
+        isSystem: boolean;
+      };
+    }) => Promise<RoleRecord>;
+    update: (args: {
+      where: { id: string };
+      data: {
+        name: string;
+        description: string;
+        permissions: string;
+      };
+    }) => Promise<RoleRecord>;
+    delete: (args: { where: { id: string } }) => Promise<RoleRecord>;
   };
   $transaction: <T extends readonly unknown[]>(queries: {
     [K in keyof T]: Promise<T[K]>;
@@ -270,6 +317,107 @@ export class OrganizationPrismaRepository {
         role,
       },
       include: { user: true },
+    });
+  }
+
+  countMembershipsByRoleNames(organizationId: string, roleNames: string[]) {
+    return this.client.membership
+      .findMany({
+        where: { organizationId },
+        include: { user: true },
+        orderBy: { createdAt: 'asc' },
+      })
+      .then((memberships) => {
+        const counts = new Map<string, number>();
+
+        for (const roleName of roleNames) {
+          counts.set(roleName, 0);
+        }
+
+        for (const membership of memberships) {
+          if (!counts.has(membership.role)) {
+            continue;
+          }
+
+          counts.set(membership.role, (counts.get(membership.role) ?? 0) + 1);
+        }
+
+        return counts;
+      });
+  }
+
+  listRoles(organizationId: string) {
+    return this.client.role.findMany({
+      where: { organizationId },
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  findRoleById(roleId: string) {
+    return this.client.role.findUnique({
+      where: { id: roleId },
+    });
+  }
+
+  findRoleByName(organizationId: string, name: string, excludeId?: string) {
+    return this.client.role.findFirst({
+      where: {
+        organizationId,
+        name,
+        ...(excludeId
+          ? {
+              id: {
+                not: excludeId,
+              },
+            }
+          : {}),
+      },
+    });
+  }
+
+  createRole(organizationId: string, dto: CreateRoleDto, permissions: string) {
+    return this.client.role.create({
+      data: {
+        organizationId,
+        name: dto.name,
+        description: dto.description?.trim() || '',
+        permissions,
+        isSystem: false,
+      },
+    });
+  }
+
+  createSystemRole(
+    organizationId: string,
+    name: string,
+    description: string,
+    permissions: string,
+  ) {
+    return this.client.role.create({
+      data: {
+        organizationId,
+        name,
+        description,
+        permissions,
+        isSystem: true,
+      },
+    });
+  }
+
+  updateRole(roleId: string, dto: UpdateRoleDto, permissions: string) {
+    return this.client.role.update({
+      where: { id: roleId },
+      data: {
+        name: dto.name,
+        description: dto.description?.trim() || '',
+        permissions,
+      },
+    });
+  }
+
+  deleteRole(roleId: string) {
+    return this.client.role.delete({
+      where: { id: roleId },
     });
   }
 
