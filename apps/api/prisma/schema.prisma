@@ -1,0 +1,240 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EventStatus {
+  Draft
+  Planned
+  Confirmed
+  Completed
+  Cancelled
+}
+
+enum QuotationStatus {
+  Draft
+  Sent
+  Accepted
+  Rejected
+  Expired
+}
+
+enum TaskStatus {
+  Todo
+  InProgress
+  Waiting
+  Completed
+  Cancelled
+}
+
+enum TaskPriority {
+  Low
+  Normal
+  High
+  Urgent
+}
+
+model User {
+  id           String       @id @default(uuid())
+  email        String       @unique
+  passwordHash String?
+  name         String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  memberships  Membership[]
+  auditLogs    AuditLog[]
+  outboxEvents OutboxEvent[]
+
+  @@index([email])
+}
+
+model Organization {
+  id           String       @id @default(uuid())
+  name         String
+  slug         String       @unique
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  memberships  Membership[]
+  contacts     Contact[]
+  events       Event[]
+  quotations   Quotation[]
+  tasks        Task[]
+  auditLogs    AuditLog[]
+  outboxEvents OutboxEvent[]
+
+  @@index([slug])
+}
+
+model Membership {
+  id             String       @id @default(uuid())
+  role           String
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  userId         String
+  organizationId String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@index([role])
+}
+
+model Contact {
+  id             String       @id @default(uuid())
+  organizationId String
+  firstName      String
+  lastName       String?
+  email          String?
+  phone          String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  events         Event[]
+  quotations     Quotation[]
+  assignedTasks  Task[]       @relation("TaskAssignedContact")
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+model Event {
+  id             String       @id @default(uuid())
+  organizationId String
+  contactId      String
+  title          String
+  description    String?
+  startDateTime  DateTime
+  endDateTime    DateTime
+  location       String?
+  status         EventStatus
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact        Contact      @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  quotations     Quotation[]
+  tasks          Task[]
+
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([startDateTime])
+  @@index([status])
+  @@index([title])
+}
+
+model Quotation {
+  id             String          @id @default(uuid())
+  quoteNumber    String          @unique
+  organizationId String
+  contactId      String
+  eventId        String
+  title          String
+  notes          String?
+  status         QuotationStatus @default(Draft)
+  issueDate      DateTime        @default(now())
+  expiryDate     DateTime?
+  subtotalCents  Int
+  discountCents  Int             @default(0)
+  taxRatePercent Int             @default(0)
+  taxCents       Int             @default(0)
+  totalCents     Int
+  archivedAt     DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact        Contact         @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  event          Event           @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  items          QuotationItem[]
+  tasks          Task[]
+
+  @@index([organizationId])
+  @@index([contactId])
+  @@index([eventId])
+  @@index([status])
+  @@index([title])
+  @@index([createdAt])
+  @@index([archivedAt])
+}
+
+model Task {
+  id                String       @id @default(uuid())
+  organizationId    String
+  eventId           String
+  assignedContactId String?
+  quotationId       String?
+  title             String
+  description       String?
+  dueDate           DateTime
+  priority          TaskPriority @default(Normal)
+  status            TaskStatus   @default(Todo)
+  completedAt       DateTime?
+  archivedAt        DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event             Event        @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  assignedContact   Contact?     @relation("TaskAssignedContact", fields: [assignedContactId], references: [id], onDelete: SetNull)
+  quotation         Quotation?   @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([eventId])
+  @@index([assignedContactId])
+  @@index([quotationId])
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+  @@index([archivedAt])
+}
+
+model QuotationItem {
+  id            String    @id @default(uuid())
+  quotationId   String
+  description   String
+  quantity      Int
+  unitPriceCents Int
+  lineTotalCents Int
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  quotation     Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@index([quotationId])
+  @@index([sortOrder])
+}
+
+model AuditLog {
+  id             String       @id @default(uuid())
+  action         String
+  details        String?
+  createdAt      DateTime     @default(now())
+  userId         String?
+  organizationId String?
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([organizationId])
+}
+
+model OutboxEvent {
+  id             String       @id @default(uuid())
+  eventType      String
+  payload        String
+  createdAt      DateTime     @default(now())
+  processedAt    DateTime?
+  userId         String?
+  organizationId String?
+  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([eventType])
+  @@index([createdAt])
+  @@index([processedAt])
+}
