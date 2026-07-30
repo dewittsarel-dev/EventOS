@@ -13,7 +13,7 @@ import {
 
 export type TaskFormValues = {
   eventId: string;
-  assignedContactId: string;
+  assignedUserId: string;
   quotationId: string;
   title: string;
   description: string;
@@ -76,12 +76,12 @@ export function TaskForm({
         </label>
 
         <label className="text-sm text-zinc-700">
-          Assigned Contact
+          Assigned User
           <select
             className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-            value={values.assignedContactId}
+            value={values.assignedUserId}
             onChange={(event) =>
-              onChange({ ...values, assignedContactId: event.target.value })
+              onChange({ ...values, assignedUserId: event.target.value })
             }
           >
             <option value="">Unassigned</option>

@@ -87,7 +87,7 @@ function quotationStatusClass(status: QuotationStatus) {
 }
 
 function taskPriorityClass(priority: TaskRecord['priority']) {
-  if (priority === 'Urgent') {
+  if (priority === 'Critical') {
     return 'bg-red-100 text-red-700';
   }
 
@@ -497,6 +497,7 @@ export default function DashboardPage() {
                 <ul className="mt-3 space-y-2">
                   {sections.overdueAndUrgentTasks.map((task) => {
                     const overdue =
+                      !!task.dueDate &&
                       data.snapshotNow > 0 &&
                       new Date(task.dueDate).getTime() < data.snapshotNow;
 
@@ -510,7 +511,9 @@ export default function DashboardPage() {
                             <p className="truncate text-sm font-medium text-zinc-900">
                               {task.title}
                             </p>
-                            <p className="text-xs text-zinc-600">Due {formatDateTime(task.dueDate)}</p>
+                            <p className="text-xs text-zinc-600">
+                              Due {task.dueDate ? formatDateTime(task.dueDate) : '-'}
+                            </p>
                           </div>
                           <div className="flex shrink-0 items-center gap-1">
                             {overdue ? (

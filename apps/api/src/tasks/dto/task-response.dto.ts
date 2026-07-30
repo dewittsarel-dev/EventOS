@@ -9,11 +9,14 @@ export class TaskResponseDto {
   @ApiProperty({ example: 'org-1' })
   organizationId: string;
 
-  @ApiProperty({ example: 'event-1' })
-  eventId: string;
+  @ApiProperty({ example: 'event-1', nullable: true })
+  eventId: string | null;
 
-  @ApiProperty({ example: 'contact-1', nullable: true })
-  assignedContactId: string | null;
+  @ApiProperty({ example: 'user-1', nullable: true })
+  assignedUserId: string | null;
+
+  @ApiProperty({ example: 'Sarel de Wit', nullable: true })
+  assignedUserName: string | null;
 
   @ApiProperty({ example: 'quote-1', nullable: true })
   quotationId: string | null;
@@ -27,10 +30,10 @@ export class TaskResponseDto {
   })
   description: string | null;
 
-  @ApiProperty({ example: '2026-11-10T12:00:00.000Z' })
-  dueDate: Date;
+  @ApiProperty({ example: '2026-11-10T12:00:00.000Z', nullable: true })
+  dueDate: Date | null;
 
-  @ApiProperty({ enum: TaskPriority, example: TaskPriority.Normal })
+  @ApiProperty({ enum: TaskPriority, example: TaskPriority.Medium })
   priority: TaskPriority;
 
   @ApiProperty({ enum: TaskStatus, example: TaskStatus.Todo })
@@ -47,6 +50,15 @@ export class TaskResponseDto {
 
   @ApiProperty({ example: '2026-07-30T00:00:00.000Z' })
   updatedAt: Date;
+
+  @ApiProperty({ example: 'org-1' })
+  organizationName: string;
+
+  @ApiProperty({ example: 'user-1' })
+  createdByUserId: string;
+
+  @ApiProperty({ example: 'System Admin', nullable: true })
+  createdByName: string | null;
 }
 
 export class TaskListResponseDto {

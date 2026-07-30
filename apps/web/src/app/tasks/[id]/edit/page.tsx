@@ -20,7 +20,14 @@ import type {
   TaskRecord,
 } from '@/lib/tasks-types';
 
-function toFormDateTime(value: string) {
+function toFormDateTime(value: string | null) {
+  if (!value) {
+    return {
+      dueDate: '',
+      dueTime: '',
+    };
+  }
+
   const dateValue = new Date(value);
   const local = new Date(dateValue.getTime() - dateValue.getTimezoneOffset() * 60000)
     .toISOString()
@@ -45,13 +52,13 @@ export default function EditTaskPage() {
   const [quotations, setQuotations] = useState<QuotationOption[]>([]);
   const [form, setForm] = useState<TaskFormValues>({
     eventId: '',
-    assignedContactId: '',
+    assignedUserId: '',
     quotationId: '',
     title: '',
     description: '',
     dueDate: '',
     dueTime: '',
-    priority: 'Normal',
+    priority: 'Medium',
     status: 'Todo',
   });
   const [loading, setLoading] = useState(false);
@@ -109,8 +116,8 @@ export default function EditTaskPage() {
         const dateTime = toFormDateTime(taskResponse.dueDate);
 
         setForm({
-          eventId: taskResponse.eventId,
-          assignedContactId: taskResponse.assignedContactId ?? '',
+          eventId: taskResponse.eventId ?? '',
+          assignedUserId: taskResponse.assignedUserId ?? '',
           quotationId: taskResponse.quotationId ?? '',
           title: taskResponse.title,
           description: taskResponse.description ?? '',
@@ -154,7 +161,7 @@ export default function EditTaskPage() {
         taskId,
         {
           eventId: form.eventId,
-          assignedContactId: form.assignedContactId || null,
+          assignedUserId: form.assignedUserId || null,
           quotationId: form.quotationId || null,
           title: form.title,
           description: form.description || undefined,

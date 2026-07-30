@@ -55,10 +55,10 @@ export class FindTasksQueryDto {
   @IsUUID()
   eventId?: string;
 
-  @ApiPropertyOptional({ example: 'contact-1' })
+  @ApiPropertyOptional({ example: 'user-1' })
   @IsOptional()
   @IsUUID()
-  assignedContactId?: string;
+  assignedUserId?: string;
 
   @ApiPropertyOptional({ enum: TaskStatus })
   @IsOptional()

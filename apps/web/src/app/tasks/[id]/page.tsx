@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/components/app-shell/page-header';
 import { useAppSession } from '@/components/app-shell/session-context';
-import { archiveTask, completeTask, getTask } from '@/lib/tasks-api';
+import { getTask, updateTaskStatus } from '@/lib/tasks-api';
 import type { TaskRecord } from '@/lib/tasks-types';
 
 export default function TaskDetailsPage() {
@@ -19,7 +19,12 @@ export default function TaskDetailsPage() {
   const [success, setSuccess] = useState('');
 
   const isOverdue = useMemo(() => {
-    if (!task || task.status === 'Completed' || task.status === 'Cancelled') {
+    if (
+      !task ||
+      !task.dueDate ||
+      task.status === 'Completed' ||
+      task.status === 'Cancelled'
+    ) {
       return false;
     }
 
@@ -69,12 +74,13 @@ export default function TaskDetailsPage() {
     setSuccess('');
 
     try {
-      const updated = await completeTask(
+      const updated = await updateTaskStatus(
         {
           token: session.token,
           baseUrl: session.baseUrl,
         },
         task.id,
+        { status: 'Completed' },
       );
 
       setTask(updated);
@@ -88,7 +94,7 @@ export default function TaskDetailsPage() {
     }
   }
 
-  async function onArchive() {
+  async function onReopen() {
     if (!session.token || !task) {
       return;
     }
@@ -97,21 +103,22 @@ export default function TaskDetailsPage() {
     setSuccess('');
 
     try {
-      await archiveTask(
+      const updated = await updateTaskStatus(
         {
           token: session.token,
           baseUrl: session.baseUrl,
         },
         task.id,
+        { status: 'Todo' },
       );
 
-      setTask({ ...task, archivedAt: new Date().toISOString() });
-      setSuccess('Task archived.');
+      setTask(updated);
+      setSuccess('Task reopened.');
     } catch (requestError) {
       setError(
         requestError instanceof Error
           ? requestError.message
-          : 'Failed to archive task.',
+          : 'Failed to reopen task.',
       );
     }
   }
@@ -173,22 +180,24 @@ export default function TaskDetailsPage() {
                   Mark Completed
                 </button>
               )}
-              {task.archivedAt ? null : (
+              {task.status === 'Completed' ? (
                 <button
                   type="button"
-                  className="rounded-md border border-red-300 px-3 py-2 text-sm text-red-700 hover:bg-red-50"
-                  onClick={() => void onArchive()}
+                  className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100"
+                  onClick={() => void onReopen()}
                 >
-                  Archive
+                  Reopen
                 </button>
-              )}
+              ) : null}
             </div>
           </div>
 
           <dl className="mt-4 grid gap-3 text-sm md:grid-cols-2">
             <div>
               <dt className="font-medium text-zinc-700">Due</dt>
-              <dd className="text-zinc-600">{new Date(task.dueDate).toLocaleString()}</dd>
+              <dd className="text-zinc-600">
+                {task.dueDate ? new Date(task.dueDate).toLocaleString() : '-'}
+              </dd>
             </div>
             <div>
               <dt className="font-medium text-zinc-700">Priority</dt>
@@ -199,8 +208,8 @@ export default function TaskDetailsPage() {
               <dd className="break-all text-zinc-600">{task.eventId}</dd>
             </div>
             <div>
-              <dt className="font-medium text-zinc-700">Assigned Contact ID</dt>
-              <dd className="break-all text-zinc-600">{task.assignedContactId ?? '-'}</dd>
+              <dt className="font-medium text-zinc-700">Assigned User</dt>
+              <dd className="break-all text-zinc-600">{task.assignedUserName ?? '-'}</dd>
             </div>
             <div>
               <dt className="font-medium text-zinc-700">Quotation ID</dt>

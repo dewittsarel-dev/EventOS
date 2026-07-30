@@ -70,20 +70,26 @@ export function getOverdueAndUrgentTasks(
         return false;
       }
 
+      if (!task.dueDate) {
+        return false;
+      }
+
       const overdue = time(task.dueDate) < now.getTime();
-      const urgent = task.priority === 'Urgent';
+      const urgent = task.priority === 'Critical';
 
       return overdue || urgent;
     })
     .sort((left, right) => {
-      const leftOverdue = time(left.dueDate) < now.getTime() ? 1 : 0;
-      const rightOverdue = time(right.dueDate) < now.getTime() ? 1 : 0;
+      const leftDueTime = left.dueDate ? time(left.dueDate) : Number.MAX_SAFE_INTEGER;
+      const rightDueTime = right.dueDate ? time(right.dueDate) : Number.MAX_SAFE_INTEGER;
+      const leftOverdue = leftDueTime < now.getTime() ? 1 : 0;
+      const rightOverdue = rightDueTime < now.getTime() ? 1 : 0;
 
       if (leftOverdue !== rightOverdue) {
         return rightOverdue - leftOverdue;
       }
 
-      return time(left.dueDate) - time(right.dueDate);
+      return leftDueTime - rightDueTime;
     })
     .slice(0, limit);
 }
@@ -111,13 +117,18 @@ export function countRecentContacts(contacts: ContactRecord[], now = new Date())
 }
 
 export function countOverdueTasks(tasks: TaskRecord[], now = new Date()) {
-  return tasks.filter((task) => !isClosedTask(task) && time(task.dueDate) < now.getTime())
-    .length;
+  return tasks.filter(
+    (task) => !isClosedTask(task) && task.dueDate && time(task.dueDate) < now.getTime(),
+  ).length;
 }
 
 export function countTasksDueToday(tasks: TaskRecord[], now = new Date()) {
   return tasks.filter((task) => {
     if (isClosedTask(task)) {
+      return false;
+    }
+
+    if (!task.dueDate) {
       return false;
     }
 

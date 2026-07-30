@@ -5,6 +5,7 @@ import type {
   TaskListResponse,
   TaskPayload,
   TaskRecord,
+  TaskStatusUpdatePayload,
   TaskStatus,
   TaskUpdatePayload,
 } from './tasks-types';
@@ -68,12 +69,12 @@ export async function listTasks(
     limit?: number;
     search?: string;
     eventId?: string;
-    assignedContactId?: string;
+    assignedUserId?: string;
     status?: TaskStatus | 'ALL';
-    priority?: 'Low' | 'Normal' | 'High' | 'Urgent' | 'ALL';
+    priority?: 'Low' | 'Medium' | 'High' | 'Critical' | 'ALL';
     dueFrom?: string;
     dueTo?: string;
-    sortBy?: 'dueDate' | 'createdAt' | 'updatedAt' | 'priority';
+    sortBy?: 'dueDate' | 'createdAt' | 'priority' | 'status';
     sort?: 'asc' | 'desc';
     includeArchived?: boolean;
   },
@@ -97,8 +98,8 @@ export async function listTasks(
     query.set('eventId', params.eventId);
   }
 
-  if (params.assignedContactId) {
-    query.set('assignedContactId', params.assignedContactId);
+  if (params.assignedUserId) {
+    query.set('assignedUserId', params.assignedUserId);
   }
 
   if (params.status && params.status !== 'ALL') {
@@ -149,25 +150,19 @@ export async function updateTask(
   payload: TaskUpdatePayload,
 ) {
   return apiRequest<TaskRecord>(`/tasks/${id}`, options, {
-    method: 'PATCH',
+    method: 'PUT',
     body: JSON.stringify(payload),
   });
 }
 
-export async function completeTask(
+export async function updateTaskStatus(
   options: RequestOptions,
   id: string,
-  completedAt?: string,
+  payload: TaskStatusUpdatePayload,
 ) {
-  return apiRequest<TaskRecord>(`/tasks/${id}/complete`, options, {
+  return apiRequest<TaskRecord>(`/tasks/${id}/status`, options, {
     method: 'PATCH',
-    body: JSON.stringify(completedAt ? { completedAt } : {}),
-  });
-}
-
-export async function archiveTask(options: RequestOptions, id: string) {
-  await apiRequest<void>(`/tasks/${id}/archive`, options, {
-    method: 'PATCH',
+    body: JSON.stringify(payload),
   });
 }
 

@@ -77,18 +77,19 @@ type QuotationRecord = {
 type TaskRecord = {
   id: string;
   organizationId: string;
-  eventId: string;
-  assignedContactId: string | null;
+  eventId: string | null;
+  assignedUserId: string | null;
   quotationId: string | null;
   title: string;
   description: string | null;
-  dueDate: Date;
+  dueDate: Date | null;
   priority: TaskPriority;
   status: TaskStatus;
   completedAt: Date | null;
   archivedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  createdByUserId: string;
 };
 
 const ORG_1 = '11111111-1111-4111-8111-111111111111';
@@ -303,7 +304,7 @@ describe('TasksController (e2e)', () => {
             where: {
               organizationId: string;
               eventId?: string;
-              assignedContactId?: string;
+              assignedUserId?: string;
               status?: TaskStatus;
               priority?: TaskPriority;
               archivedAt?: null;
@@ -325,9 +326,9 @@ describe('TasksController (e2e)', () => {
               result = result.filter((task) => task.eventId === where.eventId);
             }
 
-            if (where.assignedContactId) {
+            if (where.assignedUserId) {
               result = result.filter(
-                (task) => task.assignedContactId === where.assignedContactId,
+                (task) => task.assignedUserId === where.assignedUserId,
               );
             }
 
@@ -348,6 +349,7 @@ describe('TasksController (e2e)', () => {
             if (where.dueDate?.gte) {
               result = result.filter(
                 (task) =>
+                  task.dueDate &&
                   task.dueDate.getTime() >= where.dueDate!.gte!.getTime(),
               );
             }
@@ -355,6 +357,7 @@ describe('TasksController (e2e)', () => {
             if (where.dueDate?.lte) {
               result = result.filter(
                 (task) =>
+                  task.dueDate &&
                   task.dueDate.getTime() <= where.dueDate!.lte!.getTime(),
               );
             }
@@ -517,7 +520,7 @@ describe('TasksController (e2e)', () => {
       .send({
         organizationId: ORG_1,
         eventId: EVENT_1,
-        assignedContactId: CONTACT_1,
+        assignedUserId: users[0].id,
         quotationId: QUOTATION_1,
         title: 'Finalize seating chart',
         description: 'Confirm with venue manager',
@@ -567,12 +570,12 @@ describe('TasksController (e2e)', () => {
       .expect(200);
 
     const updatedResponse = await request(app.getHttpServer())
-      .patch(`/tasks/${created.id}`)
+      .put(`/tasks/${created.id}`)
       .set('Authorization', `Bearer ${token}`)
       .send({
         title: 'Finalize seating chart v2',
         status: TaskStatus.InProgress,
-        priority: TaskPriority.Urgent,
+        priority: TaskPriority.Critical,
       })
       .expect(200);
 
@@ -580,14 +583,14 @@ describe('TasksController (e2e)', () => {
       expect.objectContaining({
         title: 'Finalize seating chart v2',
         status: TaskStatus.InProgress,
-        priority: TaskPriority.Urgent,
+        priority: TaskPriority.Critical,
       }),
     );
 
     const completedResponse = await request(app.getHttpServer())
-      .patch(`/tasks/${created.id}/complete`)
+      .patch(`/tasks/${created.id}/status`)
       .set('Authorization', `Bearer ${token}`)
-      .send({ completedAt: '2026-11-09T14:00:00.000Z' })
+      .send({ status: TaskStatus.Completed })
       .expect(200);
 
     expect(completedResponse.body).toEqual(

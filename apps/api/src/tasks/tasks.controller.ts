@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
   UsePipes,
@@ -29,13 +30,13 @@ import {
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserResponseDto } from '../auth/dto/auth-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CompleteTaskDto } from './dto/complete-task.dto';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { FindTasksQueryDto } from './dto/find-tasks-query.dto';
 import { TaskPriority } from './dto/task-priority.enum';
 import { TaskListResponseDto, TaskResponseDto } from './dto/task-response.dto';
 import { TaskSortBy, TaskSortOrder } from './dto/task-sort.enum';
 import { TaskStatus } from './dto/task-status.enum';
+import { UpdateTaskStatusDto } from './dto/update-task-status.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { TasksService } from './tasks.service';
 
@@ -70,7 +71,7 @@ export class TasksController {
   @ApiQuery({ name: 'limit', required: false })
   @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'eventId', required: false })
-  @ApiQuery({ name: 'assignedContactId', required: false })
+  @ApiQuery({ name: 'assignedUserId', required: false })
   @ApiQuery({ name: 'status', enum: TaskStatus, required: false })
   @ApiQuery({ name: 'priority', enum: TaskPriority, required: false })
   @ApiQuery({ name: 'dueFrom', required: false })
@@ -105,7 +106,7 @@ export class TasksController {
     return this.tasksService.findOne(user.id, id);
   }
 
-  @Patch(':id')
+  @Put(':id')
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @ApiOperation({ summary: 'Update a task' })
   @ApiParam({ name: 'id' })
@@ -127,23 +128,24 @@ export class TasksController {
     return this.tasksService.update(user.id, id, dto);
   }
 
-  @Patch(':id/complete')
+  @Patch(':id/status')
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
-  @ApiOperation({ summary: 'Mark a task as completed' })
+  @ApiOperation({ summary: 'Update a task status' })
   @ApiParam({ name: 'id' })
   @ApiOkResponse({
-    description: 'Task completed successfully',
+    description: 'Task status updated successfully',
     type: TaskResponseDto,
   })
+  @ApiBadRequestResponse({ description: 'Payload validation failed' })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   @ApiForbiddenResponse({ description: 'No access to organization' })
   @ApiNotFoundResponse({ description: 'Task not found' })
-  complete(
+  updateStatus(
     @CurrentUser() user: UserResponseDto,
     @Param('id') id: string,
-    @Body() dto: CompleteTaskDto,
+    @Body() dto: UpdateTaskStatusDto,
   ) {
-    return this.tasksService.complete(user.id, id, dto);
+    return this.tasksService.updateStatus(user.id, id, dto);
   }
 
   @Patch(':id/archive')

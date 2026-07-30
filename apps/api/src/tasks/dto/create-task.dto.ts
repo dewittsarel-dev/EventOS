@@ -16,14 +16,15 @@ export class CreateTaskDto {
   @IsUUID()
   organizationId: string;
 
-  @ApiProperty({ example: 'event-1' })
-  @IsUUID()
-  eventId: string;
-
-  @ApiPropertyOptional({ example: 'contact-1', nullable: true })
+  @ApiPropertyOptional({ example: 'event-1' })
   @IsOptional()
   @IsUUID()
-  assignedContactId?: string;
+  eventId?: string;
+
+  @ApiPropertyOptional({ example: 'user-1', nullable: true })
+  @IsOptional()
+  @IsUUID()
+  assignedUserId?: string;
 
   @ApiPropertyOptional({
     example: 'quote-1',
@@ -49,11 +50,12 @@ export class CreateTaskDto {
   @MaxLength(1500)
   description?: string;
 
-  @ApiProperty({ example: '2026-11-10T12:00:00.000Z' })
+  @ApiPropertyOptional({ example: '2026-11-10T12:00:00.000Z', nullable: true })
+  @IsOptional()
   @IsDateString()
-  dueDate: string;
+  dueDate?: string;
 
-  @ApiPropertyOptional({ enum: TaskPriority, example: TaskPriority.Normal })
+  @ApiPropertyOptional({ enum: TaskPriority, example: TaskPriority.Medium })
   @IsOptional()
   @IsEnum(TaskPriority)
   priority?: TaskPriority;

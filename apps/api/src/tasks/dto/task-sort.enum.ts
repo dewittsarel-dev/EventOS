@@ -1,8 +1,8 @@
 export enum TaskSortBy {
   DueDate = 'dueDate',
   CreatedAt = 'createdAt',
-  UpdatedAt = 'updatedAt',
   Priority = 'priority',
+  Status = 'status',
 }
 
 export enum TaskSortOrder {

@@ -60,6 +60,10 @@ export default function TasksTimelinePage() {
         continue;
       }
 
+      if (!task.dueDate) {
+        continue;
+      }
+
       const day = normalizeDay(task.dueDate);
       const list = grouped.get(day) ?? [];
       list.push(task);
@@ -70,9 +74,11 @@ export default function TasksTimelinePage() {
       .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
       .map(([day, groupedTasks]) => ({
         day,
-        tasks: groupedTasks.sort((left, right) =>
-          new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime(),
-        ),
+        tasks: groupedTasks.sort((left, right) => {
+          const leftDue = left.dueDate ? new Date(left.dueDate).getTime() : 0;
+          const rightDue = right.dueDate ? new Date(right.dueDate).getTime() : 0;
+          return leftDue - rightDue;
+        }),
       }));
 
     return items;
@@ -210,6 +216,7 @@ export default function TasksTimelinePage() {
               <div className="mt-3 space-y-3">
                 {item.tasks.map((task) => {
                   const overdue =
+                    !!task.dueDate &&
                     task.status !== 'Completed' &&
                     task.status !== 'Cancelled' &&
                     new Date(task.dueDate).getTime() < Date.now();
@@ -223,7 +230,10 @@ export default function TasksTimelinePage() {
                         <div>
                           <h3 className="text-sm font-semibold text-zinc-900">{task.title}</h3>
                           <p className="text-xs text-zinc-600">
-                            {new Date(task.dueDate).toLocaleTimeString()} - Priority {task.priority}
+                            {task.dueDate
+                              ? new Date(task.dueDate).toLocaleTimeString()
+                              : '-'}{' '}
+                            - Priority {task.priority}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">

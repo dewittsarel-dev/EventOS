@@ -16,10 +16,10 @@ export class UpdateTaskDto {
   @IsUUID()
   eventId?: string;
 
-  @ApiPropertyOptional({ example: 'contact-1', nullable: true })
+  @ApiPropertyOptional({ example: 'user-1', nullable: true })
   @IsOptional()
   @IsUUID()
-  assignedContactId?: string | null;
+  assignedUserId?: string | null;
 
   @ApiPropertyOptional({ example: 'quote-1', nullable: true })
   @IsOptional()
@@ -44,7 +44,7 @@ export class UpdateTaskDto {
   @ApiPropertyOptional({ example: '2026-11-11T12:00:00.000Z' })
   @IsOptional()
   @IsDateString()
-  dueDate?: string;
+  dueDate?: string | null;
 
   @ApiPropertyOptional({ enum: TaskPriority })
   @IsOptional()

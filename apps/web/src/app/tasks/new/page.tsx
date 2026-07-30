@@ -34,13 +34,13 @@ const defaultNow = nowParts();
 
 const defaultForm: TaskFormValues = {
   eventId: '',
-  assignedContactId: '',
+  assignedUserId: '',
   quotationId: '',
   title: '',
   description: '',
   dueDate: defaultNow.date,
   dueTime: defaultNow.time,
-  priority: 'Normal',
+  priority: 'Medium',
   status: 'Todo',
 };
 
@@ -128,7 +128,7 @@ export default function NewTaskPage() {
         {
           organizationId: session.organizationId,
           eventId: form.eventId,
-          assignedContactId: form.assignedContactId || undefined,
+          assignedUserId: form.assignedUserId || undefined,
           quotationId: form.quotationId || undefined,
           title: form.title,
           description: form.description || undefined,

@@ -5,26 +5,30 @@ export type TaskStatus =
   | 'Completed'
   | 'Cancelled';
 
-export type TaskPriority = 'Low' | 'Normal' | 'High' | 'Urgent';
+export type TaskPriority = 'Low' | 'Medium' | 'High' | 'Critical';
 
-export type TaskSortBy = 'dueDate' | 'createdAt' | 'updatedAt' | 'priority';
+export type TaskSortBy = 'dueDate' | 'createdAt' | 'priority' | 'status';
 export type TaskSortOrder = 'asc' | 'desc';
 
 export type TaskRecord = {
   id: string;
   organizationId: string;
-  eventId: string;
-  assignedContactId: string | null;
+  eventId: string | null;
+  assignedUserId: string | null;
+  assignedUserName: string | null;
   quotationId: string | null;
   title: string;
   description: string | null;
-  dueDate: string;
+  dueDate: string | null;
   priority: TaskPriority;
   status: TaskStatus;
   completedAt: string | null;
   archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  organizationName: string;
+  createdByUserId: string;
+  createdByName: string | null;
 };
 
 export type TaskListResponse = {
@@ -38,25 +42,29 @@ export type TaskListResponse = {
 
 export type TaskPayload = {
   organizationId: string;
-  eventId: string;
-  assignedContactId?: string;
+  eventId?: string;
+  assignedUserId?: string;
   quotationId?: string;
   title: string;
   description?: string;
-  dueDate: string;
+  dueDate?: string;
   priority?: TaskPriority;
   status?: TaskStatus;
 };
 
 export type TaskUpdatePayload = {
   eventId?: string;
-  assignedContactId?: string | null;
+  assignedUserId?: string | null;
   quotationId?: string | null;
   title?: string;
   description?: string;
-  dueDate?: string;
+  dueDate?: string | null;
   priority?: TaskPriority;
   status?: TaskStatus;
+};
+
+export type TaskStatusUpdatePayload = {
+  status: TaskStatus;
 };
 
 export type ContactOption = {
@@ -111,7 +119,7 @@ export const TASK_STATUSES: TaskStatus[] = [
 
 export const TASK_PRIORITIES: TaskPriority[] = [
   'Low',
-  'Normal',
+  'Medium',
   'High',
-  'Urgent',
+  'Critical',
 ];
