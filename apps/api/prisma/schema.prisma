@@ -83,6 +83,7 @@ model Organization {
 model Membership {
   id             String       @id @default(uuid())
   role           String
+  isDisabled     Boolean      @default(false)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   userId         String

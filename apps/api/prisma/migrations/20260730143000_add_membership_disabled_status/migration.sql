@@ -1,0 +1,2 @@
+ALTER TABLE "Membership"
+ADD COLUMN "isDisabled" BOOLEAN NOT NULL DEFAULT false;

@@ -2,8 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { FindOrganizationsQueryDto } from './dto/find-organizations-query.dto';
+import { InviteOrganizationUserDto } from './dto/invite-organization-user.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { UpdateOrganizationSettingsDto } from './dto/update-organization-settings.dto';
+import { UpdateOrganizationUserDto } from './dto/update-organization-user.dto';
 
 type OrganizationRecord = {
   id: string;
@@ -32,6 +34,20 @@ type MembershipRecord = {
   id: string;
   userId: string;
   organizationId: string;
+  role: string;
+  isDisabled: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  user?: UserRecord;
+};
+
+type UserRecord = {
+  id: string;
+  email: string;
+  name: string | null;
+  passwordHash: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 };
 
 type OrganizationClient = {
@@ -63,7 +79,7 @@ type OrganizationClient = {
     }) => Promise<OrganizationRecord | null>;
     update: (args: {
       where: { id: string };
-      data: Record<string, string | undefined>;
+      data: Record<string, string | null | undefined>;
     }) => Promise<OrganizationRecord>;
     delete: (args: { where: { id: string } }) => Promise<OrganizationRecord>;
   };
@@ -76,6 +92,61 @@ type OrganizationClient = {
         };
       };
     }) => Promise<MembershipRecord | null>;
+    findMany: (args: {
+      where: { organizationId: string };
+      include: { user: true };
+      orderBy: { createdAt: 'asc' };
+    }) => Promise<MembershipRecord[]>;
+    create: (args: {
+      data: {
+        userId: string;
+        organizationId: string;
+        role: string;
+      };
+      include: { user: true };
+    }) => Promise<MembershipRecord>;
+    update: (args: {
+      where: {
+        userId_organizationId: {
+          userId: string;
+          organizationId: string;
+        };
+      };
+      data: {
+        role?: string;
+        isDisabled?: boolean;
+      };
+      include: { user: true };
+    }) => Promise<MembershipRecord>;
+    delete: (args: {
+      where: {
+        userId_organizationId: {
+          userId: string;
+          organizationId: string;
+        };
+      };
+    }) => Promise<MembershipRecord>;
+  };
+  user: {
+    findUnique: (args: {
+      where: {
+        id?: string;
+        email?: string;
+      };
+    }) => Promise<UserRecord | null>;
+    create: (args: {
+      data: {
+        email: string;
+        name?: string | null;
+      };
+    }) => Promise<UserRecord>;
+    update: (args: {
+      where: { id: string };
+      data: {
+        email?: string;
+        name?: string | null;
+      };
+    }) => Promise<UserRecord>;
   };
   $transaction: <T extends readonly unknown[]>(queries: {
     [K in keyof T]: Promise<T[K]>;
@@ -136,6 +207,98 @@ export class OrganizationPrismaRepository {
         userId_organizationId: {
           userId,
           organizationId,
+        },
+      },
+    });
+  }
+
+  listOrganizationUsers(organizationId: string) {
+    return this.client.membership.findMany({
+      where: { organizationId },
+      include: { user: true },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  findOrganizationUserMembership(organizationId: string, userId: string) {
+    return this.client.membership.findUnique({
+      where: {
+        userId_organizationId: {
+          organizationId,
+          userId,
+        },
+      },
+    });
+  }
+
+  findUserByEmail(email: string) {
+    return this.client.user.findUnique({
+      where: { email },
+    });
+  }
+
+  findUserById(userId: string) {
+    return this.client.user.findUnique({
+      where: { id: userId },
+    });
+  }
+
+  createUser(data: InviteOrganizationUserDto) {
+    return this.client.user.create({
+      data: {
+        email: data.email,
+        name: data.name?.trim() || null,
+      },
+    });
+  }
+
+  updateUser(userId: string, data: UpdateOrganizationUserDto) {
+    return this.client.user.update({
+      where: { id: userId },
+      data: {
+        email: data.email,
+        name: data.name?.trim() || null,
+      },
+    });
+  }
+
+  createMembership(organizationId: string, userId: string, role: string) {
+    return this.client.membership.create({
+      data: {
+        organizationId,
+        userId,
+        role,
+      },
+      include: { user: true },
+    });
+  }
+
+  updateMembership(
+    organizationId: string,
+    userId: string,
+    data: {
+      role?: string;
+      isDisabled?: boolean;
+    },
+  ) {
+    return this.client.membership.update({
+      where: {
+        userId_organizationId: {
+          organizationId,
+          userId,
+        },
+      },
+      data,
+      include: { user: true },
+    });
+  }
+
+  removeMembership(organizationId: string, userId: string) {
+    return this.client.membership.delete({
+      where: {
+        userId_organizationId: {
+          organizationId,
+          userId,
         },
       },
     });
