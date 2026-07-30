@@ -1,0 +1,92 @@
+# Roadmap
+
+## Current repository state
+
+The repository currently contains:
+
+- a pnpm workspace with Turbo orchestration
+- a NestJS API under [apps/api](apps/api)
+- a Next.js web app under [apps/web](apps/web)
+- Prisma schema and migrations for a shared platform data model
+- a working Organization module with create, list, get, update and delete flows
+
+The current implementation is therefore already beyond a blank scaffold, but it does not yet implement the wider EventOS product surface.
+
+## Status legend
+
+- COMPLETE: implemented and verified in the repository
+- IN PROGRESS: actively being developed in the current workstream
+- NEXT: the next logical slice after the current verified work
+- PLANNED: defined but not yet started
+- BLOCKED: pending external dependency or unresolved constraint
+
+## Package backlog
+
+### PP-001 Repository Bootstrap — COMPLETE
+
+- Established the monorepo structure, workspace tooling, API, web app and Prisma foundation.
+- Verified by the current build and test flow.
+
+### PP-002 Organization Create — COMPLETE
+
+- Added organization creation through the API and supporting tests.
+
+### PP-003 Organization Read — COMPLETE
+
+- Added organization listing and read-by-id flows with pagination and filtering.
+
+### PP-004 Organization Update — COMPLETE
+
+- Added organization update support and corresponding tests.
+
+### PP-005 Membership and Invitations — NEXT
+
+- Vertical slice 1: membership persistence and ownership.
+- Vertical slice 2: invite issuance and acceptance workflow.
+
+### PP-006 Authentication and Authorization — COMPLETE
+
+- Added registration, login, JWT bearer authentication and current-user profile access for the API.
+- Added a reusable auth guard and current-user decorator for future private-operation authorization work.
+- Verification status: build passed, tests passed, lint passed.
+
+### PP-007 Event Core — PLANNED
+
+- Vertical slice 1: event model and lifecycle state.
+- Vertical slice 2: event ownership and visibility rules.
+
+### PP-008 Work and Tasks — PLANNED
+
+- Vertical slice 1: task model and assignment.
+- Vertical slice 2: workflow state and notifications.
+
+### PP-009 Documents — PLANNED
+
+- Vertical slice 1: document model and storage contract.
+- Vertical slice 2: document access rules.
+
+### PP-010 Governance — PLANNED
+
+- Vertical slice 1: audit log and approval concepts.
+- Vertical slice 2: governance policy enforcement.
+
+### PP-011 Finance — PLANNED
+
+- Vertical slice 1: budget and invoicing concepts.
+- Vertical slice 2: finance workflow integration.
+
+### PP-012 Command Center — PLANNED
+
+- Vertical slice 1: command center data model.
+- Vertical slice 2: action-oriented operational views.
+
+## Future package guidance
+
+Each future package should be delivered as a small vertical slice, verified end to end, and documented in the changelog before the next package starts.
+
+## Related documents
+
+- [AGENTS.md](AGENTS.md)
+- [CHANGELOG.md](CHANGELOG.md)
+- [docs/PRODUCTION_PACKAGE_TEMPLATE.md](docs/PRODUCTION_PACKAGE_TEMPLATE.md)
+- [docs/DEFINITION_OF_DONE.md](docs/DEFINITION_OF_DONE.md)

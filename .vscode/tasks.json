@@ -1,0 +1,143 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "api-build-check",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"--filter",
+				"api",
+				"build"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "api-build-check-2",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"--filter",
+				"api",
+				"build"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "api-lint-check-2",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"--filter",
+				"api",
+				"lint"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "api-unit-check-2",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"--filter",
+				"api",
+				"test",
+				"--",
+				"--runInBand"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "api-e2e-check-2",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"--filter",
+				"api",
+				"test:e2e"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "api-lint-check-3",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"--filter",
+				"api",
+				"lint"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "web-build-check-3",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"--filter",
+				"web",
+				"build"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "web-lint-check-3",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"--filter",
+				"web",
+				"lint"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "workspace-build-check-3",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"build"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "workspace-lint-check-3",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"lint"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "workspace-test-check-3",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"test"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "api-e2e-final-check-3",
+			"type": "shell",
+			"command": "pnpm",
+			"args": [
+				"--filter",
+				"api",
+				"test:e2e"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "git-status-quotations",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"status",
+				"--short"
+			],
+			"isBackground": false
+		}
+	]
+}
