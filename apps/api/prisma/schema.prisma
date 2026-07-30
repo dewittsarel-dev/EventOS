@@ -58,6 +58,15 @@ model Organization {
   id           String       @id @default(uuid())
   name         String
   slug         String       @unique
+  tradingName  String?
+  vatNumber    String?
+  registrationNumber String?
+  email        String?
+  phone        String?
+  website      String?
+  physicalAddress String?
+  postalAddress String?
+  logoUrl      String?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   memberships  Membership[]
