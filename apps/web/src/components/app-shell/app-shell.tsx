@@ -15,6 +15,7 @@ import {
   buildBreadcrumbs,
   routeTitle,
 } from './route-meta';
+import { Breadcrumbs } from './breadcrumbs';
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -131,6 +132,7 @@ export function AppShell({ children }: AppShellProps) {
     };
   }, []);
 
+
   useEffect(() => {
     function onClickOutside(event: MouseEvent) {
       if (!isProfileOpen || !profileMenuRef.current) {
@@ -213,7 +215,7 @@ export function AppShell({ children }: AppShellProps) {
             <Icon className="h-4 w-4 shrink-0" />
             <span className={isSidebarCollapsed ? 'md:hidden xl:inline' : ''}>
               {item.label}
-              {item.placeholder ? ' (Coming Later)' : ''}
+              {item.placeholder ? ' (Coming Soon)' : ''}
             </span>
           </Link>
         );
@@ -222,10 +224,10 @@ export function AppShell({ children }: AppShellProps) {
   );
 
   return (
-    <div className="min-h-screen bg-zinc-100 text-zinc-900">
-      <div className="flex min-h-screen w-full overflow-x-clip">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#ffffff_0%,_#f4f5f7_38%,_#eceef2_100%)] text-zinc-900">
+      <div className="flex min-h-screen w-full overflow-x-hidden">
         <aside
-          className={`hidden border-r border-zinc-200 bg-white md:flex md:flex-col ${
+          className={`hidden border-r border-zinc-200/80 bg-white/95 shadow-[inset_-1px_0_0_rgba(0,0,0,0.02)] backdrop-blur md:flex md:flex-col ${
             isSidebarCollapsed ? 'md:w-20 xl:w-20' : 'md:w-72'
           }`}
           aria-label="Sidebar"
@@ -266,8 +268,17 @@ export function AppShell({ children }: AppShellProps) {
         </aside>
 
         {isMobileMenuOpen ? (
-          <div className="fixed inset-0 z-40 bg-zinc-900/50 md:hidden">
-            <div className="h-full w-72 bg-white p-4 shadow-xl">
+          <div
+            className="fixed inset-0 z-40 bg-zinc-900/50 md:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label="Mobile navigation"
+              className="h-full w-72 bg-white p-4 shadow-xl"
+              onClick={(event) => event.stopPropagation()}
+            >
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-semibold">ClientOS</p>
@@ -288,7 +299,7 @@ export function AppShell({ children }: AppShellProps) {
         ) : null}
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/95 backdrop-blur">
+          <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/90 shadow-sm backdrop-blur">
             <div className="flex h-16 items-center gap-3 px-3 md:px-5">
               <button
                 type="button"
@@ -311,6 +322,37 @@ export function AppShell({ children }: AppShellProps) {
 
               <button
                 type="button"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-100 md:hidden"
+                aria-label="Global search coming soon"
+                title="Global search coming soon"
+              >
+                <SearchIcon className="h-4 w-4" />
+              </button>
+
+              <label className="hidden items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-xs text-zinc-600 lg:flex">
+                <span className="shrink-0">Organization</span>
+                <select
+                  aria-label="Select organization"
+                  className="min-w-40 bg-transparent text-xs text-zinc-800 outline-none"
+                  value={session.organizationId}
+                  onChange={onOrganizationSelect}
+                >
+                  <option value="">Select organization</option>
+                  {organizations.map((organization) => (
+                    <option key={organization.id} value={organization.id}>
+                      {organization.name}
+                    </option>
+                  ))}
+                  {!organizations.length && session.organizationId ? (
+                    <option value={session.organizationId}>
+                      Organization {session.organizationId}
+                    </option>
+                  ) : null}
+                </select>
+              </label>
+
+              <button
+                type="button"
                 className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-100"
                 aria-label="Open notifications"
                 title="Notifications"
@@ -325,6 +367,7 @@ export function AppShell({ children }: AppShellProps) {
                   onClick={onToggleProfileMenu}
                   aria-expanded={isProfileOpen}
                   aria-haspopup="menu"
+                  aria-label="Open user menu"
                 >
                   <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-xs font-semibold text-white">
                     {initials(user?.name ?? null, user?.email)}
@@ -427,19 +470,7 @@ export function AppShell({ children }: AppShellProps) {
 
             <div className="border-t border-zinc-100 px-3 py-2 md:px-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex min-w-0 items-center gap-2 text-xs text-zinc-500">
-                  {breadcrumbs.map((crumb, index) => (
-                    <span key={crumb.href} className="inline-flex items-center gap-2">
-                      {index > 0 ? <span>/</span> : null}
-                      <Link
-                        href={crumb.href}
-                        className="truncate rounded-sm px-0.5 hover:text-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-                      >
-                        {crumb.label}
-                      </Link>
-                    </span>
-                  ))}
-                </div>
+                <Breadcrumbs breadcrumbs={breadcrumbs} />
 
                 <div className="flex items-center gap-2 text-xs text-zinc-500">
                   <UserIcon className="h-3.5 w-3.5" />

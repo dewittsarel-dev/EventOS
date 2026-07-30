@@ -1,4 +1,8 @@
-import type { ContactListResponse } from './contacts-types';
+import type {
+  ContactListResponse,
+  ContactRecord,
+  CreateContactPayload,
+} from './contacts-types';
 
 type RequestOptions = {
   token: string;
@@ -55,4 +59,14 @@ export async function listContacts(
     `/contacts?organizationId=${organizationId}`,
     options,
   );
+}
+
+export async function createContact(
+  options: RequestOptions,
+  payload: CreateContactPayload,
+) {
+  return apiRequest<ContactRecord>('/contacts', options, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }

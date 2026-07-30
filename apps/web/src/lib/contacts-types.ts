@@ -12,3 +12,11 @@ export type ContactRecord = {
 export type ContactListResponse = {
   data: ContactRecord[];
 };
+
+export type CreateContactPayload = {
+  organizationId: string;
+  firstName: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+};
