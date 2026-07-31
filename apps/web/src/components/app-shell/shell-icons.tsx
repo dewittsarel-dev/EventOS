@@ -84,6 +84,16 @@ export function SuppliersIcon(props: IconProps) {
   );
 }
 
+export function InventoryIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M3 7l9-4 9 4-9 4-9-4Z" />
+      <path d="M3 7v10l9 4 9-4V7" />
+      <path d="M12 11v10" />
+    </BaseIcon>
+  );
+}
+
 export function MarketplaceIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>

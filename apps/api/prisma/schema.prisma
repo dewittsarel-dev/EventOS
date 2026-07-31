@@ -91,6 +91,44 @@ enum SupplierCategory {
   Other
 }
 
+enum InventoryItemType {
+  Equipment
+  Furniture
+  Decor
+  Consumable
+  Product
+  Service
+  Other
+}
+
+enum UnitOfMeasure {
+  Each
+  Pair
+  Set
+  Box
+  Pack
+  Metre
+  SquareMetre
+  Kilogram
+  Litre
+  Hour
+  Day
+  Other
+}
+
+enum StockMovementType {
+  OpeningBalance
+  StockIn
+  StockOut
+  AdjustmentIncrease
+  AdjustmentDecrease
+  TransferIn
+  TransferOut
+  Damaged
+  Lost
+  Returned
+}
+
 model User {
   id           String       @id @default(uuid())
   email        String       @unique
@@ -104,6 +142,7 @@ model User {
   assignedTasks Task[]      @relation("TaskAssignedUser")
   meetingNotesCreated MeetingNote[]
   meetingActionItemsAssigned MeetingActionItem[]
+  stockMovementsCreated StockMovement[]
   auditLogs    AuditLog[]
   outboxEvents OutboxEvent[]
 
@@ -133,6 +172,10 @@ model Organization {
   meetingNotes MeetingNote[]
   quotations   Quotation[]
   tasks        Task[]
+  inventoryItems InventoryItem[]
+  inventoryCategories InventoryCategory[]
+  storageLocations StorageLocation[]
+  stockMovements StockMovement[]
   auditLogs    AuditLog[]
   outboxEvents OutboxEvent[]
 
@@ -389,6 +432,7 @@ model Supplier {
   createdAt             DateTime         @default(now())
   updatedAt             DateTime         @updatedAt
   organization          Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  preferredInventoryItems InventoryItem[]
   eventLinks            SupplierEvent[]
   quotationLinks        SupplierQuotation[]
   taskLinks             SupplierTask[]
@@ -399,6 +443,120 @@ model Supplier {
   @@index([preferredSupplier])
   @@index([active])
   @@index([internalRating])
+}
+
+model InventoryCategory {
+  id             String       @id @default(uuid())
+  organizationId String
+  name           String
+  description    String?
+  active         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  items          InventoryItem[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+  @@index([active])
+}
+
+model StorageLocation {
+  id              String       @id @default(uuid())
+  organizationId  String
+  name            String
+  code            String
+  physicalAddress String?
+  city            String?
+  province        String?
+  notes           String?
+  active          Boolean      @default(true)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  stockLevels     StockLevel[]
+  stockMovements  StockMovement[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([active])
+}
+
+model InventoryItem {
+  id                 String            @id @default(uuid())
+  organizationId     String
+  sku                String
+  barcode            String?
+  name               String
+  description        String?
+  categoryId         String
+  preferredSupplierId String?
+  itemType           InventoryItemType
+  unitOfMeasure      UnitOfMeasure
+  costPrice          Float?
+  replacementValue   Float?
+  rentalPrice        Float?
+  sellingPrice       Float?
+  taxable            Boolean           @default(false)
+  active             Boolean           @default(true)
+  trackQuantity      Boolean           @default(true)
+  trackSerialNumbers Boolean           @default(false)
+  minimumStock       Float?
+  reorderLevel       Float?
+  notes              String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category           InventoryCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  preferredSupplier  Supplier?         @relation(fields: [preferredSupplierId], references: [id], onDelete: SetNull)
+  stockLevels        StockLevel[]
+  stockMovements     StockMovement[]
+
+  @@unique([organizationId, sku])
+  @@unique([organizationId, barcode])
+  @@index([organizationId])
+  @@index([categoryId])
+  @@index([preferredSupplierId])
+  @@index([itemType])
+  @@index([active])
+  @@index([name])
+}
+
+model StockLevel {
+  inventoryItemId   String
+  storageLocationId String
+  quantityOnHand    Float     @default(0)
+  quantityReserved  Float     @default(0)
+  updatedAt         DateTime  @updatedAt
+  inventoryItem     InventoryItem   @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
+  storageLocation   StorageLocation @relation(fields: [storageLocationId], references: [id], onDelete: Cascade)
+
+  @@id([inventoryItemId, storageLocationId])
+  @@index([storageLocationId])
+}
+
+model StockMovement {
+  id                String            @id @default(uuid())
+  organizationId    String
+  inventoryItemId   String
+  storageLocationId String
+  movementType      StockMovementType
+  quantity          Float
+  reference         String?
+  reason            String?
+  notes             String?
+  createdByUserId   String
+  createdAt         DateTime          @default(now())
+  organization      Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inventoryItem     InventoryItem     @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  storageLocation   StorageLocation   @relation(fields: [storageLocationId], references: [id], onDelete: Restrict)
+  createdBy         User              @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([inventoryItemId])
+  @@index([storageLocationId])
+  @@index([movementType])
+  @@index([createdAt])
 }
 
 model SupplierEvent {

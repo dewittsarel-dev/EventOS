@@ -23,6 +23,7 @@ import {
   ContactsIcon,
   DashboardIcon,
   EventsIcon,
+  InventoryIcon,
   LogoutIcon,
   MarketplaceIcon,
   MenuIcon,
@@ -63,6 +64,10 @@ function navIcon(label: string) {
 
   if (label === 'Suppliers') {
     return SuppliersIcon;
+  }
+
+  if (label === 'Inventory') {
+    return InventoryIcon;
   }
 
   if (label === 'Tasks') {

@@ -4,6 +4,7 @@ export const ROLE_PERMISSION_GROUPS = [
   'Organizations',
   'Meeting Notes',
   'Suppliers',
+  'Inventory',
   'Users',
   'Roles',
   'Tasks',

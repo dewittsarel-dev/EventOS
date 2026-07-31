@@ -8,6 +8,8 @@ describe('protected routes', () => {
     expect(isProtectedAppPath('/suppliers')).toBe(true);
     expect(isProtectedAppPath('/suppliers/new')).toBe(true);
     expect(isProtectedAppPath('/suppliers/s-1/edit')).toBe(true);
+    expect(isProtectedAppPath('/inventory')).toBe(true);
+    expect(isProtectedAppPath('/inventory/items/new')).toBe(true);
     expect(isProtectedAppPath('/quotations')).toBe(true);
     expect(isProtectedAppPath('/quotations/q-1/edit')).toBe(true);
     expect(isProtectedAppPath('/tasks')).toBe(true);

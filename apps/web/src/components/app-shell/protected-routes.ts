@@ -3,6 +3,7 @@ const PROTECTED_ROUTE_PREFIXES = [
   '/events',
   '/meeting-notes',
   '/suppliers',
+  '/inventory',
   '/quotations',
   '/tasks',
   '/settings',

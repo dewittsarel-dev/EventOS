@@ -11,6 +11,7 @@ describe('route meta', () => {
       '/events',
       '/meeting-notes',
       '/suppliers',
+      '/inventory',
       '/quotations',
       '/tasks',
       '/marketplace',
