@@ -9,6 +9,7 @@ describe('route meta', () => {
       '/',
       '/contacts',
       '/events',
+      '/suppliers',
       '/quotations',
       '/tasks',
       '/marketplace',
@@ -27,6 +28,7 @@ describe('route meta', () => {
 
   it('resolves titles from nested paths', () => {
     expect(routeTitle('/events/123')).toBe('Events');
+    expect(routeTitle('/suppliers/123')).toBe('Suppliers');
     expect(routeTitle('/quotations')).toBe('Quotations');
     expect(routeTitle('/marketplace')).toBe('Marketplace');
   });

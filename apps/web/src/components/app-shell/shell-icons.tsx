@@ -64,6 +64,17 @@ export function TasksIcon(props: IconProps) {
   );
 }
 
+export function SuppliersIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M3 10h18" />
+      <path d="M5 10V6l7-3 7 3v4" />
+      <path d="M6 10v10M10 10v10M14 10v10M18 10v10" />
+      <path d="M4 20h16" />
+    </BaseIcon>
+  );
+}
+
 export function MarketplaceIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>

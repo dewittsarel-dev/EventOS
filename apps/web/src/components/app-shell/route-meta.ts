@@ -9,6 +9,7 @@ export const APP_NAV_ROUTES: AppRouteMeta[] = [
   { href: '/', label: 'Dashboard', section: 'Overview' },
   { href: '/contacts', label: 'Contacts', section: 'Operations' },
   { href: '/events', label: 'Events', section: 'Operations' },
+  { href: '/suppliers', label: 'Suppliers', section: 'Operations' },
   { href: '/quotations', label: 'Quotations', section: 'Operations' },
   { href: '/tasks', label: 'Tasks', section: 'Operations' },
   {

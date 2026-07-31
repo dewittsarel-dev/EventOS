@@ -28,6 +28,7 @@ import {
   NotificationIcon,
   QuotationsIcon,
   SearchIcon,
+  SuppliersIcon,
   TasksIcon,
   UserIcon,
 } from './shell-icons';
@@ -52,6 +53,10 @@ function navIcon(label: string) {
 
   if (label === 'Quotations') {
     return QuotationsIcon;
+  }
+
+  if (label === 'Suppliers') {
+    return SuppliersIcon;
   }
 
   if (label === 'Tasks') {

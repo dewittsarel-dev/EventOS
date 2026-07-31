@@ -41,6 +41,25 @@ enum TaskPriority {
   Critical
 }
 
+enum SupplierCategory {
+  Venue
+  Catering
+  Decor
+  Photography
+  Videography
+  Entertainment
+  DJ
+  Florist
+  AudioVisual
+  EquipmentRental
+  Security
+  Transport
+  Staffing
+  Accommodation
+  Printing
+  Other
+}
+
 model User {
   id           String       @id @default(uuid())
   email        String       @unique
@@ -76,6 +95,7 @@ model Organization {
   memberships  Membership[]
   roles        Role[]
   contacts     Contact[]
+  suppliers    Supplier[]
   events       Event[]
   quotations   Quotation[]
   tasks        Task[]
@@ -159,6 +179,7 @@ model Event {
   assignedUser   User?        @relation("EventAssignedUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
   quotations     Quotation[]
   tasks          Task[]
+  supplierLinks  SupplierEvent[]
 
   @@index([organizationId])
   @@index([contactId])
@@ -194,6 +215,7 @@ model Quotation {
   event          Event?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
   items          QuotationItem[]
   tasks          Task[]
+  supplierLinks  SupplierQuotation[]
 
   @@index([organizationId])
   @@index([contactId])
@@ -225,6 +247,7 @@ model Task {
   assignedUser      User?        @relation("TaskAssignedUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
   createdBy         User         @relation("TaskCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
   quotation         Quotation?   @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+  supplierLinks     SupplierTask[]
 
   @@index([organizationId])
   @@index([eventId])
@@ -235,6 +258,81 @@ model Task {
   @@index([priority])
   @@index([dueDate])
   @@index([archivedAt])
+}
+
+model Supplier {
+  id                    String           @id @default(uuid())
+  organizationId        String
+  companyName           String
+  category              SupplierCategory
+  primaryContactName    String?
+  phone                 String?
+  mobile                String?
+  email                 String?
+  website               String?
+  physicalAddress       String?
+  city                  String?
+  province              String?
+  postalCode            String?
+  vatNumber             String?
+  registrationNumber    String?
+  preferredSupplier     Boolean          @default(false)
+  active                Boolean          @default(true)
+  preferredPaymentTerms String?
+  internalRating        Int?
+  notes                 String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+  organization          Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  eventLinks            SupplierEvent[]
+  quotationLinks        SupplierQuotation[]
+  taskLinks             SupplierTask[]
+
+  @@index([organizationId])
+  @@index([companyName])
+  @@index([category])
+  @@index([preferredSupplier])
+  @@index([active])
+  @@index([internalRating])
+}
+
+model SupplierEvent {
+  id         String   @id @default(uuid())
+  supplierId String
+  eventId    String
+  createdAt  DateTime @default(now())
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([supplierId, eventId])
+  @@index([supplierId])
+  @@index([eventId])
+}
+
+model SupplierQuotation {
+  id          String    @id @default(uuid())
+  supplierId  String
+  quotationId String
+  createdAt   DateTime  @default(now())
+  supplier    Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+
+  @@unique([supplierId, quotationId])
+  @@index([supplierId])
+  @@index([quotationId])
+}
+
+model SupplierTask {
+  id         String   @id @default(uuid())
+  supplierId String
+  taskId     String
+  createdAt  DateTime @default(now())
+  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([supplierId, taskId])
+  @@index([supplierId])
+  @@index([taskId])
 }
 
 model QuotationItem {

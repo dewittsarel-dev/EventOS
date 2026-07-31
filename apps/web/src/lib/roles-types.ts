@@ -2,6 +2,7 @@ export const ROLE_PERMISSION_GROUPS = [
   'Dashboard',
   'Contacts',
   'Organizations',
+  'Suppliers',
   'Users',
   'Roles',
   'Tasks',
