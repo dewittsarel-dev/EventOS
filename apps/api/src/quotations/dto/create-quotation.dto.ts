@@ -25,9 +25,14 @@ export class CreateQuotationDto {
   @IsUUID()
   contactId: string;
 
-  @ApiProperty({ example: 'event-1', description: 'Event id' })
+  @ApiPropertyOptional({
+    example: 'event-1',
+    description: 'Event id',
+    nullable: true,
+  })
+  @IsOptional()
   @IsUUID()
-  eventId: string;
+  eventId?: string;
 
   @ApiProperty({ example: 'Wedding Package Quotation' })
   @IsString()
@@ -58,6 +63,15 @@ export class CreateQuotationDto {
   @IsOptional()
   @IsDateString()
   expiryDate?: string;
+
+  @ApiPropertyOptional({
+    example: '2026-08-13T00:00:00.000Z',
+    nullable: true,
+    description: 'Alias for expiryDate',
+  })
+  @IsOptional()
+  @IsDateString()
+  validUntil?: string;
 
   @ApiPropertyOptional({
     example: 10000,

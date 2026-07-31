@@ -17,8 +17,26 @@ export class QuotationLineItemResponseDto {
   @ApiProperty({ example: 150000 })
   unitPriceCents: number;
 
+  @ApiProperty({ example: 10 })
+  discountPercent: number;
+
+  @ApiProperty({ example: 1500 })
+  discountCents: number;
+
   @ApiProperty({ example: 300000 })
   lineTotalCents: number;
+
+  @ApiProperty({ example: 150000 })
+  unitPrice: number;
+
+  @ApiProperty({ example: 1500 })
+  discount: number;
+
+  @ApiProperty({ example: 10 })
+  discountPercentage: number;
+
+  @ApiProperty({ example: 298500 })
+  total: number;
 
   @ApiProperty({ example: 0 })
   sortOrder: number;
@@ -37,14 +55,17 @@ export class QuotationResponseDto {
   @ApiProperty({ example: 'QUO-20260730-AB12CD' })
   quoteNumber: string;
 
+  @ApiProperty({ example: 'QUO-20260730-AB12CD' })
+  quotationNumber: string;
+
   @ApiProperty({ example: 'org-1' })
   organizationId: string;
 
   @ApiProperty({ example: 'contact-1' })
   contactId: string;
 
-  @ApiProperty({ example: 'event-1' })
-  eventId: string;
+  @ApiProperty({ example: 'event-1', nullable: true })
+  eventId: string | null;
 
   @ApiProperty({ example: 'Wedding Package Quotation' })
   title: string;
@@ -64,8 +85,14 @@ export class QuotationResponseDto {
   @ApiProperty({ example: '2026-08-13T00:00:00.000Z', nullable: true })
   expiryDate: Date | null;
 
+  @ApiProperty({ example: '2026-08-13T00:00:00.000Z', nullable: true })
+  validUntil: Date | null;
+
   @ApiProperty({ example: 450000 })
   subtotalCents: number;
+
+  @ApiProperty({ example: 450000 })
+  subtotal: number;
 
   @ApiProperty({ example: 10000 })
   discountCents: number;
@@ -76,8 +103,20 @@ export class QuotationResponseDto {
   @ApiProperty({ example: 66000 })
   taxCents: number;
 
+  @ApiProperty({ example: 66000 })
+  vat: number;
+
   @ApiProperty({ example: 506000 })
   totalCents: number;
+
+  @ApiProperty({ example: 506000 })
+  total: number;
+
+  @ApiProperty({ example: 506000 })
+  grandTotalCents: number;
+
+  @ApiProperty({ example: 506000 })
+  grandTotal: number;
 
   @ApiProperty({ example: null, nullable: true })
   archivedAt: Date | null;

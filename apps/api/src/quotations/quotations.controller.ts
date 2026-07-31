@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   UseGuards,
   UsePipes,
@@ -107,7 +108,7 @@ export class QuotationsController {
     return this.quotationsService.findOne(user.id, id);
   }
 
-  @Patch(':id')
+  @Put(':id')
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @ApiOperation({ summary: 'Update a quotation by id' })
   @ApiParam({ name: 'id' })
@@ -122,6 +123,28 @@ export class QuotationsController {
   })
   @ApiNotFoundResponse({ description: 'Quotation not found' })
   update(
+    @CurrentUser() user: UserResponseDto,
+    @Param('id') id: string,
+    @Body() dto: UpdateQuotationDto,
+  ) {
+    return this.quotationsService.update(user.id, id, dto);
+  }
+
+  @Patch(':id')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  @ApiOperation({ summary: 'Update a quotation by id (legacy)' })
+  @ApiParam({ name: 'id' })
+  @ApiOkResponse({
+    description: 'Quotation updated successfully',
+    type: QuotationResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Payload validation failed' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({
+    description: 'No access to organization/contact/event',
+  })
+  @ApiNotFoundResponse({ description: 'Quotation not found' })
+  updateLegacy(
     @CurrentUser() user: UserResponseDto,
     @Param('id') id: string,
     @Body() dto: UpdateQuotationDto,

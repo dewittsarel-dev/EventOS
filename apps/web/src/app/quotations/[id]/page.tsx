@@ -8,10 +8,14 @@ import { useAppSession } from '@/components/app-shell/session-context';
 import {
   archiveQuotation,
   getQuotation,
+  listContacts,
+  listEvents,
   updateQuotationStatus,
 } from '@/lib/quotations-api';
 import {
   QUOTATION_STATUSES,
+  type ContactOption,
+  type EventOption,
   type QuotationRecord,
   type QuotationStatus,
 } from '@/lib/quotations-types';
@@ -29,13 +33,15 @@ export default function QuotationDetailsPage() {
 
   const { session } = useAppSession();
   const [quotation, setQuotation] = useState<QuotationRecord | null>(null);
+  const [contacts, setContacts] = useState<ContactOption[]>([]);
+  const [events, setEvents] = useState<EventOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
     async function loadQuotation() {
-      if (!session.token) {
+      if (!session.token || !session.organizationId) {
         return;
       }
 
@@ -43,15 +49,33 @@ export default function QuotationDetailsPage() {
       setError('');
 
       try {
-        const response = await getQuotation(
-          {
-            token: session.token,
-            baseUrl: session.baseUrl,
-          },
-          quotationId,
-        );
+        const [quotationResponse, contactsResponse, eventsResponse] = await Promise.all([
+          getQuotation(
+            {
+              token: session.token,
+              baseUrl: session.baseUrl,
+            },
+            quotationId,
+          ),
+          listContacts(
+            {
+              token: session.token,
+              baseUrl: session.baseUrl,
+            },
+            session.organizationId,
+          ),
+          listEvents(
+            {
+              token: session.token,
+              baseUrl: session.baseUrl,
+            },
+            session.organizationId,
+          ),
+        ]);
 
-        setQuotation(response);
+        setQuotation(quotationResponse);
+        setContacts(contactsResponse.data);
+        setEvents(eventsResponse.data);
       } catch (requestError) {
         setError(
           requestError instanceof Error
@@ -123,6 +147,13 @@ export default function QuotationDetailsPage() {
     }
   }
 
+  const clientName = quotation
+    ? contacts.find((contact) => contact.id === quotation.contactId)
+    : null;
+  const eventName = quotation?.eventId
+    ? events.find((event) => event.id === quotation.eventId)
+    : null;
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
@@ -163,6 +194,7 @@ export default function QuotationDetailsPage() {
 
             <div className="flex items-center gap-2">
               <select
+                aria-label="Quotation status"
                 className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
                 value={quotation.status}
                 onChange={(event) =>
@@ -190,6 +222,16 @@ export default function QuotationDetailsPage() {
 
           <dl className="mt-4 grid gap-3 text-sm md:grid-cols-2">
             <div>
+              <dt className="font-medium text-zinc-700">Client</dt>
+              <dd className="text-zinc-600">
+                {clientName ? `${clientName.firstName} ${clientName.lastName ?? ''}`.trim() : quotation.contactId}
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium text-zinc-700">Status</dt>
+              <dd className="text-zinc-600">{quotation.status}</dd>
+            </div>
+            <div>
               <dt className="font-medium text-zinc-700">Issue Date</dt>
               <dd className="text-zinc-600">
                 {new Date(quotation.issueDate).toLocaleDateString()}
@@ -204,12 +246,18 @@ export default function QuotationDetailsPage() {
               </dd>
             </div>
             <div>
-              <dt className="font-medium text-zinc-700">Contact ID</dt>
-              <dd className="break-all text-zinc-600">{quotation.contactId}</dd>
+              <dt className="font-medium text-zinc-700">Created Date</dt>
+              <dd className="text-zinc-600">
+                {new Date(quotation.createdAt).toLocaleDateString()}
+              </dd>
             </div>
             <div>
-              <dt className="font-medium text-zinc-700">Event ID</dt>
-              <dd className="break-all text-zinc-600">{quotation.eventId}</dd>
+              <dt className="font-medium text-zinc-700">Event</dt>
+              <dd className="break-all text-zinc-600">
+                {quotation.eventId
+                  ? eventName?.title ?? quotation.eventId
+                  : 'No linked event'}
+              </dd>
             </div>
           </dl>
 
@@ -232,6 +280,9 @@ export default function QuotationDetailsPage() {
                     Unit
                   </th>
                   <th className="px-3 py-2 text-left font-medium text-zinc-600">
+                    Discount %
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium text-zinc-600">
                     Line Total
                   </th>
                 </tr>
@@ -242,6 +293,7 @@ export default function QuotationDetailsPage() {
                     <td className="px-3 py-2">{item.description}</td>
                     <td className="px-3 py-2">{item.quantity}</td>
                     <td className="px-3 py-2">{formatCurrency(item.unitPriceCents)}</td>
+                    <td className="px-3 py-2">{item.discountPercent}%</td>
                     <td className="px-3 py-2">{formatCurrency(item.lineTotalCents)}</td>
                   </tr>
                 ))}
@@ -252,9 +304,10 @@ export default function QuotationDetailsPage() {
           <div className="mt-5 grid gap-1 rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm md:max-w-sm">
             <p>Subtotal: {formatCurrency(quotation.subtotalCents)}</p>
             <p>Discount: -{formatCurrency(quotation.discountCents)}</p>
-            <p>Tax: {formatCurrency(quotation.taxCents)}</p>
+            <p>VAT: {formatCurrency(quotation.taxCents)}</p>
+            <p>Total: {formatCurrency(quotation.totalCents - quotation.taxCents)}</p>
             <p className="font-semibold text-zinc-900">
-              Total: {formatCurrency(quotation.totalCents)}
+              Grand Total: {formatCurrency(quotation.grandTotalCents)}
             </p>
           </div>
         </div>

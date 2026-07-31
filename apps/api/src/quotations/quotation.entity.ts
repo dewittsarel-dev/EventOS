@@ -6,6 +6,8 @@ export interface QuotationLineItem {
   description: string;
   quantity: number;
   unitPriceCents: number;
+  discountPercent: number;
+  discountCents: number;
   lineTotalCents: number;
   sortOrder: number;
   createdAt: Date;
@@ -17,7 +19,7 @@ export interface Quotation {
   quoteNumber: string;
   organizationId: string;
   contactId: string;
-  eventId: string;
+  eventId: string | null;
   title: string;
   notes: string | null;
   status: QuotationStatus;

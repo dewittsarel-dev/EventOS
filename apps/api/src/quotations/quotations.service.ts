@@ -19,10 +19,16 @@ export class QuotationsService {
   async create(userId: string, data: CreateQuotationDto) {
     await this.ensureOrganizationAccess(userId, data.organizationId);
     await this.ensureContactOwnership(data.contactId, data.organizationId);
-    await this.ensureEventOwnership(data.eventId, data.organizationId);
+    if (data.eventId) {
+      await this.ensureEventOwnership(data.eventId, data.organizationId);
+    }
 
     const issueDate = data.issueDate ? new Date(data.issueDate) : new Date();
-    const expiryDate = data.expiryDate ? new Date(data.expiryDate) : null;
+    const expiryDate = data.expiryDate
+      ? new Date(data.expiryDate)
+      : data.validUntil
+        ? new Date(data.validUntil)
+        : null;
     this.ensureDateRange(issueDate, expiryDate);
 
     const status = data.status ?? QuotationStatus.Draft;
@@ -55,13 +61,19 @@ export class QuotationsService {
         taxCents: totals.taxCents,
         totalCents: totals.totalCents,
         items: {
-          create: data.items.map((item, index) => ({
-            description: item.description,
-            quantity: item.quantity,
-            unitPriceCents: item.unitPriceCents,
-            lineTotalCents: item.quantity * item.unitPriceCents,
-            sortOrder: index,
-          })),
+          create: data.items.map((item, index) => {
+            const pricing = this.calculateLineItemPricing(item, index);
+
+            return {
+              description: item.description,
+              quantity: item.quantity,
+              unitPriceCents: item.unitPriceCents,
+              discountPercent: pricing.discountPercent,
+              discountCents: pricing.discountCents,
+              lineTotalCents: pricing.lineTotalCents,
+              sortOrder: index,
+            };
+          }),
         },
       },
       include: {
@@ -71,7 +83,7 @@ export class QuotationsService {
       },
     });
 
-    return created;
+    return this.mapQuotationResponse(created);
   }
 
   async findAll(userId: string, query: FindQuotationsQueryDto) {
@@ -134,7 +146,7 @@ export class QuotationsService {
     ]);
 
     return {
-      data,
+      data: data.map((quotation) => this.mapQuotationResponse(quotation)),
       meta: {
         page,
         limit,
@@ -159,7 +171,7 @@ export class QuotationsService {
 
     await this.ensureOrganizationAccess(userId, quotation.organizationId);
 
-    return quotation;
+    return this.mapQuotationResponse(quotation);
   }
 
   async update(userId: string, id: string, data: UpdateQuotationDto) {
@@ -181,10 +193,10 @@ export class QuotationsService {
       ? new Date(data.issueDate)
       : quotation.issueDate;
     const expiryDate =
-      data.expiryDate === null
+      data.expiryDate === null || data.validUntil === null
         ? null
-        : data.expiryDate
-          ? new Date(data.expiryDate)
+        : data.expiryDate || data.validUntil
+          ? new Date(data.expiryDate ?? data.validUntil ?? '')
           : quotation.expiryDate;
 
     this.ensureDateRange(issueDate, expiryDate);
@@ -195,6 +207,8 @@ export class QuotationsService {
           description: item.description,
           quantity: item.quantity,
           unitPriceCents: item.unitPriceCents,
+          discountPercent: item.discountPercent,
+          discountCents: item.discountCents,
         }));
 
     const discountCents = data.discountCents ?? quotation.discountCents;
@@ -212,18 +226,24 @@ export class QuotationsService {
         });
 
         await tx.quotationItem.createMany({
-          data: data.items.map((item, index) => ({
-            quotationId: quotation.id,
-            description: item.description,
-            quantity: item.quantity,
-            unitPriceCents: item.unitPriceCents,
-            lineTotalCents: item.quantity * item.unitPriceCents,
-            sortOrder: index,
-          })),
+          data: data.items.map((item, index) => {
+            const pricing = this.calculateLineItemPricing(item, index);
+
+            return {
+              quotationId: quotation.id,
+              description: item.description,
+              quantity: item.quantity,
+              unitPriceCents: item.unitPriceCents,
+              discountPercent: pricing.discountPercent,
+              discountCents: pricing.discountCents,
+              lineTotalCents: pricing.lineTotalCents,
+              sortOrder: index,
+            };
+          }),
         });
       }
 
-      return tx.quotation.update({
+      const updated = await tx.quotation.update({
         where: { id: quotation.id },
         data: {
           contactId: data.contactId,
@@ -244,6 +264,8 @@ export class QuotationsService {
           },
         },
       });
+
+      return this.mapQuotationResponse(updated);
     });
   }
 
@@ -260,7 +282,7 @@ export class QuotationsService {
       data.status,
     );
 
-    return this.prisma.quotation.update({
+    const updated = await this.prisma.quotation.update({
       where: { id: quotation.id },
       data: {
         status: data.status,
@@ -271,6 +293,8 @@ export class QuotationsService {
         },
       },
     });
+
+    return this.mapQuotationResponse(updated);
   }
 
   async archive(userId: string, id: string) {
@@ -293,7 +317,12 @@ export class QuotationsService {
   }
 
   private calculateTotals(
-    items: Array<{ quantity: number; unitPriceCents: number }>,
+    items: Array<{
+      quantity: number;
+      unitPriceCents: number;
+      discountPercent?: number;
+      discountCents?: number;
+    }>,
     discountCents: number,
     taxRatePercent: number,
   ) {
@@ -301,10 +330,11 @@ export class QuotationsService {
       throw new BadRequestException('taxRatePercent must be between 0 and 100');
     }
 
-    const subtotalCents = items.reduce(
-      (sum, item) => sum + item.quantity * item.unitPriceCents,
-      0,
-    );
+    const subtotalCents = items.reduce((sum, item, index) => {
+      const pricing = this.calculateLineItemPricing(item, index);
+
+      return sum + pricing.lineTotalCents;
+    }, 0);
 
     if (discountCents > subtotalCents) {
       throw new BadRequestException(
@@ -342,15 +372,21 @@ export class QuotationsService {
     }
 
     const transitions: Record<QuotationStatus, QuotationStatus[]> = {
-      [QuotationStatus.Draft]: [QuotationStatus.Sent, QuotationStatus.Expired],
+      [QuotationStatus.Draft]: [
+        QuotationStatus.Sent,
+        QuotationStatus.Expired,
+        QuotationStatus.Cancelled,
+      ],
       [QuotationStatus.Sent]: [
         QuotationStatus.Accepted,
         QuotationStatus.Rejected,
         QuotationStatus.Expired,
+        QuotationStatus.Cancelled,
       ],
-      [QuotationStatus.Accepted]: [],
+      [QuotationStatus.Accepted]: [QuotationStatus.Cancelled],
       [QuotationStatus.Rejected]: [],
       [QuotationStatus.Expired]: [],
+      [QuotationStatus.Cancelled]: [],
     };
 
     if (!transitions[currentStatus].includes(nextStatus)) {
@@ -364,6 +400,83 @@ export class QuotationsService {
     if (archivedAt) {
       throw new BadRequestException('Archived quotations cannot be updated');
     }
+  }
+
+  private mapQuotationResponse<
+    T extends {
+      quoteNumber: string;
+      expiryDate: Date | null;
+      subtotalCents: number;
+      taxCents: number;
+      totalCents: number;
+      items?: Array<{
+        unitPriceCents: number;
+        discountPercent: number;
+        discountCents: number;
+        lineTotalCents: number;
+      }>;
+    },
+  >(quotation: T) {
+    return {
+      ...quotation,
+      quotationNumber: quotation.quoteNumber,
+      validUntil: quotation.expiryDate,
+      subtotal: quotation.subtotalCents,
+      vat: quotation.taxCents,
+      total: quotation.totalCents,
+      grandTotalCents: quotation.totalCents,
+      grandTotal: quotation.totalCents,
+      items: quotation.items?.map((item) => ({
+        ...item,
+        unitPrice: item.unitPriceCents,
+        discount: item.discountCents,
+        discountPercentage: item.discountPercent,
+        total: item.lineTotalCents,
+      })),
+    };
+  }
+
+  private calculateLineItemPricing(
+    item: {
+      quantity: number;
+      unitPriceCents: number;
+      discountPercent?: number;
+      discountCents?: number;
+    },
+    index: number,
+  ) {
+    const baseLineTotal = item.quantity * item.unitPriceCents;
+    const discountPercent = item.discountPercent ?? 0;
+
+    if (discountPercent < 0 || discountPercent > 100) {
+      throw new BadRequestException(
+        `items[${index}].discountPercent must be between 0 and 100`,
+      );
+    }
+
+    const derivedDiscountCents = Math.round(
+      (baseLineTotal * discountPercent) / 100,
+    );
+    const discountCents =
+      item.discountPercent !== undefined
+        ? derivedDiscountCents
+        : (item.discountCents ?? 0);
+
+    if (discountCents > baseLineTotal) {
+      throw new BadRequestException(
+        `items[${index}].discount cannot be greater than quantity * unitPriceCents`,
+      );
+    }
+
+    return {
+      discountPercent:
+        item.discountPercent ??
+        (baseLineTotal > 0
+          ? Math.round((discountCents / baseLineTotal) * 100)
+          : 0),
+      discountCents,
+      lineTotalCents: baseLineTotal - discountCents,
+    };
   }
 
   private generateQuoteNumber() {

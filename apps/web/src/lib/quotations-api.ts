@@ -139,7 +139,7 @@ export async function updateQuotation(
   payload: UpdateQuotationPayload,
 ) {
   return apiRequest<QuotationRecord>(`/quotations/${id}`, options, {
-    method: 'PATCH',
+    method: 'PUT',
     body: JSON.stringify(payload),
   });
 }

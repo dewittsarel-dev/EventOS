@@ -1,5 +1,13 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsNotEmpty, IsString, MaxLength, Min } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class QuotationLineItemDto {
   @ApiProperty({
@@ -28,4 +36,28 @@ export class QuotationLineItemDto {
   @IsInt()
   @Min(0)
   unitPriceCents: number;
+
+  @ApiPropertyOptional({
+    example: 10,
+    description: 'Discount percentage applied to this line item',
+    minimum: 0,
+    maximum: 100,
+    default: 0,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(100)
+  discountPercent?: number;
+
+  @ApiPropertyOptional({
+    example: 5000,
+    description: 'Legacy discount amount in cents applied to this line item',
+    minimum: 0,
+    default: 0,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  discountCents?: number;
 }

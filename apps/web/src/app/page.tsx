@@ -373,7 +373,7 @@ export default function DashboardPage() {
                   New Event
                 </Link>
                 <Link
-                  href="/quotations/new"
+                  href="/quotations"
                   className="rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-center text-sm font-medium text-white transition hover:bg-white/20"
                 >
                   New Quotation
@@ -538,7 +538,10 @@ export default function DashboardPage() {
             <article className="min-w-0 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-base font-semibold text-zinc-900">Recent Quotations</h3>
-                <Link href="/quotations" className="text-xs text-zinc-600 hover:text-zinc-900">
+                <Link
+                  href="/quotations"
+                  className="text-xs text-zinc-600 hover:text-zinc-900"
+                >
                   View all
                 </Link>
               </div>

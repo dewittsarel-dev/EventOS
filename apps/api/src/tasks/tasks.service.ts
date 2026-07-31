@@ -4,6 +4,10 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import type {
+  TaskPriority as PrismaTaskPriority,
+  TaskStatus as PrismaTaskStatus,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { FindTasksQueryDto } from './dto/find-tasks-query.dto';
@@ -270,7 +274,7 @@ export class TasksService {
   }
 
   private resolveCompletedAt(
-    status: TaskStatus,
+    status: TaskStatus | PrismaTaskStatus,
     previousCompletedAt: Date | null,
   ): Date | null {
     if (status === TaskStatus.Completed) {
@@ -289,8 +293,8 @@ export class TasksService {
     title: string;
     description: string | null;
     dueDate: Date | null;
-    priority: TaskPriority;
-    status: TaskStatus;
+    priority: PrismaTaskPriority;
+    status: PrismaTaskStatus;
     completedAt: Date | null;
     archivedAt: Date | null;
     createdAt: Date;

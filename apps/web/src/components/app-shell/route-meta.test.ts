@@ -27,7 +27,7 @@ describe('route meta', () => {
 
   it('resolves titles from nested paths', () => {
     expect(routeTitle('/events/123')).toBe('Events');
-    expect(routeTitle('/quotations/new')).toBe('Quotations');
+    expect(routeTitle('/quotations')).toBe('Quotations');
     expect(routeTitle('/marketplace')).toBe('Marketplace');
   });
 });

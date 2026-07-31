@@ -57,6 +57,7 @@ type QuotationItemRecord = {
   description: string;
   quantity: number;
   unitPriceCents: number;
+  discountCents: number;
   lineTotalCents: number;
   sortOrder: number;
   createdAt: Date;
@@ -285,6 +286,7 @@ describe('QuotationsController (e2e)', () => {
                   description: string;
                   quantity: number;
                   unitPriceCents: number;
+                  discountCents: number;
                   lineTotalCents: number;
                   sortOrder: number;
                 }>;
@@ -324,6 +326,7 @@ describe('QuotationsController (e2e)', () => {
                 description: item.description,
                 quantity: item.quantity,
                 unitPriceCents: item.unitPriceCents,
+                discountCents: item.discountCents,
                 lineTotalCents: item.lineTotalCents,
                 sortOrder: item.sortOrder,
                 createdAt: new Date(),
@@ -640,7 +643,7 @@ describe('QuotationsController (e2e)', () => {
       .expect(200);
 
     const updatedResponse = await request(app.getHttpServer())
-      .patch(`/quotations/${created.id}`)
+      .put(`/quotations/${created.id}`)
       .set('Authorization', `Bearer ${token}`)
       .send({
         title: 'Premium Package Updated',

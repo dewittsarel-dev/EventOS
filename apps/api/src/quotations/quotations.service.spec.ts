@@ -80,7 +80,7 @@ describe('QuotationsService', () => {
     });
 
     expect(prisma.quotation.create).toHaveBeenCalled();
-    expect(result).toEqual({ id: quotationId });
+    expect(result).toEqual(expect.objectContaining({ id: quotationId }));
   });
 
   it('rejects discount above subtotal', async () => {

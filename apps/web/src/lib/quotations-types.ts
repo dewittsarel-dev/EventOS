@@ -3,12 +3,15 @@ export type QuotationStatus =
   | 'Sent'
   | 'Accepted'
   | 'Rejected'
-  | 'Expired';
+  | 'Expired'
+  | 'Cancelled';
 
 export type QuotationItemPayload = {
   description: string;
   quantity: number;
   unitPriceCents: number;
+  discountPercent?: number;
+  discountCents?: number;
 };
 
 export type QuotationItemRecord = {
@@ -17,7 +20,13 @@ export type QuotationItemRecord = {
   description: string;
   quantity: number;
   unitPriceCents: number;
+  discountPercent: number;
+  discountCents: number;
   lineTotalCents: number;
+  unitPrice: number;
+  discount: number;
+  discountPercentage: number;
+  total: number;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -26,19 +35,26 @@ export type QuotationItemRecord = {
 export type QuotationRecord = {
   id: string;
   quoteNumber: string;
+  quotationNumber: string;
   organizationId: string;
   contactId: string;
-  eventId: string;
+  eventId: string | null;
   title: string;
   notes: string | null;
   status: QuotationStatus;
   issueDate: string;
   expiryDate: string | null;
+  validUntil: string | null;
   subtotalCents: number;
+  subtotal: number;
   discountCents: number;
   taxRatePercent: number;
   taxCents: number;
+  vat: number;
   totalCents: number;
+  total: number;
+  grandTotalCents: number;
+  grandTotal: number;
   archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -83,11 +99,12 @@ export type EventListResponse = {
 export type CreateQuotationPayload = {
   organizationId: string;
   contactId: string;
-  eventId: string;
+  eventId?: string;
   title: string;
   notes?: string;
   issueDate?: string;
   expiryDate?: string;
+  validUntil?: string;
   discountCents?: number;
   taxRatePercent?: number;
   status?: QuotationStatus;
@@ -102,4 +119,5 @@ export const QUOTATION_STATUSES: QuotationStatus[] = [
   'Accepted',
   'Rejected',
   'Expired',
+  'Cancelled',
 ];

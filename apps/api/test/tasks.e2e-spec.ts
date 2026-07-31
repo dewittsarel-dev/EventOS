@@ -118,7 +118,7 @@ describe('TasksController (e2e)', () => {
 
     users = [
       {
-        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
         email: 'user1@example.com',
         name: null,
         passwordHash,
@@ -126,7 +126,7 @@ describe('TasksController (e2e)', () => {
         updatedAt: new Date(),
       },
       {
-        id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+        id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
         email: 'user2@example.com',
         name: null,
         passwordHash,

@@ -41,6 +41,15 @@ function formatCurrency(cents: number) {
   }).format(cents / 100);
 }
 
+function lineTotal(item: QuotationItemPayload) {
+  const base = item.quantity * item.unitPriceCents;
+  const discountAmount = Math.round(
+    (base * Math.max(0, Math.min(100, item.discountPercent ?? 0))) / 100,
+  );
+
+  return Math.max(0, base - discountAmount);
+}
+
 export function QuotationForm({
   mode,
   values,
@@ -53,7 +62,7 @@ export function QuotationForm({
   onSubmit,
 }: QuotationFormProps) {
   const subtotal = values.items.reduce(
-    (sum, item) => sum + item.quantity * item.unitPriceCents,
+    (sum, item) => sum + lineTotal(item),
     0,
   );
   const safeDiscount = Math.min(values.discountCents || 0, subtotal);
@@ -133,9 +142,8 @@ export function QuotationForm({
             className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
             value={values.eventId}
             onChange={(event) => onChange({ ...values, eventId: event.target.value })}
-            required
           >
-            <option value="">Select event</option>
+            <option value="">No linked event</option>
             {events.map((event) => (
               <option key={event.id} value={event.id}>
                 {event.title}
@@ -293,7 +301,23 @@ export function QuotationForm({
               <input
                 type="number"
                 min={0}
-                className="rounded-md border border-zinc-300 px-3 py-2 text-sm md:col-span-3"
+                max={100}
+                className="rounded-md border border-zinc-300 px-3 py-2 text-sm md:col-span-2"
+                placeholder="Discount %"
+                value={item.discountPercent ?? 0}
+                onChange={(event) =>
+                  setItem(index, {
+                    ...item,
+                    discountPercent: Number(event.target.value) || 0,
+                  })
+                }
+                required
+              />
+
+              <input
+                type="number"
+                min={0}
+                className="rounded-md border border-zinc-300 px-3 py-2 text-sm md:col-span-2"
                 placeholder="Unit price cents"
                 value={item.unitPriceCents}
                 onChange={(event) =>
@@ -314,7 +338,7 @@ export function QuotationForm({
               </button>
 
               <div className="text-xs text-zinc-600 md:col-span-12">
-                Line total: {formatCurrency(item.quantity * item.unitPriceCents)}
+                Line total: {formatCurrency(lineTotal(item))}
               </div>
             </div>
           ))}

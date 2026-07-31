@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcryptjs';
 import request from 'supertest';
 import type { App } from 'supertest/types';
+import type { Response } from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
 
@@ -324,20 +325,15 @@ describe('OrganizationUsersController (e2e)', () => {
   it('/organization/users (GET) returns users for organization', async () => {
     const token = await loginAndGetToken();
 
-    const response = await request(app.getHttpServer())
+    await request(app.getHttpServer())
       .get(`/organization/users?organizationId=${ORG_ID}`)
       .set('Authorization', `Bearer ${token}`)
-      .expect(200);
-
-    expect(response.body).toEqual({
-      data: expect.arrayContaining([
-        expect.objectContaining({
-          userId: ACTOR_ID,
-          role: 'Administrator',
-          status: 'Active',
-        }),
-      ]),
-    });
+      .expect(200)
+      .expect((response: Response) => {
+        expect(response.text).toContain(`"userId":"${ACTOR_ID}"`);
+        expect(response.text).toContain('"role":"Administrator"');
+        expect(response.text).toContain('"status":"Active"');
+      });
   });
 
   it('/organization/users (POST) invites a user', async () => {

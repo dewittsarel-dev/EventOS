@@ -23,6 +23,7 @@ enum QuotationStatus {
   Accepted
   Rejected
   Expired
+  Cancelled
 }
 
 enum TaskStatus {
@@ -127,7 +128,6 @@ model Contact {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   events         Event[]
   quotations     Quotation[]
-  assignedTasks  Task[]       @relation("TaskAssignedContact")
 
   @@index([organizationId])
   @@index([email])
@@ -162,7 +162,7 @@ model Quotation {
   quoteNumber    String          @unique
   organizationId String
   contactId      String
-  eventId        String
+  eventId        String?
   title          String
   notes          String?
   status         QuotationStatus @default(Draft)
@@ -178,7 +178,7 @@ model Quotation {
   updatedAt      DateTime        @updatedAt
   organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   contact        Contact         @relation(fields: [contactId], references: [id], onDelete: Restrict)
-  event          Event           @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  event          Event?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
   items          QuotationItem[]
   tasks          Task[]
 
@@ -230,6 +230,8 @@ model QuotationItem {
   description   String
   quantity      Int
   unitPriceCents Int
+  discountPercent Int     @default(0)
+  discountCents Int       @default(0)
   lineTotalCents Int
   sortOrder     Int       @default(0)
   createdAt     DateTime  @default(now())

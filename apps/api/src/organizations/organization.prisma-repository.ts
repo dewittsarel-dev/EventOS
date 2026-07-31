@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { CreateRoleDto } from './dto/create-role.dto';
-import { FindOrganizationsQueryDto } from './dto/find-organizations-query.dto';
 import { InviteOrganizationUserDto } from './dto/invite-organization-user.dto';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
 import { UpdateOrganizationSettingsDto } from './dto/update-organization-settings.dto';

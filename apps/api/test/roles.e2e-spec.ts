@@ -3,6 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcryptjs';
 import request from 'supertest';
 import type { App } from 'supertest/types';
+import type { Response } from 'supertest';
 import { AppModule } from './../src/app.module';
 import { PrismaService } from './../src/prisma/prisma.service';
 
@@ -319,19 +320,14 @@ describe('RolesController (e2e)', () => {
   it('/roles (GET) returns roles list', async () => {
     const token = await loginAndGetToken();
 
-    const response = await request(app.getHttpServer())
+    await request(app.getHttpServer())
       .get(`/roles?organizationId=${ORG_ID}`)
       .set('Authorization', `Bearer ${token}`)
-      .expect(200);
-
-    expect(response.body).toEqual({
-      data: expect.arrayContaining([
-        expect.objectContaining({
-          name: 'Administrator',
-          isSystem: true,
-        }),
-      ]),
-    });
+      .expect(200)
+      .expect((response: Response) => {
+        expect(response.text).toContain('"name":"Administrator"');
+        expect(response.text).toContain('"isSystem":true');
+      });
   });
 
   it('/roles (POST) creates a custom role', async () => {

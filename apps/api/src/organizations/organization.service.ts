@@ -12,8 +12,6 @@ import {
   defaultRolePermissions,
   ROLE_PERMISSION_ACTIONS,
   ROLE_PERMISSION_GROUPS,
-  RolePermissionAction,
-  RolePermissionGroup,
   RolePermissionSet,
 } from './dto/permission-groups';
 import { OrganizationUserRole } from './dto/organization-user-role';

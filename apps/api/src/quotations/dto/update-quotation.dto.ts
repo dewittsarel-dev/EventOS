@@ -20,10 +20,10 @@ export class UpdateQuotationDto {
   @IsUUID()
   contactId?: string;
 
-  @ApiPropertyOptional({ example: 'event-1' })
+  @ApiPropertyOptional({ example: 'event-1', nullable: true })
   @IsOptional()
   @IsUUID()
-  eventId?: string;
+  eventId?: string | null;
 
   @ApiPropertyOptional({ example: 'Updated quotation title' })
   @IsOptional()
@@ -46,6 +46,15 @@ export class UpdateQuotationDto {
   @IsOptional()
   @IsDateString()
   expiryDate?: string | null;
+
+  @ApiPropertyOptional({
+    example: '2026-08-13T00:00:00.000Z',
+    nullable: true,
+    description: 'Alias for expiryDate',
+  })
+  @IsOptional()
+  @IsDateString()
+  validUntil?: string | null;
 
   @ApiPropertyOptional({ example: 5000 })
   @IsOptional()

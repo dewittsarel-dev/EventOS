@@ -34,6 +34,7 @@ const defaultForm: QuotationFormValues = {
       description: '',
       quantity: 1,
       unitPriceCents: 0,
+      discountPercent: 0,
     },
   ],
 };
@@ -112,7 +113,7 @@ export default function NewQuotationPage() {
         {
           organizationId: session.organizationId,
           contactId: form.contactId,
-          eventId: form.eventId,
+          eventId: form.eventId || undefined,
           title: form.title,
           notes: form.notes,
           issueDate: form.issueDate
@@ -161,9 +162,9 @@ export default function NewQuotationPage() {
         </div>
       ) : null}
 
-      {contacts.length === 0 || events.length === 0 ? (
+      {contacts.length === 0 ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-600">
-          You need at least one contact and one event to create a quotation.
+          You need at least one contact to create a quotation. Linking an event is optional.
         </div>
       ) : null}
 

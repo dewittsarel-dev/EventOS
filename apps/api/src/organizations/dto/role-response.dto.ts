@@ -4,20 +4,6 @@ import {
   ROLE_PERMISSION_GROUPS,
 } from './permission-groups';
 
-class RolePermissionActionMapDto {
-  @ApiProperty({ example: true })
-  View: boolean;
-
-  @ApiProperty({ example: true })
-  Create: boolean;
-
-  @ApiProperty({ example: true })
-  Edit: boolean;
-
-  @ApiProperty({ example: false })
-  Delete: boolean;
-}
-
 export class RoleResponseDto {
   @ApiProperty({ example: 'role-1' })
   id: string;

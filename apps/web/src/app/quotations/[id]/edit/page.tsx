@@ -101,7 +101,7 @@ export default function EditQuotationPage() {
 
         setForm({
           contactId: quotationResponse.contactId,
-          eventId: quotationResponse.eventId,
+          eventId: quotationResponse.eventId ?? '',
           title: quotationResponse.title,
           notes: quotationResponse.notes ?? '',
           issueDate: toDateInput(quotationResponse.issueDate),
@@ -113,6 +113,7 @@ export default function EditQuotationPage() {
             description: item.description,
             quantity: item.quantity,
             unitPriceCents: item.unitPriceCents,
+            discountPercent: item.discountPercent,
           })),
         });
       } catch (requestError) {
@@ -150,7 +151,7 @@ export default function EditQuotationPage() {
         quotationId,
         {
           contactId: form.contactId,
-          eventId: form.eventId,
+          eventId: form.eventId || undefined,
           title: form.title,
           notes: form.notes,
           issueDate: form.issueDate
