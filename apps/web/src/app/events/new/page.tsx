@@ -39,6 +39,8 @@ export default function NewEventPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  const hasContacts = contacts.length > 0;
+
   useEffect(() => {
     async function loadContacts() {
       if (!session.token || !session.organizationId) {
@@ -92,6 +94,16 @@ export default function NewEventPage() {
       return;
     }
 
+    if (!hasContacts) {
+      setError('You must first create at least one Contact before creating an Event.');
+      return;
+    }
+
+    if (!form.contactId) {
+      setError('Please select a contact before creating an Event.');
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -120,6 +132,9 @@ export default function NewEventPage() {
 
       setSuccess('Event created successfully.');
       setForm(defaultForm);
+      if (typeof window !== 'undefined') {
+        window.location.assign('/events');
+      }
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -145,13 +160,23 @@ export default function NewEventPage() {
         }
       />
 
-      {loadingContacts ? (
+      {!session.organizationId ? (
+        <div className="rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-600">
+          Select an organization in the header to create events.
+        </div>
+      ) : loadingContacts ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-600">
           Loading contacts...
         </div>
       ) : contacts.length === 0 ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-600">
-          No contacts available. Create a contact first.
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+          <p>You must first create at least one Contact before creating an Event.</p>
+          <Link
+            href="/contacts/new"
+            className="mt-3 inline-flex rounded-md bg-zinc-900 px-3 py-2 text-xs font-medium text-white hover:bg-zinc-700"
+          >
+            Create Contact
+          </Link>
         </div>
       ) : null}
 
@@ -161,6 +186,7 @@ export default function NewEventPage() {
         contacts={contacts}
         assignedUsers={assignedUsers}
         saving={saving}
+        submitDisabled={!hasContacts || !form.contactId}
         error={error}
         success={success}
         onChange={setForm}

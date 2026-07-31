@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { getWorkspaceContext, type AuthUser, type WorkspaceOrganization } from '../../lib/auth-api';
 
 type SessionValues = {
   baseUrl: string;
@@ -20,17 +21,11 @@ type UserProfile = {
   id: string;
   email: string;
   name: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
-type OrganizationRecord = {
-  id: string;
-  name: string;
-  slug: string;
-};
-
-type OrganizationListResponse = {
-  data: OrganizationRecord[];
-};
+type OrganizationRecord = WorkspaceOrganization;
 
 type SessionContextValue = {
   session: SessionValues;
@@ -91,8 +86,13 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
   const [metaError, setMetaError] = useState('');
 
   const setSession = useCallback((next: SessionValues) => {
-    setSessionState(next);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    const normalizedNext = {
+      ...next,
+      baseUrl: normalizeBaseUrl(next.baseUrl || defaultSession.baseUrl),
+    };
+
+    setSessionState(normalizedNext);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedNext));
   }, []);
 
   const logout = useCallback(() => {
@@ -106,6 +106,8 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       return next;
     });
     setUser(null);
+    setOrganizations([]);
+    setMetaError('');
   }, []);
 
   const setOrganizationId = useCallback((organizationId: string) => {
@@ -134,42 +136,34 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       setMetaError('');
 
       try {
-        const headers = {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.token}`,
-        };
-
-        const [meResponse, orgResponse] = await Promise.all([
-          fetch(`${normalizeBaseUrl(session.baseUrl)}/auth/me`, {
-            headers,
-            cache: 'no-store',
-          }),
-          fetch(
-            `${normalizeBaseUrl(session.baseUrl)}/organizations?page=1&limit=100`,
-            {
-              headers,
-              cache: 'no-store',
-            },
-          ),
-        ]);
-
-        if (!meResponse.ok) {
-          throw new Error('Failed to load user profile from access token.');
-        }
-
-        const meBody = (await meResponse.json()) as UserProfile;
-
-        let organizationItems: OrganizationRecord[] = [];
-
-        if (orgResponse.ok) {
-          const organizationsBody =
-            (await orgResponse.json()) as OrganizationListResponse;
-          organizationItems = organizationsBody.data ?? [];
-        }
+        const workspace = await getWorkspaceContext(
+          normalizeBaseUrl(session.baseUrl),
+          session.token,
+        );
+        const meBody: UserProfile = workspace.user as AuthUser;
+        const organizationItems = workspace.organizations ?? [];
+        const hasSelectedOrganization = organizationItems.some(
+          (organization) => organization.id === session.organizationId,
+        );
+        const nextOrganizationId = hasSelectedOrganization
+          ? session.organizationId
+          : (organizationItems[0]?.id ?? '');
 
         if (!cancelled) {
           setUser(meBody);
           setOrganizations(organizationItems);
+
+          if (nextOrganizationId !== session.organizationId) {
+            setSessionState((prev) => {
+              const next = {
+                ...prev,
+                organizationId: nextOrganizationId,
+              };
+
+              window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+              return next;
+            });
+          }
         }
       } catch (error) {
         if (!cancelled) {
@@ -180,6 +174,19 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
           );
           setUser(null);
           setOrganizations([]);
+
+          const message = error instanceof Error ? error.message : '';
+          if (message.toLowerCase().includes('401')) {
+            setSessionState((prev) => {
+              const next = {
+                ...prev,
+                token: '',
+                organizationId: '',
+              };
+              window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+              return next;
+            });
+          }
         }
       } finally {
         if (!cancelled) {
@@ -193,7 +200,7 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [session.baseUrl, session.token]);
+  }, [session.baseUrl, session.organizationId, session.token]);
 
   const activeOrganization = useMemo(() => {
     if (!session.organizationId) {

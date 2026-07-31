@@ -4,14 +4,15 @@ import SuppliersPage from './page';
 
 const listSuppliers = vi.fn();
 const deleteSupplier = vi.fn();
+const sessionState = {
+  token: 'token-1',
+  baseUrl: 'http://localhost:3001',
+  organizationId: '11111111-1111-4111-8111-111111111111',
+};
 
 vi.mock('../../components/app-shell/session-context', () => ({
   useAppSession: () => ({
-    session: {
-      token: 'token-1',
-      baseUrl: 'http://localhost:3001',
-      organizationId: '11111111-1111-4111-8111-111111111111',
-    },
+    session: sessionState,
   }),
 }));
 
@@ -24,6 +25,8 @@ describe('SuppliersPage', () => {
   beforeEach(() => {
     listSuppliers.mockReset();
     deleteSupplier.mockReset();
+    sessionState.token = 'token-1';
+    sessionState.organizationId = '11111111-1111-4111-8111-111111111111';
     vi.stubGlobal('confirm', vi.fn(() => true));
 
     listSuppliers.mockResolvedValue({
@@ -95,5 +98,16 @@ describe('SuppliersPage', () => {
     await waitFor(() => {
       expect(deleteSupplier).toHaveBeenCalledWith(expect.anything(), 'supplier-1');
     });
+  });
+
+  it('shows organization guidance and skips data load when organization is missing', async () => {
+    sessionState.organizationId = '';
+
+    render(<SuppliersPage />);
+
+    expect(
+      await screen.findByText('Select an organization in the header to manage suppliers.'),
+    ).toBeInTheDocument();
+    expect(listSuppliers).not.toHaveBeenCalled();
   });
 });

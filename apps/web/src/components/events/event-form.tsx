@@ -28,6 +28,7 @@ type EventFormProps = {
   contacts: ContactRecord[];
   assignedUsers: OrganizationUserRecord[];
   saving: boolean;
+  submitDisabled?: boolean;
   error: string;
   success: string;
   onChange: (next: EventFormValues) => void;
@@ -40,6 +41,7 @@ export function EventForm({
   contacts,
   assignedUsers,
   saving,
+  submitDisabled,
   error,
   success,
   onChange,
@@ -221,7 +223,7 @@ export function EventForm({
         <button
           className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-60"
           type="submit"
-          disabled={saving}
+          disabled={saving || submitDisabled}
         >
           {saving ? 'Saving...' : mode === 'create' ? 'Create Event' : 'Save Changes'}
         </button>

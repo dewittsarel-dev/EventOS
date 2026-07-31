@@ -6,6 +6,7 @@ import { AuthModule } from './auth/auth.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { EventsModule } from './events/events.module';
+import { MeetingNotesModule } from './meeting-notes/meeting-notes.module';
 import { QuotationsModule } from './quotations/quotations.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
 import { TasksModule } from './tasks/tasks.module';
@@ -26,6 +27,7 @@ import { PrismaModule } from './prisma/prisma.module';
     DashboardModule,
     ContactsModule,
     EventsModule,
+    MeetingNotesModule,
     SuppliersModule,
     QuotationsModule,
     TasksModule,

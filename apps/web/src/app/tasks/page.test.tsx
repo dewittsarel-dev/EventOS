@@ -8,14 +8,15 @@ const updateTask = vi.fn();
 const deleteTask = vi.fn();
 const updateTaskStatus = vi.fn();
 const listOrganizationUsers = vi.fn();
+const sessionState = {
+  token: 'token-1',
+  baseUrl: 'http://localhost:3001',
+  organizationId: '11111111-1111-4111-8111-111111111111',
+};
 
 vi.mock('../../components/app-shell/session-context', () => ({
   useAppSession: () => ({
-    session: {
-      token: 'token-1',
-      baseUrl: 'http://localhost:3001',
-      organizationId: '11111111-1111-4111-8111-111111111111',
-    },
+    session: sessionState,
     activeOrganization: {
       id: '11111111-1111-4111-8111-111111111111',
       name: 'EventOS',
@@ -87,6 +88,8 @@ describe('TasksPage', () => {
     updateTask.mockReset();
     deleteTask.mockReset();
     updateTaskStatus.mockReset();
+    sessionState.token = 'token-1';
+    sessionState.organizationId = '11111111-1111-4111-8111-111111111111';
 
     listOrganizationUsers.mockResolvedValue({
       data: [
@@ -184,5 +187,19 @@ describe('TasksPage', () => {
     await waitFor(() => {
       expect(deleteTask).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('shows organization guidance and does not load tasks when organization is missing', async () => {
+    sessionState.organizationId = '';
+
+    render(<TasksPage />);
+
+    expect(
+      await screen.findByText(
+        'Save your bearer token and selected organization in the user menu to manage tasks.',
+      ),
+    ).toBeInTheDocument();
+    expect(listTasks).not.toHaveBeenCalled();
+    expect(listOrganizationUsers).not.toHaveBeenCalled();
   });
 });

@@ -201,6 +201,12 @@ export default function EventsPage() {
         </button>
       </form>
 
+      {!session.organizationId ? (
+        <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
+          Select an organization in the header to load events.
+        </div>
+      ) : null}
+
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       {success ? <p className="text-sm text-emerald-600">{success}</p> : null}
 

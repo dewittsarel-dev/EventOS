@@ -62,9 +62,9 @@ export default function ContactsPage() {
         }
       />
 
-      {!session.token || !session.organizationId ? (
+      {!session.organizationId ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
-          Set your token and organization in the profile menu to load contacts.
+          Select an organization in the header to load contacts.
         </div>
       ) : loading ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">

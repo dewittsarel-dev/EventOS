@@ -102,6 +102,38 @@ export class AuthService {
     return this.toPublicUser(user);
   }
 
+  async getWorkspaceContext(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+
+    const memberships = await this.prisma.membership.findMany({
+      where: {
+        userId,
+        isDisabled: false,
+      },
+      include: {
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    return {
+      user: this.toPublicUser(user),
+      organizations: memberships.map((membership) => membership.organization),
+    };
+  }
+
   private issueAccessToken(user: { id: string; email: string }) {
     const payload: JwtPayload = {
       sub: user.id,

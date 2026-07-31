@@ -15,6 +15,7 @@ import {
   buildBreadcrumbs,
   routeTitle,
 } from './route-meta';
+import { isProtectedAppPath, navigateToLogin, navigateToPath } from './protected-routes';
 import { Breadcrumbs } from './breadcrumbs';
 import {
   ChevronLeftIcon,
@@ -25,6 +26,7 @@ import {
   LogoutIcon,
   MarketplaceIcon,
   MenuIcon,
+  MeetingNotesIcon,
   NotificationIcon,
   QuotationsIcon,
   SearchIcon,
@@ -49,6 +51,10 @@ function navIcon(label: string) {
 
   if (label === 'Events') {
     return EventsIcon;
+  }
+
+  if (label === 'Meeting Notes') {
+    return MeetingNotesIcon;
   }
 
   if (label === 'Quotations') {
@@ -137,7 +143,6 @@ export function AppShell({ children }: AppShellProps) {
     };
   }, []);
 
-
   useEffect(() => {
     function onClickOutside(event: MouseEvent) {
       if (!isProfileOpen || !profileMenuRef.current) {
@@ -157,6 +162,7 @@ export function AppShell({ children }: AppShellProps) {
   }, [isProfileOpen]);
 
   const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname), [pathname]);
+  const protectedRoute = useMemo(() => isProtectedAppPath(pathname), [pathname]);
 
   function isActiveRoute(href: string) {
     if (href === '/') {
@@ -198,6 +204,15 @@ export function AppShell({ children }: AppShellProps) {
 
     setProfileOpen((prev) => !prev);
   }
+
+  useEffect(() => {
+    if (!protectedRoute || isAuthenticated) {
+      return;
+    }
+
+    const search = typeof window === 'undefined' ? '' : window.location.search;
+    navigateToLogin(pathname, search);
+  }, [isAuthenticated, pathname, protectedRoute]);
 
   const nav = (
     <nav aria-label="Main navigation" className="mt-6 space-y-1">
@@ -458,7 +473,11 @@ export function AppShell({ children }: AppShellProps) {
                       <button
                         type="button"
                         className="inline-flex items-center gap-1 rounded-md border border-red-300 px-3 py-1.5 text-xs text-red-700 hover:bg-red-50"
-                        onClick={logout}
+                        onClick={() => {
+                          logout();
+                          setProfileOpen(false);
+                          navigateToPath('/login');
+                        }}
                       >
                         <LogoutIcon className="h-3.5 w-3.5" />
                         Logout
@@ -502,7 +521,15 @@ export function AppShell({ children }: AppShellProps) {
           </header>
 
           <main className="min-w-0 flex-1 overflow-x-clip px-3 py-4 md:px-6 md:py-6">
-            <div className="mx-auto w-full max-w-7xl">{children}</div>
+            <div className="mx-auto w-full max-w-7xl">
+              {protectedRoute && !isAuthenticated ? (
+                <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
+                  Redirecting to sign in...
+                </div>
+              ) : (
+                children
+              )}
+            </div>
           </main>
         </div>
       </div>

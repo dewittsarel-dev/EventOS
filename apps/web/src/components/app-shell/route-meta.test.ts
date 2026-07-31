@@ -9,6 +9,7 @@ describe('route meta', () => {
       '/',
       '/contacts',
       '/events',
+      '/meeting-notes',
       '/suppliers',
       '/quotations',
       '/tasks',

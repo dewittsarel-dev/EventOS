@@ -17,6 +17,25 @@ export class UserResponseDto {
   updatedAt: Date;
 }
 
+export class WorkspaceOrganizationResponseDto {
+  @ApiProperty({ example: 'org-1' })
+  id: string;
+
+  @ApiProperty({ example: 'EventOS Pty Ltd' })
+  name: string;
+
+  @ApiProperty({ example: 'eventos' })
+  slug: string;
+}
+
+export class WorkspaceContextResponseDto {
+  @ApiProperty({ type: UserResponseDto })
+  user: UserResponseDto;
+
+  @ApiProperty({ type: [WorkspaceOrganizationResponseDto] })
+  organizations: WorkspaceOrganizationResponseDto[];
+}
+
 export class RegisterResponseDto {
   @ApiProperty({ type: UserResponseDto })
   user: UserResponseDto;

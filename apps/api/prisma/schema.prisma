@@ -41,6 +41,37 @@ enum TaskPriority {
   Critical
 }
 
+enum MeetingType {
+  ClientMeeting
+  InternalPlanning
+  SupplierMeeting
+  SiteVisit
+  Briefing
+  Debrief
+  Other
+}
+
+enum MeetingAttendeeStatus {
+  Attended
+  Invited
+  Apology
+  Optional
+}
+
+enum MeetingActionItemStatus {
+  Open
+  InProgress
+  Completed
+  Cancelled
+}
+
+enum MeetingActionItemPriority {
+  Low
+  Medium
+  High
+  Urgent
+}
+
 enum SupplierCategory {
   Venue
   Catering
@@ -71,6 +102,8 @@ model User {
   assignedEvents Event[]    @relation("EventAssignedUser")
   createdTasks Task[]       @relation("TaskCreatedBy")
   assignedTasks Task[]      @relation("TaskAssignedUser")
+  meetingNotesCreated MeetingNote[]
+  meetingActionItemsAssigned MeetingActionItem[]
   auditLogs    AuditLog[]
   outboxEvents OutboxEvent[]
 
@@ -97,6 +130,7 @@ model Organization {
   contacts     Contact[]
   suppliers    Supplier[]
   events       Event[]
+  meetingNotes MeetingNote[]
   quotations   Quotation[]
   tasks        Task[]
   auditLogs    AuditLog[]
@@ -179,6 +213,7 @@ model Event {
   assignedUser   User?        @relation("EventAssignedUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
   quotations     Quotation[]
   tasks          Task[]
+  meetingNotes   MeetingNote[]
   supplierLinks  SupplierEvent[]
 
   @@index([organizationId])
@@ -248,6 +283,7 @@ model Task {
   createdBy         User         @relation("TaskCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
   quotation         Quotation?   @relation(fields: [quotationId], references: [id], onDelete: SetNull)
   supplierLinks     SupplierTask[]
+  meetingActionItem MeetingActionItem? @relation("MeetingActionItemLinkedTask")
 
   @@index([organizationId])
   @@index([eventId])
@@ -258,6 +294,75 @@ model Task {
   @@index([priority])
   @@index([dueDate])
   @@index([archivedAt])
+}
+
+model MeetingNote {
+  id              String            @id @default(uuid())
+  organizationId  String
+  eventId         String
+  title           String
+  meetingDate     DateTime
+  startTime       String?
+  endTime         String?
+  location        String?
+  meetingType     MeetingType
+  summary         String?
+  discussionNotes String?
+  decisions       String?
+  nextMeetingDate DateTime?
+  createdByUserId String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event           Event             @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  createdBy       User              @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  attendees       MeetingAttendee[]
+  actionItems     MeetingActionItem[]
+
+  @@index([organizationId])
+  @@index([eventId])
+  @@index([meetingDate])
+  @@index([meetingType])
+  @@index([title])
+}
+
+model MeetingAttendee {
+  id                 String                 @id @default(uuid())
+  meetingNoteId      String
+  name               String
+  email              String?
+  roleOrOrganization String?
+  attendanceStatus   MeetingAttendeeStatus
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  meetingNote        MeetingNote            @relation(fields: [meetingNoteId], references: [id], onDelete: Cascade)
+
+  @@index([meetingNoteId])
+  @@index([email])
+  @@index([attendanceStatus])
+}
+
+model MeetingActionItem {
+  id                 String                       @id @default(uuid())
+  meetingNoteId      String
+  description        String
+  assignedUserId     String?
+  assignedContactName String?
+  dueDate            DateTime?
+  priority           MeetingActionItemPriority
+  status             MeetingActionItemStatus
+  linkedTaskId       String?                      @unique
+  createdAt          DateTime                     @default(now())
+  updatedAt          DateTime                     @updatedAt
+  meetingNote        MeetingNote                  @relation(fields: [meetingNoteId], references: [id], onDelete: Cascade)
+  assignedUser       User?                        @relation(fields: [assignedUserId], references: [id], onDelete: SetNull)
+  linkedTask         Task?                        @relation("MeetingActionItemLinkedTask", fields: [linkedTaskId], references: [id], onDelete: SetNull)
+
+  @@index([meetingNoteId])
+  @@index([assignedUserId])
+  @@index([dueDate])
+  @@index([priority])
+  @@index([status])
 }
 
 model Supplier {

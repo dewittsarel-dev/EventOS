@@ -167,12 +167,11 @@ export default function DashboardPage() {
         description="Command center for live ClientOS operations."
       />
 
-      {!session.token || !session.organizationId ? (
+      {!session.organizationId ? (
         <section className="rounded-2xl border border-zinc-200 bg-white p-6">
           <h2 className="text-lg font-semibold text-zinc-900">Connect Workspace Context</h2>
           <p className="mt-2 text-sm text-zinc-600">
-            Save your bearer token and organization in the user menu to load real
-            dashboard insights.
+            Select an organization in the header to load real dashboard insights.
           </p>
         </section>
       ) : (

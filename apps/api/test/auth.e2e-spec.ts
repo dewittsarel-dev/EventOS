@@ -11,6 +11,9 @@ type AuthPrismaMock = {
     findUnique: jest.Mock;
     create: jest.Mock;
   };
+  membership: {
+    findMany: jest.Mock;
+  };
   organization: {
     findMany: jest.Mock;
     count: jest.Mock;
@@ -35,6 +38,9 @@ describe('AuthController (e2e)', () => {
       user: {
         findUnique: jest.fn(),
         create: jest.fn(),
+      },
+      membership: {
+        findMany: jest.fn().mockResolvedValue([]),
       },
       organization: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -67,6 +73,20 @@ describe('AuthController (e2e)', () => {
     delete process.env.JWT_SECRET;
     delete process.env.JWT_ACCESS_TOKEN_TTL;
   });
+
+  function readAccessToken(body: unknown) {
+    if (!body || typeof body !== 'object') {
+      throw new Error('Expected login response object');
+    }
+
+    const accessToken = (body as { accessToken?: unknown }).accessToken;
+
+    if (typeof accessToken !== 'string') {
+      throw new Error('Expected accessToken in login response');
+    }
+
+    return accessToken;
+  }
 
   it('/auth/register (POST) creates a user account', async () => {
     prismaService.user.findUnique.mockResolvedValue(null);
@@ -143,11 +163,11 @@ describe('AuthController (e2e)', () => {
       .send({ email: 'user@example.com', password: 'secure1234' })
       .expect(200);
 
-    const loginBody = loginResponse.body as { accessToken: string };
+    const accessToken = readAccessToken(loginResponse.body as unknown);
 
     const response = await request(app.getHttpServer())
       .get('/auth/me')
-      .set('Authorization', `Bearer ${loginBody.accessToken}`)
+      .set('Authorization', `Bearer ${accessToken}`)
       .expect(200);
 
     expect(response.body).toEqual(
@@ -160,5 +180,46 @@ describe('AuthController (e2e)', () => {
 
   it('/auth/me (GET) rejects missing tokens', async () => {
     await request(app.getHttpServer()).get('/auth/me').expect(401);
+  });
+
+  it('/auth/workspace (GET) returns user and accessible organizations', async () => {
+    const passwordHash = await bcrypt.hash('secure1234', 12);
+
+    prismaService.user.findUnique.mockResolvedValue({
+      id: 'user-1',
+      email: 'user@example.com',
+      name: 'User One',
+      passwordHash,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    prismaService.membership.findMany.mockResolvedValue([
+      {
+        organization: {
+          id: 'org-1',
+          name: 'EventOS Pty Ltd',
+          slug: 'eventos',
+        },
+      },
+    ]);
+
+    const loginResponse = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: 'user@example.com', password: 'secure1234' })
+      .expect(200);
+
+    const accessToken = readAccessToken(loginResponse.body as unknown);
+
+    const response = await request(app.getHttpServer())
+      .get('/auth/workspace')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    expect(response.text).toContain('"id":"user-1"');
+    expect(response.text).toContain('"email":"user@example.com"');
+    expect(response.text).toContain('"id":"org-1"');
+    expect(response.text).toContain('"name":"EventOS Pty Ltd"');
+    expect(response.text).toContain('"slug":"eventos"');
   });
 });

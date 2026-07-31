@@ -24,6 +24,7 @@ import {
   AuthResponseDto,
   RegisterResponseDto,
   UserResponseDto,
+  WorkspaceContextResponseDto,
 } from './dto/auth-response.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -73,5 +74,20 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   getMe(@CurrentUser() user: UserResponseDto) {
     return user;
+  }
+
+  @Get('workspace')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Get authenticated user and accessible organizations',
+  })
+  @ApiOkResponse({
+    description: 'Workspace context for the current user',
+    type: WorkspaceContextResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  getWorkspace(@CurrentUser() user: UserResponseDto) {
+    return this.authService.getWorkspaceContext(user.id);
   }
 }

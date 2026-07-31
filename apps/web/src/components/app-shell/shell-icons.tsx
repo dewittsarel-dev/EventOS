@@ -64,6 +64,15 @@ export function TasksIcon(props: IconProps) {
   );
 }
 
+export function MeetingNotesIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M6 3h12a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-4 2V5a2 2 0 0 1 2-2Z" />
+      <path d="M8 7h8M8 11h8M8 15h5" />
+    </BaseIcon>
+  );
+}
+
 export function SuppliersIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>

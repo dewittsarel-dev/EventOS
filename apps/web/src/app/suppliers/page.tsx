@@ -36,6 +36,7 @@ export default function SuppliersPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
+  const canLoad = Boolean(session.token && session.organizationId);
 
   const totalPages = useMemo(() => {
     if (!total || !limit) {
@@ -49,8 +50,8 @@ export default function SuppliersPage() {
     setError('');
     setSuccess('');
 
-    if (!session.token || !session.organizationId) {
-      setError('Please save Bearer token and Organization ID first.');
+    if (!canLoad) {
+      setSuppliers([]);
       return;
     }
 
@@ -89,7 +90,7 @@ export default function SuppliersPage() {
   }
 
   useEffect(() => {
-    if (!session.token || !session.organizationId) {
+    if (!canLoad) {
       return;
     }
 
@@ -97,7 +98,7 @@ export default function SuppliersPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadSuppliers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session.token, session.organizationId, page, limit, sortBy]);
+  }, [canLoad, session.token, session.organizationId, page, limit, sortBy]);
 
   async function onSearchSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -233,11 +234,17 @@ export default function SuppliersPage() {
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       {success ? <p className="text-sm text-emerald-600">{success}</p> : null}
 
+      {!session.organizationId ? (
+        <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
+          Select an organization in the header to manage suppliers.
+        </div>
+      ) : null}
+
       {loading ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
           Loading suppliers...
         </div>
-      ) : suppliers.length === 0 ? (
+      ) : canLoad && suppliers.length === 0 ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
           No suppliers found.
         </div>

@@ -9,19 +9,22 @@ const createQuotation = vi.fn();
 const updateQuotation = vi.fn();
 const updateQuotationStatus = vi.fn();
 const deleteQuotation = vi.fn();
+const sessionState = {
+  token: 'token-1',
+  baseUrl: 'http://localhost:3001',
+  organizationId: '11111111-1111-4111-8111-111111111111',
+};
 
 vi.mock('../../../components/app-shell/session-context', () => ({
   useAppSession: () => ({
-    session: {
-      token: 'token-1',
-      baseUrl: 'http://localhost:3001',
-      organizationId: '11111111-1111-4111-8111-111111111111',
-    },
-    activeOrganization: {
-      id: '11111111-1111-4111-8111-111111111111',
-      name: 'EventOS',
-      slug: 'eventos',
-    },
+    session: sessionState,
+    activeOrganization: sessionState.organizationId
+      ? {
+          id: '11111111-1111-4111-8111-111111111111',
+          name: 'EventOS',
+          slug: 'eventos',
+        }
+      : null,
   }),
 }));
 
@@ -89,6 +92,8 @@ describe('QuotationsSettingsPage', () => {
     updateQuotation.mockReset();
     updateQuotationStatus.mockReset();
     deleteQuotation.mockReset();
+    sessionState.token = 'token-1';
+    sessionState.organizationId = '11111111-1111-4111-8111-111111111111';
 
     listQuotations.mockResolvedValue({
       data: quotations,
@@ -188,5 +193,20 @@ describe('QuotationsSettingsPage', () => {
     await waitFor(() => {
       expect(deleteQuotation).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('shows workspace guidance and skips business data load without organization context', async () => {
+    sessionState.organizationId = '';
+
+    render(<QuotationsSettingsPage />);
+
+    expect(
+      await screen.findByText(
+        'Save your bearer token and selected organization in the user menu to manage quotations.',
+      ),
+    ).toBeInTheDocument();
+    expect(listQuotations).not.toHaveBeenCalled();
+    expect(listContacts).not.toHaveBeenCalled();
+    expect(listEvents).not.toHaveBeenCalled();
   });
 });
