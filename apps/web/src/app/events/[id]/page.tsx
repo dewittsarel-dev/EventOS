@@ -3,10 +3,10 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { PageHeader } from '@/components/app-shell/page-header';
-import { useAppSession } from '@/components/app-shell/session-context';
-import { getEvent } from '@/lib/events-api';
-import type { EventRecord } from '@/lib/events-types';
+import { PageHeader } from '../../../components/app-shell/page-header';
+import { useAppSession } from '../../../components/app-shell/session-context';
+import { getEvent } from '../../../lib/events-api';
+import type { EventRecord } from '../../../lib/events-types';
 
 export default function EventDetailsPage() {
   const params = useParams<{ id: string }>();
@@ -48,7 +48,7 @@ export default function EventDetailsPage() {
     }
 
     void loadEvent();
-  }, [eventId, session]);
+  }, [eventId, session.baseUrl, session.token]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -93,31 +93,54 @@ export default function EventDetailsPage() {
 
           <dl className="mt-4 grid gap-3 text-sm md:grid-cols-2">
             <div>
-              <dt className="font-medium text-zinc-700">Start</dt>
+              <dt className="font-medium text-zinc-700">Client</dt>
+              <dd className="text-zinc-600">{eventRecord.contactName ?? eventRecord.contactId}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-zinc-700">Organization</dt>
+              <dd className="text-zinc-600 break-all">{eventRecord.organizationId}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-zinc-700">Event Type</dt>
+              <dd className="text-zinc-600">{eventRecord.eventType}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-zinc-700">Event Date</dt>
+              <dd className="text-zinc-600">{new Date(eventRecord.eventDate).toLocaleDateString()}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-zinc-700">Start Time</dt>
+              <dd className="text-zinc-600">{eventRecord.startTime}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-zinc-700">End Time</dt>
+              <dd className="text-zinc-600">{eventRecord.endTime}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-zinc-700">Venue</dt>
+              <dd className="text-zinc-600">{eventRecord.venue ?? '-'}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-zinc-700">Assigned User</dt>
+              <dd className="text-zinc-600">{eventRecord.assignedUserName ?? '-'}</dd>
+            </div>
+            <div>
+              <dt className="font-medium text-zinc-700">Budget</dt>
               <dd className="text-zinc-600">
-                {new Date(eventRecord.startDateTime).toLocaleString()}
+                {eventRecord.budgetCents !== null
+                  ? (eventRecord.budgetCents / 100).toLocaleString(undefined, {
+                      style: 'currency',
+                      currency: 'USD',
+                    })
+                  : '-'}
               </dd>
-            </div>
-            <div>
-              <dt className="font-medium text-zinc-700">End</dt>
-              <dd className="text-zinc-600">
-                {new Date(eventRecord.endDateTime).toLocaleString()}
-              </dd>
-            </div>
-            <div>
-              <dt className="font-medium text-zinc-700">Location</dt>
-              <dd className="text-zinc-600">{eventRecord.location ?? '-'}</dd>
-            </div>
-            <div>
-              <dt className="font-medium text-zinc-700">Contact ID</dt>
-              <dd className="break-all text-zinc-600">{eventRecord.contactId}</dd>
             </div>
           </dl>
 
           <div className="mt-4">
-            <p className="text-sm font-medium text-zinc-700">Description</p>
+            <p className="text-sm font-medium text-zinc-700">Notes</p>
             <p className="mt-1 whitespace-pre-wrap text-sm text-zinc-600">
-              {eventRecord.description || 'No description provided.'}
+              {eventRecord.notes || 'No notes provided.'}
             </p>
           </div>
         </div>

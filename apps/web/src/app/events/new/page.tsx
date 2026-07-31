@@ -2,19 +2,30 @@
 
 import Link from 'next/link';
 import { useEffect, useState, type FormEvent } from 'react';
-import { PageHeader } from '@/components/app-shell/page-header';
-import { useAppSession } from '@/components/app-shell/session-context';
-import { EventForm, type EventFormValues } from '@/components/events/event-form';
-import { createEvent, listContacts } from '@/lib/events-api';
-import { type ContactRecord } from '@/lib/events-types';
+import { PageHeader } from '../../../components/app-shell/page-header';
+import { useAppSession } from '../../../components/app-shell/session-context';
+import { EventForm, type EventFormValues } from '../../../components/events/event-form';
+import {
+  createEvent,
+  listContacts,
+  listOrganizationUsers,
+} from '../../../lib/events-api';
+import {
+  type ContactRecord,
+  type OrganizationUserRecord,
+} from '../../../lib/events-types';
 
 const defaultForm: EventFormValues = {
   contactId: '',
+  assignedUserId: '',
   title: '',
-  description: '',
-  startDateTime: '',
-  endDateTime: '',
-  location: '',
+  eventType: '',
+  eventDate: '',
+  startTime: '',
+  endTime: '',
+  venue: '',
+  budget: '',
+  notes: '',
   status: 'Draft',
 };
 
@@ -22,6 +33,7 @@ export default function NewEventPage() {
   const { session } = useAppSession();
   const [form, setForm] = useState<EventFormValues>(defaultForm);
   const [contacts, setContacts] = useState<ContactRecord[]>([]);
+  const [assignedUsers, setAssignedUsers] = useState<OrganizationUserRecord[]>([]);
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -46,6 +58,16 @@ export default function NewEventPage() {
         );
 
         setContacts(response.data);
+
+        const usersResponse = await listOrganizationUsers(
+          {
+            token: session.token,
+            baseUrl: session.baseUrl,
+          },
+          session.organizationId,
+        );
+
+        setAssignedUsers(usersResponse.data);
       } catch (requestError) {
         setError(
           requestError instanceof Error
@@ -58,7 +80,7 @@ export default function NewEventPage() {
     }
 
     void loadContacts();
-  }, [session]);
+  }, [session.baseUrl, session.organizationId, session.token]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -81,11 +103,17 @@ export default function NewEventPage() {
         {
           organizationId: session.organizationId,
           contactId: form.contactId,
+          assignedUserId: form.assignedUserId || undefined,
           title: form.title,
-          description: form.description,
-          startDateTime: new Date(form.startDateTime).toISOString(),
-          endDateTime: new Date(form.endDateTime).toISOString(),
-          location: form.location,
+          eventType: form.eventType,
+          eventDate: new Date(`${form.eventDate}T00:00:00.000Z`).toISOString(),
+          startTime: form.startTime,
+          endTime: form.endTime,
+          venue: form.venue,
+          budgetCents: form.budget
+            ? Math.round(Number.parseFloat(form.budget) * 100)
+            : undefined,
+          notes: form.notes || undefined,
           status: form.status,
         },
       );
@@ -131,6 +159,7 @@ export default function NewEventPage() {
         mode="create"
         values={form}
         contacts={contacts}
+        assignedUsers={assignedUsers}
         saving={saving}
         error={error}
         success={success}

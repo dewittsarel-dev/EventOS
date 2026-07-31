@@ -9,7 +9,17 @@ export type EventRecord = {
   id: string;
   organizationId: string;
   contactId: string;
+  contactName: string | null;
+  assignedUserId: string | null;
+  assignedUserName: string | null;
   title: string;
+  eventType: string;
+  eventDate: string;
+  startTime: string;
+  endTime: string;
+  venue: string | null;
+  budgetCents: number | null;
+  notes: string | null;
   description: string | null;
   startDateTime: string;
   endDateTime: string;
@@ -46,12 +56,31 @@ export type ContactListResponse = {
 export type EventPayload = {
   organizationId: string;
   contactId: string;
+  assignedUserId?: string;
   title: string;
-  description?: string;
-  startDateTime: string;
-  endDateTime: string;
-  location?: string;
+  eventType: string;
+  eventDate: string;
+  startTime: string;
+  endTime: string;
+  venue: string;
+  budgetCents?: number;
+  notes?: string;
   status: EventStatus;
+};
+
+export type OrganizationUserRecord = {
+  membershipId: string;
+  userId: string;
+  name: string | null;
+  email: string;
+  role: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OrganizationUserListResponse = {
+  data: OrganizationUserRecord[];
 };
 
 export const EVENT_STATUSES: EventStatus[] = [

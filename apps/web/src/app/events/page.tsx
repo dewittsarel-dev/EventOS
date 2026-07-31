@@ -2,10 +2,14 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { PageHeader } from '@/components/app-shell/page-header';
-import { useAppSession } from '@/components/app-shell/session-context';
-import { deleteEvent, listEvents } from '@/lib/events-api';
-import { EVENT_STATUSES, type EventRecord, type EventStatus } from '@/lib/events-types';
+import { PageHeader } from '../../components/app-shell/page-header';
+import { useAppSession } from '../../components/app-shell/session-context';
+import { deleteEvent, listEvents } from '../../lib/events-api';
+import {
+  EVENT_STATUSES,
+  type EventRecord,
+  type EventStatus,
+} from '../../lib/events-types';
 
 type SortOrder = 'asc' | 'desc';
 
@@ -16,7 +20,8 @@ export default function EventsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [title, setTitle] = useState('');
+  const [search, setSearch] = useState('');
+  const [eventType, setEventType] = useState('');
   const [status, setStatus] = useState<EventStatus | 'ALL'>('ALL');
   const [sort, setSort] = useState<SortOrder>('desc');
   const [page, setPage] = useState(1);
@@ -52,7 +57,8 @@ export default function EventsPage() {
           organizationId: session.organizationId,
           page,
           limit,
-          title,
+          search,
+          eventType,
           status,
           sort,
         },
@@ -144,9 +150,16 @@ export default function EventsPage() {
       >
         <input
           className="rounded-md border border-zinc-300 px-3 py-2 text-sm md:col-span-2"
-          placeholder="Search title"
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
+          placeholder="Search name, type or venue"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+        />
+
+        <input
+          className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+          placeholder="Filter event type"
+          value={eventType}
+          onChange={(event) => setEventType(event.target.value)}
         />
 
         <select
@@ -205,10 +218,12 @@ export default function EventsPage() {
             <table className="min-w-full text-sm">
               <thead className="bg-zinc-50">
                 <tr>
-                  <th className="px-4 py-3 text-left font-medium text-zinc-600">Title</th>
+                  <th className="px-4 py-3 text-left font-medium text-zinc-600">Event Name</th>
+                  <th className="px-4 py-3 text-left font-medium text-zinc-600">Client</th>
+                  <th className="px-4 py-3 text-left font-medium text-zinc-600">Type</th>
+                  <th className="px-4 py-3 text-left font-medium text-zinc-600">Date</th>
                   <th className="px-4 py-3 text-left font-medium text-zinc-600">Status</th>
-                  <th className="px-4 py-3 text-left font-medium text-zinc-600">Start</th>
-                  <th className="px-4 py-3 text-left font-medium text-zinc-600">Location</th>
+                  <th className="px-4 py-3 text-left font-medium text-zinc-600">Venue</th>
                   <th className="px-4 py-3 text-left font-medium text-zinc-600">Actions</th>
                 </tr>
               </thead>
@@ -216,11 +231,13 @@ export default function EventsPage() {
                 {events.map((event) => (
                   <tr key={event.id} className="border-t border-zinc-200">
                     <td className="px-4 py-3 text-zinc-900">{event.title}</td>
-                    <td className="px-4 py-3 text-zinc-700">{event.status}</td>
+                    <td className="px-4 py-3 text-zinc-700">{event.contactName ?? '-'}</td>
+                    <td className="px-4 py-3 text-zinc-700">{event.eventType}</td>
                     <td className="px-4 py-3 text-zinc-700">
-                      {new Date(event.startDateTime).toLocaleString()}
+                      {new Date(event.eventDate).toLocaleDateString()} {event.startTime}
                     </td>
-                    <td className="px-4 py-3 text-zinc-700">{event.location ?? '-'}</td>
+                    <td className="px-4 py-3 text-zinc-700">{event.status}</td>
+                    <td className="px-4 py-3 text-zinc-700">{event.venue ?? '-'}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-2">
                         <Link

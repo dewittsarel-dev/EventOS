@@ -11,8 +11,44 @@ export class EventResponseDto {
   @ApiProperty({ example: 'contact-1' })
   contactId: string;
 
+  @ApiProperty({ example: 'Lara Croft', nullable: true })
+  contactName: string | null;
+
+  @ApiProperty({
+    example: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    nullable: true,
+  })
+  assignedUserId: string | null;
+
+  @ApiProperty({ example: 'Alice Admin', nullable: true })
+  assignedUserName: string | null;
+
   @ApiProperty({ example: 'Wedding Reception' })
   title: string;
+
+  @ApiProperty({ example: 'Wedding' })
+  eventType: string;
+
+  @ApiProperty({ example: '2026-09-01T00:00:00.000Z' })
+  eventDate: Date;
+
+  @ApiProperty({ example: '16:00' })
+  startTime: string;
+
+  @ApiProperty({ example: '22:00' })
+  endTime: string;
+
+  @ApiProperty({ example: 'Cape Town Convention Center', nullable: true })
+  venue: string | null;
+
+  @ApiProperty({ example: 250000, nullable: true })
+  budgetCents: number | null;
+
+  @ApiProperty({
+    example: 'Customer requested floral-themed setup.',
+    nullable: true,
+  })
+  notes: string | null;
 
   @ApiProperty({ example: 'Sunset ceremony and reception', nullable: true })
   description: string | null;

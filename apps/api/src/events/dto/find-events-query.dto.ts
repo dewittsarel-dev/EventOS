@@ -58,12 +58,29 @@ export class FindEventsQueryDto {
 
   @ApiPropertyOptional({
     example: 'wedding',
-    description: 'Case-insensitive title search term',
+    description: 'Case-insensitive search term for event name, type or venue',
   })
   @IsOptional()
   @IsString()
   @MaxLength(150)
-  title?: string;
+  search?: string;
+
+  @ApiPropertyOptional({
+    example: 'Wedding',
+    description: 'Filter by event type',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  eventType?: string;
+
+  @ApiPropertyOptional({
+    example: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+    description: 'Filter by assigned user',
+  })
+  @IsOptional()
+  @IsUUID()
+  assignedUserId?: string;
 
   @ApiPropertyOptional({
     example: EventStatus.Planned,

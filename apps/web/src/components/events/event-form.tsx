@@ -1,15 +1,24 @@
 'use client';
 
 import type { FormEvent } from 'react';
-import { EVENT_STATUSES, type ContactRecord, type EventStatus } from '@/lib/events-types';
+import {
+  EVENT_STATUSES,
+  type ContactRecord,
+  type EventStatus,
+  type OrganizationUserRecord,
+} from '../../lib/events-types';
 
 export type EventFormValues = {
   contactId: string;
+  assignedUserId: string;
   title: string;
-  description: string;
-  startDateTime: string;
-  endDateTime: string;
-  location: string;
+  eventType: string;
+  eventDate: string;
+  startTime: string;
+  endTime: string;
+  venue: string;
+  budget: string;
+  notes: string;
   status: EventStatus;
 };
 
@@ -17,6 +26,7 @@ type EventFormProps = {
   mode: 'create' | 'edit';
   values: EventFormValues;
   contacts: ContactRecord[];
+  assignedUsers: OrganizationUserRecord[];
   saving: boolean;
   error: string;
   success: string;
@@ -28,6 +38,7 @@ export function EventForm({
   mode,
   values,
   contacts,
+  assignedUsers,
   saving,
   error,
   success,
@@ -45,7 +56,7 @@ export function EventForm({
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <label className="text-sm text-zinc-700">
-          Contact
+          Client
           <select
             className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
             value={values.contactId}
@@ -60,6 +71,26 @@ export function EventForm({
                 {contact.firstName} {contact.lastName ?? ''}
               </option>
             ))}
+          </select>
+        </label>
+
+        <label className="text-sm text-zinc-700">
+          Assigned User
+          <select
+            className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+            value={values.assignedUserId}
+            onChange={(event) =>
+              onChange({ ...values, assignedUserId: event.target.value })
+            }
+          >
+            <option value="">Unassigned</option>
+            {assignedUsers
+              .filter((user) => user.status === 'Active')
+              .map((user) => (
+                <option key={user.userId} value={user.userId}>
+                  {user.name ?? user.email}
+                </option>
+              ))}
           </select>
         </label>
 
@@ -85,7 +116,7 @@ export function EventForm({
         </label>
 
         <label className="text-sm text-zinc-700 md:col-span-2">
-          Title
+          Event Name
           <input
             className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
             value={values.title}
@@ -95,53 +126,90 @@ export function EventForm({
           />
         </label>
 
-        <label className="text-sm text-zinc-700 md:col-span-2">
-          Description
-          <textarea
-            className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-            value={values.description}
-            onChange={(event) =>
-              onChange({ ...values, description: event.target.value })
-            }
-            rows={3}
-          />
-        </label>
-
         <label className="text-sm text-zinc-700">
-          Start Date/Time
+          Event Type
           <input
-            type="datetime-local"
             className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-            value={values.startDateTime}
+            value={values.eventType}
             onChange={(event) =>
-              onChange({ ...values, startDateTime: event.target.value })
+              onChange({ ...values, eventType: event.target.value })
             }
+            maxLength={100}
             required
           />
         </label>
 
         <label className="text-sm text-zinc-700">
-          End Date/Time
+          Event Date
           <input
-            type="datetime-local"
+            type="date"
             className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-            value={values.endDateTime}
-            onChange={(event) =>
-              onChange({ ...values, endDateTime: event.target.value })
-            }
+            value={values.eventDate}
+            onChange={(event) => onChange({ ...values, eventDate: event.target.value })}
             required
           />
         </label>
 
         <label className="text-sm text-zinc-700 md:col-span-2">
-          Location
+          Venue
           <input
             className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-            value={values.location}
+            value={values.venue}
             onChange={(event) =>
-              onChange({ ...values, location: event.target.value })
+              onChange({ ...values, venue: event.target.value })
             }
             maxLength={200}
+            required
+          />
+        </label>
+
+        <label className="text-sm text-zinc-700">
+          Start Time
+          <input
+            type="time"
+            className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+            value={values.startTime}
+            onChange={(event) =>
+              onChange({ ...values, startTime: event.target.value })
+            }
+            required
+          />
+        </label>
+
+        <label className="text-sm text-zinc-700">
+          End Time
+          <input
+            type="time"
+            className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+            value={values.endTime}
+            onChange={(event) =>
+              onChange({ ...values, endTime: event.target.value })
+            }
+            required
+          />
+        </label>
+
+        <label className="text-sm text-zinc-700">
+          Budget (in currency units)
+          <input
+            type="number"
+            min={0}
+            step={0.01}
+            className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+            value={values.budget}
+            onChange={(event) =>
+              onChange({ ...values, budget: event.target.value })
+            }
+          />
+        </label>
+
+        <label className="text-sm text-zinc-700 md:col-span-2">
+          Notes
+          <textarea
+            className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+            value={values.notes}
+            onChange={(event) => onChange({ ...values, notes: event.target.value })}
+            rows={3}
           />
         </label>
       </div>

@@ -4,6 +4,7 @@ import type {
   EventPayload,
   EventRecord,
   EventStatus,
+  OrganizationUserListResponse,
 } from './events-types';
 
 type RequestOptions = {
@@ -63,7 +64,9 @@ export async function listEvents(
     organizationId: string;
     page?: number;
     limit?: number;
-    title?: string;
+    search?: string;
+    eventType?: string;
+    assignedUserId?: string;
     status?: EventStatus | 'ALL';
     sort?: 'asc' | 'desc';
   },
@@ -79,8 +82,16 @@ export async function listEvents(
     query.set('limit', String(params.limit));
   }
 
-  if (params.title) {
-    query.set('title', params.title);
+  if (params.search) {
+    query.set('search', params.search);
+  }
+
+  if (params.eventType) {
+    query.set('eventType', params.eventType);
+  }
+
+  if (params.assignedUserId) {
+    query.set('assignedUserId', params.assignedUserId);
   }
 
   if (params.status && params.status !== 'ALL') {
@@ -128,6 +139,16 @@ export async function listContacts(
 ) {
   return apiRequest<ContactListResponse>(
     `/contacts?organizationId=${organizationId}`,
+    options,
+  );
+}
+
+export async function listOrganizationUsers(
+  options: RequestOptions,
+  organizationId: string,
+) {
+  return apiRequest<OrganizationUserListResponse>(
+    `/organization/users?organizationId=${organizationId}`,
     options,
   );
 }

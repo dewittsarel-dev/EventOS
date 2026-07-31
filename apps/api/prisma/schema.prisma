@@ -49,6 +49,7 @@ model User {
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   memberships  Membership[]
+  assignedEvents Event[]    @relation("EventAssignedUser")
   createdTasks Task[]       @relation("TaskCreatedBy")
   assignedTasks Task[]      @relation("TaskAssignedUser")
   auditLogs    AuditLog[]
@@ -137,7 +138,15 @@ model Event {
   id             String       @id @default(uuid())
   organizationId String
   contactId      String
+  assignedUserId String?
   title          String
+  eventType      String
+  eventDate      DateTime
+  startTime      String
+  endTime        String
+  venue          String?
+  budgetCents    Int?
+  notes          String?
   description    String?
   startDateTime  DateTime
   endDateTime    DateTime
@@ -147,11 +156,15 @@ model Event {
   updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   contact        Contact      @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  assignedUser   User?        @relation("EventAssignedUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
   quotations     Quotation[]
   tasks          Task[]
 
   @@index([organizationId])
   @@index([contactId])
+  @@index([assignedUserId])
+  @@index([eventDate])
+  @@index([eventType])
   @@index([startDateTime])
   @@index([status])
   @@index([title])

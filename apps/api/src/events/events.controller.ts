@@ -69,7 +69,9 @@ export class EventsController {
   @ApiQuery({ name: 'organizationId', type: String, required: true })
   @ApiQuery({ name: 'page', type: Number, required: false })
   @ApiQuery({ name: 'limit', type: Number, required: false })
-  @ApiQuery({ name: 'title', type: String, required: false })
+  @ApiQuery({ name: 'search', type: String, required: false })
+  @ApiQuery({ name: 'eventType', type: String, required: false })
+  @ApiQuery({ name: 'assignedUserId', type: String, required: false })
   @ApiQuery({ name: 'status', enum: EventStatus, required: false })
   @ApiQuery({ name: 'sort', enum: EventSortOrder, required: false })
   @ApiOkResponse({

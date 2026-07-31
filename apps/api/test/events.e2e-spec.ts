@@ -31,7 +31,15 @@ type EventRecord = {
   id: string;
   organizationId: string;
   contactId: string;
+  assignedUserId: string | null;
   title: string;
+  eventType: string;
+  eventDate: Date;
+  startTime: string;
+  endTime: string;
+  venue: string | null;
+  budgetCents: number | null;
+  notes: string | null;
   description: string | null;
   startDateTime: Date;
   endDateTime: Date;
@@ -39,6 +47,15 @@ type EventRecord = {
   status: EventStatus;
   createdAt: Date;
   updatedAt: Date;
+  contact: {
+    firstName: string;
+    lastName: string | null;
+  };
+  assignedUser: {
+    id: string;
+    name: string | null;
+    email: string;
+  } | null;
 };
 
 type MembershipRecord = {
@@ -59,7 +76,15 @@ function makeEvent(overrides: Partial<EventRecord> = {}): EventRecord {
     id: '44444444-4444-4444-4444-444444444444',
     organizationId: ORG_1,
     contactId: CONTACT_1,
+    assignedUserId: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     title: 'Wedding Reception',
+    eventType: 'Wedding',
+    eventDate: new Date('2026-12-01T00:00:00.000Z'),
+    startTime: '12:00',
+    endTime: '14:00',
+    venue: 'Cape Town',
+    budgetCents: 250000,
+    notes: 'Main hall ceremony',
     description: 'Main hall ceremony',
     startDateTime: new Date('2026-12-01T12:00:00.000Z'),
     endDateTime: new Date('2026-12-01T14:00:00.000Z'),
@@ -67,6 +92,15 @@ function makeEvent(overrides: Partial<EventRecord> = {}): EventRecord {
     status: EventStatus.Planned,
     createdAt: new Date(),
     updatedAt: new Date(),
+    contact: {
+      firstName: 'Lara',
+      lastName: 'Croft',
+    },
+    assignedUser: {
+      id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+      name: null,
+      email: 'user1@example.com',
+    },
     ...overrides,
   };
 }
@@ -89,7 +123,7 @@ describe('EventsController (e2e)', () => {
 
     users = [
       {
-        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+        id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
         email: 'user1@example.com',
         name: null,
         passwordHash,
@@ -97,7 +131,7 @@ describe('EventsController (e2e)', () => {
         updatedAt: new Date(),
       },
       {
-        id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
+        id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
         email: 'user2@example.com',
         name: null,
         passwordHash,
@@ -204,14 +238,45 @@ describe('EventsController (e2e)', () => {
           ({
             data,
           }: {
-            data: Omit<EventRecord, 'id' | 'createdAt' | 'updatedAt'>;
+            data: {
+              organizationId: string;
+              contactId: string;
+              assignedUserId?: string | null;
+              title: string;
+              eventType: string;
+              eventDate: Date;
+              startTime: string;
+              endTime: string;
+              venue?: string | null;
+              budgetCents?: number | null;
+              notes?: string | null;
+              description?: string | null;
+              startDateTime: Date;
+              endDateTime: Date;
+              location?: string | null;
+              status: EventStatus;
+            };
           }) => {
             eventSequence += 1;
             const event = makeEvent({
               id: `event-${eventSequence}`,
               ...data,
+              assignedUserId: data.assignedUserId ?? null,
+              eventDate: new Date(data.eventDate),
               startDateTime: new Date(data.startDateTime),
               endDateTime: new Date(data.endDateTime),
+              venue: data.venue ?? null,
+              location: data.location ?? data.venue ?? null,
+              notes: data.notes ?? null,
+              description: data.description ?? data.notes ?? null,
+              assignedUser:
+                data.assignedUserId === users[0]?.id
+                  ? {
+                      id: users[0].id,
+                      name: users[0].name,
+                      email: users[0].email,
+                    }
+                  : null,
             });
             events.unshift(event);
             return Promise.resolve(event);
@@ -226,7 +291,13 @@ describe('EventsController (e2e)', () => {
           }: {
             where: {
               organizationId: string;
-              title?: { contains: string; mode: 'insensitive' };
+              OR?: Array<{
+                title?: { contains: string; mode: 'insensitive' };
+                eventType?: { contains: string; mode: 'insensitive' };
+                venue?: { contains: string; mode: 'insensitive' };
+              }>;
+              eventType?: { contains: string; mode: 'insensitive' };
+              assignedUserId?: string;
               status?: EventStatus;
             };
             orderBy: { startDateTime: 'asc' | 'desc' };
@@ -237,10 +308,27 @@ describe('EventsController (e2e)', () => {
               (event) => event.organizationId === where.organizationId,
             );
 
-            if (where.title?.contains) {
-              const search = where.title.contains.toLowerCase();
+            const search = where.OR?.[0]?.title?.contains;
+            if (search) {
+              const searchTerm = search.toLowerCase();
               result = result.filter((event) =>
-                event.title.toLowerCase().includes(search),
+                [event.title, event.eventType, event.venue ?? '']
+                  .join(' ')
+                  .toLowerCase()
+                  .includes(searchTerm),
+              );
+            }
+
+            if (where.eventType?.contains) {
+              const eventTypeSearch = where.eventType.contains.toLowerCase();
+              result = result.filter((event) =>
+                event.eventType.toLowerCase().includes(eventTypeSearch),
+              );
+            }
+
+            if (where.assignedUserId) {
+              result = result.filter(
+                (event) => event.assignedUserId === where.assignedUserId,
               );
             }
 
@@ -263,7 +351,13 @@ describe('EventsController (e2e)', () => {
           }: {
             where: {
               organizationId: string;
-              title?: { contains: string; mode: 'insensitive' };
+              OR?: Array<{
+                title?: { contains: string; mode: 'insensitive' };
+                eventType?: { contains: string; mode: 'insensitive' };
+                venue?: { contains: string; mode: 'insensitive' };
+              }>;
+              eventType?: { contains: string; mode: 'insensitive' };
+              assignedUserId?: string;
               status?: EventStatus;
             };
           }) => {
@@ -271,10 +365,27 @@ describe('EventsController (e2e)', () => {
               (event) => event.organizationId === where.organizationId,
             );
 
-            if (where.title?.contains) {
-              const search = where.title.contains.toLowerCase();
+            const search = where.OR?.[0]?.title?.contains;
+            if (search) {
+              const searchTerm = search.toLowerCase();
               result = result.filter((event) =>
-                event.title.toLowerCase().includes(search),
+                [event.title, event.eventType, event.venue ?? '']
+                  .join(' ')
+                  .toLowerCase()
+                  .includes(searchTerm),
+              );
+            }
+
+            if (where.eventType?.contains) {
+              const eventTypeSearch = where.eventType.contains.toLowerCase();
+              result = result.filter((event) =>
+                event.eventType.toLowerCase().includes(eventTypeSearch),
+              );
+            }
+
+            if (where.assignedUserId) {
+              result = result.filter(
+                (event) => event.assignedUserId === where.assignedUserId,
               );
             }
 
@@ -307,6 +418,19 @@ describe('EventsController (e2e)', () => {
             const updated: EventRecord = {
               ...events[index],
               ...data,
+              assignedUser:
+                data.assignedUserId === undefined
+                  ? events[index].assignedUser
+                  : data.assignedUserId === users[0]?.id
+                    ? {
+                        id: users[0].id,
+                        name: users[0].name,
+                        email: users[0].email,
+                      }
+                    : null,
+              eventDate: data.eventDate
+                ? new Date(data.eventDate)
+                : events[index].eventDate,
               startDateTime: data.startDateTime
                 ? new Date(data.startDateTime)
                 : events[index].startDateTime,
@@ -382,11 +506,15 @@ describe('EventsController (e2e)', () => {
       .send({
         organizationId: ORG_1,
         contactId: CONTACT_1,
+        assignedUserId: users[0].id,
         title: 'Gamma Expo',
-        description: 'Expo details',
-        startDateTime: '2026-12-20T08:00:00.000Z',
-        endDateTime: '2026-12-20T18:00:00.000Z',
-        location: 'Durban ICC',
+        eventType: 'Expo',
+        eventDate: '2026-12-20T00:00:00.000Z',
+        startTime: '08:00',
+        endTime: '18:00',
+        venue: 'Durban ICC',
+        budgetCents: 450000,
+        notes: 'Expo details',
         status: EventStatus.Planned,
       })
       .expect(201);
@@ -395,6 +523,7 @@ describe('EventsController (e2e)', () => {
     expect(created).toEqual(
       expect.objectContaining({
         title: 'Gamma Expo',
+        eventType: 'Expo',
         status: EventStatus.Planned,
       }),
     );
@@ -405,7 +534,7 @@ describe('EventsController (e2e)', () => {
         organizationId: ORG_1,
         page: 1,
         limit: 1,
-        title: 'gamma',
+        search: 'gamma',
         status: EventStatus.Planned,
         sort: 'asc',
       })
@@ -436,6 +565,7 @@ describe('EventsController (e2e)', () => {
       .send({
         status: EventStatus.Confirmed,
         title: 'Gamma Expo Confirmed',
+        notes: 'Confirmed with venue',
       })
       .expect(200);
 
@@ -443,6 +573,7 @@ describe('EventsController (e2e)', () => {
       expect.objectContaining({
         status: EventStatus.Confirmed,
         title: 'Gamma Expo Confirmed',
+        notes: 'Confirmed with venue',
       }),
     );
 
@@ -499,9 +630,12 @@ describe('EventsController (e2e)', () => {
       .send({
         organizationId: ORG_1,
         contactId: CONTACT_1,
+        eventType: 'Wedding',
+        eventDate: '2026-12-21T00:00:00.000Z',
+        startTime: '20:00',
+        endTime: '10:00',
+        venue: 'Venue 1',
         title: 'Invalid Event',
-        startDateTime: '2026-12-21T20:00:00.000Z',
-        endDateTime: '2026-12-20T20:00:00.000Z',
         status: EventStatus.Draft,
       })
       .expect(400);
