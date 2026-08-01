@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import SupplierDetailsPage from './page';
 
 const getSupplier = vi.fn();
+const getSupplierPurchaseHistory = vi.fn();
 
 vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'supplier-1' }),
@@ -20,6 +21,10 @@ vi.mock('../../../components/app-shell/session-context', () => ({
 
 vi.mock('../../../lib/suppliers-api', () => ({
   getSupplier: (...args: unknown[]) => getSupplier(...args),
+}));
+
+vi.mock('../../../lib/purchase-orders-api', () => ({
+  getSupplierPurchaseHistory: (...args: unknown[]) => getSupplierPurchaseHistory(...args),
 }));
 
 describe('SupplierDetailsPage', () => {
@@ -48,6 +53,14 @@ describe('SupplierDetailsPage', () => {
       notes: 'Great service',
       createdAt: '2026-07-31T00:00:00.000Z',
       updatedAt: '2026-07-31T00:00:00.000Z',
+    });
+
+    getSupplierPurchaseHistory.mockResolvedValue({
+      supplierId: 'supplier-1',
+      totalOrderValue: 1000,
+      openPurchaseOrders: 1,
+      outstandingDeliveries: 2,
+      purchaseOrders: [],
     });
 
     render(<SupplierDetailsPage />);

@@ -10,6 +10,10 @@ describe('protected routes', () => {
     expect(isProtectedAppPath('/suppliers/s-1/edit')).toBe(true);
     expect(isProtectedAppPath('/inventory')).toBe(true);
     expect(isProtectedAppPath('/inventory/items/new')).toBe(true);
+    expect(isProtectedAppPath('/purchase-orders')).toBe(true);
+    expect(isProtectedAppPath('/purchase-orders/new')).toBe(true);
+    expect(isProtectedAppPath('/goods-receipts')).toBe(true);
+    expect(isProtectedAppPath('/goods-receipts/gr-1')).toBe(true);
     expect(isProtectedAppPath('/quotations')).toBe(true);
     expect(isProtectedAppPath('/quotations/q-1/edit')).toBe(true);
     expect(isProtectedAppPath('/tasks')).toBe(true);

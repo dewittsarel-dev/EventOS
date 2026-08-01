@@ -1179,6 +1179,104 @@ export class InventoryService {
     });
   }
 
+  async applyGoodsReceiptMovements(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    params: {
+      organizationId: string;
+      purchaseOrderNumber: string;
+      goodsReceiptNumber: string;
+      inventoryItemId: string;
+      storageLocationId: string;
+      quantityAccepted: number;
+      quantityDamaged: number;
+      notes?: string | null;
+    },
+  ) {
+    const context = await this.getMovementContext(
+      tx,
+      params.organizationId,
+      params.inventoryItemId,
+      params.storageLocationId,
+    );
+
+    const reference = `PO:${params.purchaseOrderNumber} GR:${params.goodsReceiptNumber}`;
+
+    const createdMovementIds: string[] = [];
+
+    if (params.quantityAccepted > 0) {
+      const level = await tx.stockLevel.findUnique({
+        where: {
+          inventoryItemId_storageLocationId: {
+            inventoryItemId: params.inventoryItemId,
+            storageLocationId: params.storageLocationId,
+          },
+        },
+      });
+
+      await tx.stockLevel.upsert({
+        where: {
+          inventoryItemId_storageLocationId: {
+            inventoryItemId: params.inventoryItemId,
+            storageLocationId: params.storageLocationId,
+          },
+        },
+        update: {
+          quantityOnHand:
+            (level?.quantityOnHand ?? 0) + params.quantityAccepted,
+        },
+        create: {
+          inventoryItemId: params.inventoryItemId,
+          storageLocationId: params.storageLocationId,
+          quantityOnHand: params.quantityAccepted,
+          quantityReserved: 0,
+        },
+      });
+
+      const stockIn = await tx.stockMovement.create({
+        data: {
+          organizationId: params.organizationId,
+          inventoryItemId: params.inventoryItemId,
+          storageLocationId: params.storageLocationId,
+          movementType: StockMovementTypeDto.StockIn,
+          quantity: params.quantityAccepted,
+          reference,
+          reason: 'Goods receipt accepted quantity',
+          notes: this.normalizeNullable(params.notes ?? null),
+          createdByUserId: userId,
+        },
+        include: this.movementInclude,
+      });
+
+      createdMovementIds.push(stockIn.id);
+    }
+
+    if (params.quantityDamaged > 0) {
+      const damaged = await tx.stockMovement.create({
+        data: {
+          organizationId: params.organizationId,
+          inventoryItemId: params.inventoryItemId,
+          storageLocationId: params.storageLocationId,
+          movementType: StockMovementTypeDto.Damaged,
+          quantity: params.quantityDamaged,
+          reference,
+          reason: 'Goods receipt damaged quantity',
+          notes: this.normalizeNullable(params.notes ?? null),
+          createdByUserId: userId,
+        },
+        include: this.movementInclude,
+      });
+
+      createdMovementIds.push(damaged.id);
+    }
+
+    return {
+      inventoryItemName: context.item.name,
+      storageLocationName: context.location.name,
+      movementIds: createdMovementIds,
+    };
+  }
+
   private readonly itemInclude = {
     category: {
       select: {

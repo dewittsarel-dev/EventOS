@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { PageHeader } from '../../../components/app-shell/page-header';
 import { useAppSession } from '../../../components/app-shell/session-context';
+import { getSupplierPurchaseHistory } from '../../../lib/purchase-orders-api';
+import type { SupplierPurchaseHistory } from '../../../lib/purchase-orders-types';
 import { getSupplier } from '../../../lib/suppliers-api';
 import type { SupplierRecord } from '../../../lib/suppliers-types';
 
@@ -14,6 +16,7 @@ export default function SupplierDetailsPage() {
 
   const { session } = useAppSession();
   const [supplier, setSupplier] = useState<SupplierRecord | null>(null);
+  const [history, setHistory] = useState<SupplierPurchaseHistory | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -27,7 +30,7 @@ export default function SupplierDetailsPage() {
       setError('');
 
       try {
-        const response = await getSupplier(
+        const supplierResponse = await getSupplier(
           {
             token: session.token,
             baseUrl: session.baseUrl,
@@ -35,7 +38,20 @@ export default function SupplierDetailsPage() {
           supplierId,
         );
 
-        setSupplier(response);
+        setSupplier(supplierResponse);
+
+        if (session.organizationId) {
+          const historyResponse = await getSupplierPurchaseHistory(
+            {
+              token: session.token,
+              baseUrl: session.baseUrl,
+            },
+            session.organizationId,
+            supplierId,
+          );
+
+          setHistory(historyResponse);
+        }
       } catch (requestError) {
         setError(
           requestError instanceof Error
@@ -48,7 +64,7 @@ export default function SupplierDetailsPage() {
     }
 
     void loadSupplier();
-  }, [session.baseUrl, session.token, supplierId]);
+  }, [session.baseUrl, session.organizationId, session.token, supplierId]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -152,6 +168,45 @@ export default function SupplierDetailsPage() {
               {supplier.notes || 'No notes provided.'}
             </p>
           </div>
+
+          {history ? (
+            <div className="mt-6 rounded-lg border border-zinc-200 bg-zinc-50 p-4">
+              <h3 className="text-sm font-semibold text-zinc-800">Supplier Purchase History</h3>
+              <div className="mt-3 grid gap-3 text-sm md:grid-cols-3">
+                <div>
+                  <p className="text-zinc-500">Total Order Value</p>
+                  <p className="font-medium text-zinc-800">{history.totalOrderValue.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-zinc-500">Open Purchase Orders</p>
+                  <p className="font-medium text-zinc-800">{history.openPurchaseOrders}</p>
+                </div>
+                <div>
+                  <p className="text-zinc-500">Outstanding Deliveries</p>
+                  <p className="font-medium text-zinc-800">{history.outstandingDeliveries.toFixed(3)}</p>
+                </div>
+              </div>
+
+              <div className="mt-4 text-sm">
+                <p className="mb-2 font-medium text-zinc-700">Recent Purchase Orders</p>
+                {history.purchaseOrders.length === 0 ? (
+                  <p className="text-zinc-600">No purchase orders yet.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {history.purchaseOrders.slice(0, 5).map((order) => (
+                      <Link
+                        key={order.id}
+                        href={`/purchase-orders/${order.id}`}
+                        className="block rounded border border-zinc-200 bg-white px-3 py-2 hover:bg-zinc-100"
+                      >
+                        {order.purchaseOrderNumber} · {order.status} · {order.totalAmount.toFixed(2)}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className="rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-600">

@@ -12,6 +12,7 @@ export const APP_NAV_ROUTES: AppRouteMeta[] = [
   { href: '/meeting-notes', label: 'Meeting Notes', section: 'Operations' },
   { href: '/suppliers', label: 'Suppliers', section: 'Operations' },
   { href: '/inventory', label: 'Inventory', section: 'Operations' },
+  { href: '/purchase-orders', label: 'Purchase Orders', section: 'Operations' },
   { href: '/quotations', label: 'Quotations', section: 'Operations' },
   { href: '/tasks', label: 'Tasks', section: 'Operations' },
   {

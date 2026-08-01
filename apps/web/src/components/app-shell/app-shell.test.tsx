@@ -55,6 +55,7 @@ describe('AppShell', () => {
     expect(within(nav).getByRole('link', { name: 'Meeting Notes' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Suppliers' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Inventory' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Purchase Orders' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Events' })).toHaveAttribute(
       'aria-current',
       'page',

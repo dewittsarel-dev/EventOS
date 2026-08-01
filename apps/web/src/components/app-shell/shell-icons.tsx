@@ -94,6 +94,17 @@ export function InventoryIcon(props: IconProps) {
   );
 }
 
+export function PurchaseOrdersIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M6 3h9l5 5v13H6z" />
+      <path d="M15 3v5h5" />
+      <path d="M9 12h9M9 16h9" />
+      <path d="M9 8h2" />
+    </BaseIcon>
+  );
+}
+
 export function MarketplaceIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>

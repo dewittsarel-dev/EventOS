@@ -29,6 +29,7 @@ import {
   MenuIcon,
   MeetingNotesIcon,
   NotificationIcon,
+  PurchaseOrdersIcon,
   QuotationsIcon,
   SearchIcon,
   SuppliersIcon,
@@ -68,6 +69,10 @@ function navIcon(label: string) {
 
   if (label === 'Inventory') {
     return InventoryIcon;
+  }
+
+  if (label === 'Purchase Orders') {
+    return PurchaseOrdersIcon;
   }
 
   if (label === 'Tasks') {

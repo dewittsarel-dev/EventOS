@@ -8,6 +8,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { EventsModule } from './events/events.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { MeetingNotesModule } from './meeting-notes/meeting-notes.module';
+import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { QuotationsModule } from './quotations/quotations.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
 import { TasksModule } from './tasks/tasks.module';
@@ -29,6 +30,7 @@ import { PrismaModule } from './prisma/prisma.module';
     ContactsModule,
     EventsModule,
     InventoryModule,
+    PurchaseOrdersModule,
     MeetingNotesModule,
     SuppliersModule,
     QuotationsModule,
