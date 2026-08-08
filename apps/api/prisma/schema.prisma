@@ -155,6 +155,25 @@ enum CommercialMessageAuthorRole {
   System
 }
 
+enum CommercialQuoteStatus {
+  Submitted
+  Superseded
+  Awarded
+  Rejected
+}
+
+enum CommercialSubstitutionReviewStatus {
+  PendingReview
+  Approved
+  Rejected
+}
+
+enum CommercialPurchaseOrderDraftStatus {
+  Draft
+  Approved
+  Generated
+}
+
 enum QuotationStatus {
   Draft
   Sent
@@ -1039,22 +1058,25 @@ model ProcurementSolutionAllocation {
 }
 
 model CommercialWorkspace {
-  id                    String                    @id @default(uuid())
+  id                    String                         @id @default(uuid())
   organizationId        String
   eventId               String
   procurementPackageId  String
   procurementSolutionId String
-  status                CommercialWorkspaceStatus @default(Draft)
+  status                CommercialWorkspaceStatus      @default(Draft)
   createdByUserId       String
-  createdAt             DateTime                  @default(now())
-  updatedAt             DateTime                  @updatedAt
-  organization          Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  event                 Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  procurementPackage    ProcurementPackage        @relation(fields: [procurementPackageId], references: [id], onDelete: Restrict)
-  procurementSolution   ProcurementSolution       @relation(fields: [procurementSolutionId], references: [id], onDelete: Restrict)
-  createdBy             User                      @relation("CommercialWorkspaceCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt             DateTime                       @default(now())
+  updatedAt             DateTime                       @updatedAt
+  organization          Organization                   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event                 Event                          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  procurementPackage    ProcurementPackage             @relation(fields: [procurementPackageId], references: [id], onDelete: Restrict)
+  procurementSolution   ProcurementSolution            @relation(fields: [procurementSolutionId], references: [id], onDelete: Restrict)
+  createdBy             User                           @relation("CommercialWorkspaceCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
   rfqs                  CommercialRfq[]
   messages              CommercialMessage[]
+  quotes                CommercialQuote[]
+  awards                CommercialAward[]
+  purchaseOrderDrafts   CommercialPurchaseOrderDraft[]
 
   @@unique([procurementPackageId])
   @@index([organizationId])
@@ -1084,6 +1106,7 @@ model CommercialRfq {
   commercialWorkspace   CommercialWorkspace @relation(fields: [commercialWorkspaceId], references: [id], onDelete: Cascade)
   approvedBy            User?               @relation("CommercialRfqApprovedBy", fields: [approvedByUserId], references: [id], onDelete: Restrict)
   lines                 CommercialRfqLine[]
+  quotes                CommercialQuote[]
 
   @@unique([commercialWorkspaceId, supplierId])
   @@index([supplierId])
@@ -1125,6 +1148,132 @@ model CommercialMessage {
   @@index([supplierId])
   @@index([authorUserId])
   @@index([type])
+}
+
+model CommercialQuote {
+  id                    String                @id @default(uuid())
+  commercialWorkspaceId String
+  commercialRfqId       String
+  supplierId            String
+  supplierName          String
+  version               Int
+  status                CommercialQuoteStatus @default(Submitted)
+  currency              String                @default("ZAR")
+  deliveryFee           Float                 @default(0)
+  taxAmount             Float                 @default(0)
+  subtotal              Float
+  totalAmount           Float
+  paymentTerms          String?
+  validUntil            DateTime?
+  submittedAt           DateTime              @default(now())
+  createdAt             DateTime              @default(now())
+  commercialWorkspace   CommercialWorkspace   @relation(fields: [commercialWorkspaceId], references: [id], onDelete: Cascade)
+  commercialRfq         CommercialRfq         @relation(fields: [commercialRfqId], references: [id], onDelete: Restrict)
+  lines                 CommercialQuoteLine[]
+
+  @@unique([commercialRfqId, version])
+  @@index([commercialWorkspaceId, status])
+  @@index([supplierId])
+}
+
+model CommercialQuoteLine {
+  id                   String                        @id @default(uuid())
+  commercialQuoteId    String
+  requirementItemId    String
+  description          String
+  offeredDescription   String
+  quantityOffered      Float
+  unitPrice            Float
+  lineTotal            Float
+  included             Boolean                       @default(false)
+  qualificationNotes   String?
+  availabilityNotes    String?
+  expectedDeliveryDate DateTime?
+  isSubstitution       Boolean                       @default(false)
+  commercialQuote      CommercialQuote               @relation(fields: [commercialQuoteId], references: [id], onDelete: Cascade)
+  substitutionImpact   CommercialSubstitutionImpact?
+  awards               CommercialAward[]
+
+  @@unique([commercialQuoteId, requirementItemId])
+  @@index([requirementItemId])
+}
+
+model CommercialSubstitutionImpact {
+  id                    String                             @id @default(uuid())
+  commercialQuoteLineId String                             @unique
+  requirementItemId     String
+  affectsRequirement    Boolean                            @default(true)
+  affectsMoodBoard      Boolean                            @default(true)
+  affectsBudget         Boolean                            @default(true)
+  status                CommercialSubstitutionReviewStatus @default(PendingReview)
+  reviewNotes           String?
+  reviewedByUserId      String?
+  reviewedAt            DateTime?
+  createdAt             DateTime                           @default(now())
+  commercialQuoteLine   CommercialQuoteLine                @relation(fields: [commercialQuoteLineId], references: [id], onDelete: Cascade)
+
+  @@index([requirementItemId, status])
+}
+
+model CommercialAward {
+  id                     String                            @id @default(uuid())
+  commercialWorkspaceId  String
+  commercialQuoteLineId  String
+  requirementItemId      String
+  supplierId             String
+  quantity               Float
+  unitPrice              Float
+  lineTotal              Float
+  awardedByUserId        String
+  awardedAt              DateTime                          @default(now())
+  commercialWorkspace    CommercialWorkspace               @relation(fields: [commercialWorkspaceId], references: [id], onDelete: Cascade)
+  commercialQuoteLine    CommercialQuoteLine               @relation(fields: [commercialQuoteLineId], references: [id], onDelete: Restrict)
+  purchaseOrderDraftLine CommercialPurchaseOrderDraftLine?
+
+  @@unique([commercialWorkspaceId, commercialQuoteLineId])
+  @@index([commercialWorkspaceId, requirementItemId])
+  @@index([supplierId])
+}
+
+model CommercialPurchaseOrderDraft {
+  id                    String                             @id @default(uuid())
+  commercialWorkspaceId String
+  supplierId            String
+  supplierName          String
+  status                CommercialPurchaseOrderDraftStatus @default(Draft)
+  currency              String                             @default("ZAR")
+  subtotal              Float
+  taxAmount             Float                              @default(0)
+  deliveryFee           Float                              @default(0)
+  totalAmount           Float
+  paymentTerms          String?
+  approvedByUserId      String?
+  approvedAt            DateTime?
+  purchaseOrderId       String?
+  createdAt             DateTime                           @default(now())
+  updatedAt             DateTime                           @updatedAt
+  commercialWorkspace   CommercialWorkspace                @relation(fields: [commercialWorkspaceId], references: [id], onDelete: Cascade)
+  lines                 CommercialPurchaseOrderDraftLine[]
+
+  @@unique([commercialWorkspaceId, supplierId])
+  @@index([status])
+}
+
+model CommercialPurchaseOrderDraftLine {
+  id                             String                       @id @default(uuid())
+  commercialPurchaseOrderDraftId String
+  commercialAwardId              String                       @unique
+  requirementItemId              String
+  description                    String
+  quantity                       Float
+  unitPrice                      Float
+  lineTotal                      Float
+  supplierProductId              String?
+  commercialPurchaseOrderDraft   CommercialPurchaseOrderDraft @relation(fields: [commercialPurchaseOrderDraftId], references: [id], onDelete: Cascade)
+  commercialAward                CommercialAward              @relation(fields: [commercialAwardId], references: [id], onDelete: Restrict)
+
+  @@index([commercialPurchaseOrderDraftId])
+  @@index([requirementItemId])
 }
 
 model Quotation {

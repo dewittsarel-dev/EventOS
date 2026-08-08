@@ -5,6 +5,8 @@ import {
   CommercialMessageType,
   CommercialRfqStatus,
   CommercialWorkspaceStatus,
+  CommercialQuoteStatus,
+  CommercialSubstitutionReviewStatus,
   ProcurementPackageStatus,
 } from '@prisma/client';
 import { CommercialWorkspacesService } from './commercial-workspaces.service';
@@ -40,6 +42,22 @@ describe('CommercialWorkspacesService', () => {
       deleteMany: jest.fn(),
     },
     commercialMessage: { create: jest.fn() },
+    commercialQuote: {
+      create: jest.fn(),
+      updateMany: jest.fn(),
+      findMany: jest.fn(),
+    },
+    commercialQuoteLine: { findMany: jest.fn() },
+    commercialSubstitutionImpact: {
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
+    commercialAward: { create: jest.fn(), findMany: jest.fn() },
+    commercialPurchaseOrderDraft: {
+      upsert: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
     $transaction: jest.fn(),
   };
 
@@ -226,5 +244,136 @@ describe('CommercialWorkspacesService', () => {
         metadata: { draftOnly: true, operatorApprovalRequired: true },
       }),
     });
+  });
+
+  it('stores quote revisions as immutable versions and supersedes the prior current quote', async () => {
+    prisma.commercialWorkspace.findUnique.mockResolvedValue({
+      id: workspaceId,
+      eventId,
+      rfqs: [],
+    });
+    prisma.commercialRfq.findUnique.mockResolvedValue({
+      id: rfqId,
+      commercialWorkspaceId: workspaceId,
+      supplierId: 'supplier-1',
+      supplierName: 'Premium Furniture Hire',
+      status: CommercialRfqStatus.Sent,
+      lines: [
+        { requirementItemId: itemId, description: 'Gold Tiffany Chairs' },
+      ],
+      quotes: [{ version: 1 }],
+    });
+    prisma.commercialQuote.create.mockResolvedValue({
+      id: 'quote-2',
+      version: 2,
+      lines: [],
+    });
+
+    await service.submitQuote(userId, eventId, workspaceId, rfqId, {
+      currency: 'ZAR',
+      lines: [
+        {
+          requirementItemId: itemId,
+          offeredDescription: 'Gold Tiffany Chairs',
+          quantityOffered: 600,
+          unitPrice: 90,
+        },
+      ],
+    });
+
+    expect(prisma.commercialQuote.updateMany).toHaveBeenCalledWith({
+      where: {
+        commercialRfqId: rfqId,
+        status: CommercialQuoteStatus.Submitted,
+      },
+      data: { status: CommercialQuoteStatus.Superseded },
+    });
+    expect(prisma.commercialQuote.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          version: 2,
+          subtotal: 54000,
+          totalAmount: 54000,
+        }),
+      }),
+    );
+  });
+
+  it('blocks awards for substitutions until the planner approves cross-module impact', async () => {
+    prisma.commercialWorkspace.findUnique.mockResolvedValue({
+      id: workspaceId,
+      eventId,
+      rfqs: [],
+    });
+    prisma.commercialQuoteLine.findMany.mockResolvedValue([
+      {
+        id: '55555555-5555-5555-5555-555555555555',
+        requirementItemId: itemId,
+        quantityOffered: 600,
+        unitPrice: 90,
+        included: false,
+        commercialQuote: {
+          commercialWorkspaceId: workspaceId,
+          status: CommercialQuoteStatus.Submitted,
+          supplierId: 'supplier-1',
+        },
+        substitutionImpact: {
+          status: CommercialSubstitutionReviewStatus.PendingReview,
+        },
+      },
+    ]);
+
+    await expect(
+      service.award(userId, eventId, workspaceId, {
+        lines: [
+          {
+            quoteLineId: '55555555-5555-5555-5555-555555555555',
+            quantity: 600,
+          },
+        ],
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('prepares Purchase Order drafts only from planner awards', async () => {
+    prisma.commercialWorkspace.findUnique.mockResolvedValue({
+      id: workspaceId,
+      eventId,
+      rfqs: [],
+    });
+    prisma.commercialAward.findMany.mockResolvedValue([
+      {
+        id: 'award-1',
+        supplierId: 'supplier-1',
+        requirementItemId: itemId,
+        quantity: 600,
+        unitPrice: 90,
+        lineTotal: 54000,
+        commercialQuoteLine: {
+          offeredDescription: 'Gold Tiffany Chairs',
+          commercialQuote: {
+            supplierName: 'Premium Furniture Hire',
+            currency: 'ZAR',
+            paymentTerms: '30 days',
+          },
+        },
+      },
+    ]);
+    prisma.commercialPurchaseOrderDraft.upsert.mockResolvedValue({
+      id: 'po-draft-1',
+      lines: [],
+    });
+
+    await service.preparePurchaseOrderDrafts(userId, eventId, workspaceId);
+
+    expect(prisma.commercialPurchaseOrderDraft.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          supplierId: 'supplier-1',
+          subtotal: 54000,
+          totalAmount: 54000,
+        }),
+      }),
+    );
   });
 });
