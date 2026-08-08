@@ -1,22 +1,4 @@
-import { PageHeader } from '../../components/app-shell/page-header';
+import Link from 'next/link';import{PageHeader}from'../../components/app-shell/page-header';
+const groups=[{title:'Event definition and design',description:'Client briefs, approved Event Design versions, Requirement Sets and visual approvals remain attached to their event.',href:'/events',action:'Browse event records'},{title:'Customer commercial records',description:'Quotations, revisions, acceptances and customer-facing commercial evidence.',href:'/quotations',action:'Browse quotations'},{title:'Supplier and purchasing records',description:'RFQs, supplier quotes, awards, purchase orders, receipts and related source evidence.',href:'/purchase-orders',action:'Browse purchasing records'},{title:'Meeting and decision evidence',description:'Meeting notes and decisions linked to the people and events they affect.',href:'/meeting-notes',action:'Browse meeting notes'},{title:'Tasks and completion evidence',description:'Assigned work, due dates, status and operational completion context.',href:'/tasks',action:'Browse activity'},{title:'Finance and close evidence',description:'Open an event to reach its controlled budget, commitments, invoices, reconciliation and close records.',href:'/events',action:'Open event finance'}];
+export default function DocumentsPage(){return <div className="flex flex-col gap-5"><PageHeader title="Documents" description="Find approved evidence through the event, person, supplier or decision it supports—not a duplicate folder tree."/><div className="rounded-md bg-blue-50 p-3 text-sm text-blue-800">Each record remains owned by its source module. This workspace provides relationships and discovery without copying private operational truth.</div><section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{groups.map(g=><article key={g.title} className="rounded-xl border bg-white p-5"><h2 className="font-semibold">{g.title}</h2><p className="mt-2 text-sm leading-6 text-zinc-600">{g.description}</p><Link href={g.href} className="mt-4 inline-block rounded border px-3 py-2 text-sm">{g.action}</Link></article>)}</section></div>}
 
-export default function DocumentsPage() {
-  return (
-    <div className="flex flex-col gap-4">
-      <PageHeader
-        title="Documents"
-        description="Find the latest approved evidence in the context of the event and decision it supports."
-      />
-      <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold text-zinc-900">
-          Document workspace is the next shared capability
-        </h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-zinc-600">
-          Documents will be relationship-based rather than organised as a second folder tree.
-          Existing operational records remain available while document storage, evidence links,
-          approvals and access controls are implemented as a focused vertical slice.
-        </p>
-      </section>
-    </div>
-  );
-}

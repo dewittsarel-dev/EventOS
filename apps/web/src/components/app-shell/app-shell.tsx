@@ -83,7 +83,7 @@ function navIcon(label: string) {
     return PurchaseOrdersIcon;
   }
 
-  if (label === 'Activity') {
+  if (label === 'Activity' || label === 'Tasks') {
     return TasksIcon;
   }
 
@@ -389,14 +389,14 @@ export function AppShell({ children }: AppShellProps) {
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/90 shadow-sm backdrop-blur">
             <div className="flex h-16 items-center gap-3 px-3 md:px-5">
-              <button
-                type="button"
+              <Link
+                href="/activity"
                 className="inline-flex rounded-md border border-zinc-200 p-2 text-zinc-600 hover:bg-zinc-100 md:hidden"
                 onClick={() => setMobileMenuOpen(true)}
                 aria-label="Open navigation menu"
               >
                 <MenuIcon className="h-4 w-4" />
-              </button>
+              </Link>
 
               <div className="hidden min-w-0 flex-1 items-center gap-2 md:flex">
                 <SearchIcon className="h-4 w-4 text-zinc-500" />

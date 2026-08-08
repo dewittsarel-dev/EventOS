@@ -13,6 +13,14 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — Shared ClientOS Documents and Activity
+
+- Replaced the Documents placeholder with a relationship-based index over source-owned event, commercial, purchasing, meeting, task and finance evidence.
+- Added a dedicated Activity workspace combining server-owned attention items, assigned work and recent operational changes without performing approvals automatically.
+- Connected the notification bell to the actionable Activity stream and retained Tasks as the detailed operational work manager.
+- Preserved source-module ownership and avoided creating a duplicate folder tree, notification authority or workflow engine.
+- Verification status: all 44 web test files and 99 tests passed; web lint and production build passed; all 29 API suites and 157 tests passed; API build and lint passed.
+
 ### 2026-08-08 — ClientOS Event Financial Control
 
 - Added an event-context financial-control workspace over the recovered M011 API and linked it from the Event workspace.

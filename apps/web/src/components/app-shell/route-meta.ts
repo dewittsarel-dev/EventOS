@@ -8,8 +8,8 @@ export type AppRouteMeta = {
 export const PRIMARY_NAV_ROUTES: AppRouteMeta[] = [
   { href: '/', label: 'Home', section: 'Primary' },
   { href: '/events', label: 'Events', section: 'Primary' },
-  { href: '/documents', label: 'Documents', section: 'Primary', placeholder: true },
-  { href: '/tasks', label: 'Activity', section: 'Primary' },
+  { href: '/documents', label: 'Documents', section: 'Primary' },
+  { href: '/activity', label: 'Activity', section: 'Primary' },
   { href: '/settings/organization', label: 'Settings', section: 'Primary' },
 ];
 
@@ -20,6 +20,7 @@ export const OPERATIONS_NAV_ROUTES: AppRouteMeta[] = [
   { href: '/inventory', label: 'Resources', section: 'Operations' },
   { href: '/purchase-orders', label: 'Purchase Orders', section: 'Operations' },
   { href: '/quotations', label: 'Quotations', section: 'Operations' },
+  { href: '/tasks', label: 'Tasks', section: 'Operations' },
 ];
 
 export const APP_NAV_ROUTES = [

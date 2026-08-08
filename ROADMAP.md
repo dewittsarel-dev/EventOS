@@ -108,7 +108,8 @@ The repository now contains the verified backend architecture from M004 through 
 - Asset Management interface — COMPLETE: event requirements now connect to governed asset search, system-calculated availability, reservations, preparation operations, deployment evidence, return inspections, incidents and organization-level exception visibility.
 - Event Execution interface — COMPLETE: events now have an operational command workspace for evidence-based tasks, explicit readiness gates, run of show, go-live authority, command logging, incidents, dispatch, collection and controlled closeout.
 - Finance interface — COMPLETE: EventOS now exposes operational event financial truth, immutable budget versions, governed changes, commitments, client billing, cash controls, reconciliation and authorised financial close while preserving the external statutory ledger.
-- Shared ClientOS capabilities — NEXT: complete the relationship-based Documents workspace and consolidate Activity, tasks, approvals and notifications around the event lifecycle.
+- Shared ClientOS capabilities — COMPLETE for the first draft: Documents now indexes source-owned evidence by relationship, Activity consolidates server-owned priorities, assigned work and recent changes, the notification bell opens that actionable stream, and full task management remains available.
+- Marketplace Product Interface — NEXT: replace the internal capability-matching prototype with the first dedicated public discovery, enquiry and booking surface plus the ClientOS publishing and enquiry-management bridge.
 
 ### Marketplace Product Interface — PLANNED
 

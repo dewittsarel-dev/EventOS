@@ -15,7 +15,7 @@ describe('route meta', () => {
       '/',
       '/events',
       '/documents',
-      '/tasks',
+      '/activity',
       '/settings/organization',
     ]);
     expect(OPERATIONS_NAV_ROUTES.map((route) => route.href)).toContain('/purchase-orders');
