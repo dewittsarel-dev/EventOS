@@ -6,6 +6,7 @@ import {
   HttpCode,
   Param,
   Patch,
+  Put,
   Post,
   Query,
   UseGuards,
@@ -114,6 +115,26 @@ export class EventsController {
   @ApiForbiddenResponse({ description: 'No access to organization or contact' })
   @ApiNotFoundResponse({ description: 'Event not found' })
   update(
+    @CurrentUser() user: UserResponseDto,
+    @Param('id') id: string,
+    @Body() dto: UpdateEventDto,
+  ) {
+    return this.eventsService.update(user.id, id, dto);
+  }
+
+  @Put(':id')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  @ApiOperation({ summary: 'Replace/update an event by id' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiOkResponse({
+    description: 'Event updated successfully',
+    type: EventResponseDto,
+  })
+  @ApiBadRequestResponse({ description: 'Payload validation failed' })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({ description: 'No access to organization or contact' })
+  @ApiNotFoundResponse({ description: 'Event not found' })
+  replace(
     @CurrentUser() user: UserResponseDto,
     @Param('id') id: string,
     @Body() dto: UpdateEventDto,

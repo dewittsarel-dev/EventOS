@@ -1,6 +1,7 @@
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { SESSION_STORAGE_KEY } from '../../lib/session-storage';
 import { AppShell } from './app-shell';
 import { AppSessionProvider } from './session-context';
 
@@ -54,7 +55,7 @@ describe('AppShell', () => {
     expect(within(nav).getByRole('link', { name: 'Contacts' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Meeting Notes' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Suppliers' })).toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Inventory' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Resources' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Purchase Orders' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Events' })).toHaveAttribute(
       'aria-current',
@@ -76,7 +77,7 @@ describe('AppShell', () => {
     expect(screen.getByLabelText('Close navigation menu')).toBeInTheDocument();
   });
 
-  it('redirects unauthenticated users away from protected routes and hides page content', () => {
+  it('redirects unauthenticated users away from protected routes and hides page content', async () => {
     render(
       <AppSessionProvider>
         <AppShell>
@@ -85,18 +86,49 @@ describe('AppShell', () => {
       </AppSessionProvider>,
     );
 
-    expect(screen.getByText('Redirecting to sign in...')).toBeInTheDocument();
-    expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
-    expect(navigateToLogin).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.getByText('Redirecting to sign in...')).toBeInTheDocument();
+      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+      expect(navigateToLogin).toHaveBeenCalled();
+    });
+  });
+
+  it('redirects users with expired JWT sessions', async () => {
+    window.localStorage.setItem(
+      SESSION_STORAGE_KEY,
+      JSON.stringify({
+        baseUrl: 'http://localhost:3001',
+        token: 'header.eyJleHAiOjF9.signature',
+        organizationId: 'org-1',
+        user: null,
+        organizations: [],
+      }),
+    );
+
+    render(
+      <AppSessionProvider>
+        <AppShell>
+          <div>Protected Content</div>
+        </AppShell>
+      </AppSessionProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Redirecting to sign in...')).toBeInTheDocument();
+      expect(screen.queryByText('Protected Content')).not.toBeInTheDocument();
+      expect(navigateToLogin).toHaveBeenCalled();
+    });
   });
 
   it('logs out and redirects to login from a protected route', () => {
     window.localStorage.setItem(
-      'eventos.events.session',
+      SESSION_STORAGE_KEY,
       JSON.stringify({
         baseUrl: 'http://localhost:3001',
         token: 'token-1',
         organizationId: 'org-1',
+        user: null,
+        organizations: [],
       }),
     );
 
@@ -112,6 +144,6 @@ describe('AppShell', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Logout' }));
 
     expect(navigateToPath).toHaveBeenCalledWith('/login');
-    expect(window.localStorage.getItem('eventos.events.session')).toContain('"token":""');
+    expect(window.localStorage.getItem(SESSION_STORAGE_KEY)).toContain('"token":""');
   });
 });

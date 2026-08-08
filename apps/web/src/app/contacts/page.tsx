@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/app-shell/page-header';
 import { useAppSession } from '@/components/app-shell/session-context';
@@ -8,6 +9,7 @@ import { listContacts } from '@/lib/contacts-api';
 import type { ContactRecord } from '@/lib/contacts-types';
 
 export default function ContactsPage() {
+  const router = useRouter();
   const { session } = useAppSession();
   const [contacts, setContacts] = useState<ContactRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -54,10 +56,10 @@ export default function ContactsPage() {
         description="Directory of people linked to your operational workflows."
         actions={
           <Link
-            href="/events/new"
+            href="/contacts/new"
             className="rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100"
           >
-            Create Event
+            Create Contact
           </Link>
         }
       />
@@ -91,7 +93,19 @@ export default function ContactsPage() {
               </thead>
               <tbody>
                 {contacts.map((contact) => (
-                  <tr key={contact.id} className="border-t border-zinc-200">
+                  <tr
+                    key={contact.id}
+                    className="cursor-pointer border-t border-zinc-200 hover:bg-zinc-50"
+                    onClick={() => router.push(`/contacts/${contact.id}`)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        router.push(`/contacts/${contact.id}`);
+                      }
+                    }}
+                    tabIndex={0}
+                    aria-label={`Open contact ${contact.firstName} ${contact.lastName ?? ''}`}
+                  >
                     <td className="px-4 py-3 text-zinc-900">
                       {contact.firstName} {contact.lastName ?? ''}
                     </td>

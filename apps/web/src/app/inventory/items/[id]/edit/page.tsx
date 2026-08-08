@@ -19,16 +19,87 @@ import {
 import { listSuppliers } from '../../../../../lib/suppliers-api';
 import type { SupplierRecord } from '../../../../../lib/suppliers-types';
 
+function joinCsv(values: string[]) {
+  return values.join(', ');
+}
+
+function parseCsv(value: string) {
+  return value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+}
+
+function joinLines(values: string[]) {
+  return values.join('\n');
+}
+
+function parseLines(value: string) {
+  return value
+    .split(/\r?\n/)
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+}
+
+function parsePhotoAssets(value: string) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return [];
+  }
+
+  const parsed = JSON.parse(trimmed) as unknown;
+  if (!Array.isArray(parsed)) {
+    throw new Error('Photo metadata must be a JSON array.');
+  }
+
+  return parsed.filter(
+    (entry): entry is Record<string, unknown> =>
+      typeof entry === 'object' && entry !== null,
+  );
+}
+
 function itemToForm(item: InventoryItemRecord): InventoryItemFormValues {
   return {
     sku: item.sku,
+    publicName: item.publicName ?? '',
+    internalName: item.internalName ?? '',
     barcode: item.barcode ?? '',
+    qrCode: item.qrCode ?? '',
     name: item.name,
     description: item.description ?? '',
+    shortDescription: item.shortDescription ?? '',
+    longDescription: item.longDescription ?? '',
+    internalNotes: item.internalNotes ?? '',
+    marketplaceTitle: item.marketplaceTitle ?? '',
+    marketplaceDescription: item.marketplaceDescription ?? '',
+    aiSummary: item.aiSummary ?? '',
+    aiKeywords: joinCsv(item.aiKeywords),
+    aiTags: joinCsv(item.aiTags),
+    aiConfidence: item.aiConfidence === null ? '' : String(item.aiConfidence),
     categoryId: item.categoryId,
+    subCategory: item.subCategory ?? '',
+    brand: item.brand ?? '',
     preferredSupplierId: item.preferredSupplierId ?? '',
+    resourceStatus: item.resourceStatus,
     itemType: item.itemType,
     unitOfMeasure: item.unitOfMeasure,
+    style: item.style ?? '',
+    theme: item.theme ?? '',
+    colour: item.colour ?? '',
+    material: item.material ?? '',
+    dimensions: item.dimensions ?? '',
+    weight: item.weight ?? '',
+    capacity: item.capacity ?? '',
+    indoorOutdoor: item.indoorOutdoor,
+    suitableEventTypes: joinCsv(item.suitableEventTypes),
+    manualTags: joinCsv(item.manualTags),
+    keywords: joinCsv(item.keywords),
+    aiGeneratedTags: joinCsv(item.aiGeneratedTags),
+    marketplaceVisibility: item.marketplaceVisibility,
+    photoUrls: joinLines(item.photoUrls),
+    primaryPhotoUrl: item.primaryPhotoUrl ?? '',
+    photoAssetsJson: item.photoAssets ? JSON.stringify(item.photoAssets, null, 2) : '',
     costPrice: item.costPrice === null ? '' : String(item.costPrice),
     replacementValue:
       item.replacementValue === null ? '' : String(item.replacementValue),
@@ -106,7 +177,7 @@ export default function EditInventoryItemPage() {
           setError(
             requestError instanceof Error
               ? requestError.message
-              : 'Failed to load inventory item.',
+              : 'Failed to load resource item.',
           );
         }
       } finally {
@@ -156,15 +227,48 @@ export default function EditInventoryItemPage() {
     setSaving(true);
 
     try {
+      const photoAssets = parsePhotoAssets(form.photoAssetsJson);
+
       const updated = await updateInventoryItem(requestOptions, itemId, {
         sku: form.sku.trim(),
+        publicName: form.publicName.trim() || undefined,
+        internalName: form.internalName.trim() || undefined,
         barcode: form.barcode.trim() || undefined,
+        qrCode: form.qrCode.trim() || undefined,
         name: form.name.trim(),
         description: form.description.trim() || undefined,
+        shortDescription: form.shortDescription.trim() || undefined,
+        longDescription: form.longDescription.trim() || undefined,
+        internalNotes: form.internalNotes.trim() || undefined,
+        marketplaceTitle: form.marketplaceTitle.trim() || undefined,
+        marketplaceDescription: form.marketplaceDescription.trim() || undefined,
+        aiSummary: form.aiSummary.trim() || undefined,
+        aiKeywords: parseCsv(form.aiKeywords),
+        aiTags: parseCsv(form.aiTags),
+        aiConfidence: form.aiConfidence ? Number(form.aiConfidence) : undefined,
         categoryId: form.categoryId,
+        subCategory: form.subCategory.trim() || undefined,
+        brand: form.brand.trim() || undefined,
         preferredSupplierId: form.preferredSupplierId || undefined,
+        resourceStatus: form.resourceStatus,
         itemType: form.itemType as InventoryItemType,
         unitOfMeasure: form.unitOfMeasure as UnitOfMeasure,
+        style: form.style.trim() || undefined,
+        theme: form.theme.trim() || undefined,
+        colour: form.colour.trim() || undefined,
+        material: form.material.trim() || undefined,
+        dimensions: form.dimensions.trim() || undefined,
+        weight: form.weight.trim() || undefined,
+        capacity: form.capacity.trim() || undefined,
+        indoorOutdoor: form.indoorOutdoor,
+        suitableEventTypes: parseCsv(form.suitableEventTypes),
+        manualTags: parseCsv(form.manualTags),
+        keywords: parseCsv(form.keywords),
+        aiGeneratedTags: parseCsv(form.aiGeneratedTags),
+        marketplaceVisibility: form.marketplaceVisibility,
+        photoUrls: parseLines(form.photoUrls),
+        primaryPhotoUrl: form.primaryPhotoUrl.trim() || undefined,
+        photoAssets: photoAssets.length > 0 ? photoAssets : undefined,
         costPrice: form.costPrice ? Number(form.costPrice) : undefined,
         replacementValue: form.replacementValue
           ? Number(form.replacementValue)
@@ -182,12 +286,12 @@ export default function EditInventoryItemPage() {
 
       setItem(updated);
       setForm(itemToForm(updated));
-      setSuccess('Inventory item updated successfully.');
+      setSuccess('Resource item updated successfully.');
     } catch (requestError) {
       setError(
         requestError instanceof Error
           ? requestError.message
-          : 'Failed to update inventory item.',
+          : 'Failed to update resource item.',
       );
     } finally {
       setSaving(false);
@@ -196,17 +300,17 @@ export default function EditInventoryItemPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader title="Edit Inventory Item" />
+      <PageHeader title="Edit Resource Item" />
 
       {!session.organizationId ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
-          Select an organization in the header to edit inventory items.
+          Select an organization in the header to edit resource items.
         </div>
       ) : null}
 
       {loading ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
-          Loading inventory item...
+          Loading resource item...
         </div>
       ) : null}
 

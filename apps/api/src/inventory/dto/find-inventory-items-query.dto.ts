@@ -12,6 +12,8 @@ import {
   Min,
 } from 'class-validator';
 import { InventoryItemType } from './inventory-item-type.enum';
+import { InventoryMarketplaceVisibility } from './inventory-marketplace-visibility.enum';
+import { InventoryResourceStatus } from './inventory-resource-status.enum';
 import { InventorySortBy } from './inventory-sort.enum';
 import { toBoolean, toNumber } from './query-transforms';
 
@@ -26,6 +28,42 @@ export class FindInventoryItemsQueryDto {
   @MaxLength(150)
   search?: string;
 
+  @ApiPropertyOptional({ example: 'rustic' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  style?: string;
+
+  @ApiPropertyOptional({ example: 'metal' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  material?: string;
+
+  @ApiPropertyOptional({ example: 'gold' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  colour?: string;
+
+  @ApiPropertyOptional({ example: '50cm' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  dimensions?: string;
+
+  @ApiPropertyOptional({ example: 'wedding,premium' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  tags?: string;
+
+  @ApiPropertyOptional({ example: 'banquet,stackable' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  keywords?: string;
+
   @ApiPropertyOptional({ example: 'category-uuid' })
   @IsOptional()
   @IsUUID()
@@ -35,6 +73,16 @@ export class FindInventoryItemsQueryDto {
   @IsOptional()
   @IsEnum(InventoryItemType)
   itemType?: InventoryItemType;
+
+  @ApiPropertyOptional({ enum: InventoryResourceStatus })
+  @IsOptional()
+  @IsEnum(InventoryResourceStatus)
+  resourceStatus?: InventoryResourceStatus;
+
+  @ApiPropertyOptional({ enum: InventoryMarketplaceVisibility })
+  @IsOptional()
+  @IsEnum(InventoryMarketplaceVisibility)
+  marketplaceVisibility?: InventoryMarketplaceVisibility;
 
   @ApiPropertyOptional({ example: true })
   @IsOptional()

@@ -2,6 +2,7 @@ export enum SupplierCategory {
   Venue = 'Venue',
   Catering = 'Catering',
   Decor = 'Decor',
+  Lighting = 'Lighting',
   Photography = 'Photography',
   Videography = 'Videography',
   Entertainment = 'Entertainment',

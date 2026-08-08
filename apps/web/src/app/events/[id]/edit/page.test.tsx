@@ -6,9 +6,11 @@ const getEvent = vi.fn();
 const listContacts = vi.fn();
 const listOrganizationUsers = vi.fn();
 const updateEvent = vi.fn();
+const push = vi.fn();
 
 vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'event-1' }),
+  useRouter: () => ({ push }),
 }));
 
 vi.mock('../../../../components/app-shell/session-context', () => ({
@@ -34,6 +36,7 @@ describe('EditEventPage', () => {
     listContacts.mockReset();
     listOrganizationUsers.mockReset();
     updateEvent.mockReset();
+    push.mockReset();
 
     getEvent.mockResolvedValue({
       id: 'event-1',
@@ -109,5 +112,18 @@ describe('EditEventPage', () => {
         expect.objectContaining({ title: 'Gamma Expo Updated' }),
       );
     });
+
+    expect(push).toHaveBeenCalledWith('/events/event-1');
+  });
+
+  it('still loads event data when organization users request fails', async () => {
+    listOrganizationUsers.mockRejectedValueOnce(new Error('Invalid role value'));
+
+    render(<EditEventPage />);
+
+    expect(await screen.findByDisplayValue('Gamma Expo')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('Durban ICC')).toBeInTheDocument();
+    expect(screen.getByLabelText('Client')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Save Changes' })).toBeInTheDocument();
   });
 });

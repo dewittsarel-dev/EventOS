@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { PageHeader } from '../../../components/app-shell/page-header';
 import { useAppSession } from '../../../components/app-shell/session-context';
@@ -9,6 +10,7 @@ import {
   type SupplierFormValues,
 } from '../../../components/suppliers/supplier-form';
 import { createSupplier } from '../../../lib/suppliers-api';
+import { validateSupplierWebsite } from '../../../lib/suppliers-website';
 
 const defaultForm: SupplierFormValues = {
   companyName: '',
@@ -33,19 +35,22 @@ const defaultForm: SupplierFormValues = {
 
 export default function NewSupplierPage() {
   const { session } = useAppSession();
+  const router = useRouter();
 
   const [form, setForm] = useState<SupplierFormValues>(defaultForm);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [websiteError, setWebsiteError] = useState('');
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
     setSuccess('');
+    setWebsiteError('');
 
     if (!session.token || !session.organizationId) {
-      setError('Please save Bearer token and Organization ID first.');
+      setError('Your session is unavailable. Please sign in again.');
       return;
     }
 
@@ -54,10 +59,17 @@ export default function NewSupplierPage() {
       return;
     }
 
+    const websiteValidation = validateSupplierWebsite(form.website);
+
+    if (websiteValidation.error) {
+      setWebsiteError(websiteValidation.error);
+      return;
+    }
+
     setSaving(true);
 
     try {
-      await createSupplier(
+      const created = await createSupplier(
         {
           token: session.token,
           baseUrl: session.baseUrl,
@@ -70,7 +82,7 @@ export default function NewSupplierPage() {
           phone: form.phone.trim() || undefined,
           mobile: form.mobile.trim() || undefined,
           email: form.email.trim() || undefined,
-          website: form.website.trim() || undefined,
+          website: websiteValidation.normalized || undefined,
           physicalAddress: form.physicalAddress.trim() || undefined,
           city: form.city.trim() || undefined,
           province: form.province.trim() || undefined,
@@ -87,8 +99,8 @@ export default function NewSupplierPage() {
         },
       );
 
-      setSuccess('Supplier created successfully.');
-      setForm(defaultForm);
+      setSuccess('Supplier created successfully. Redirecting...');
+      router.push(`/suppliers/${created.id}`);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -120,6 +132,7 @@ export default function NewSupplierPage() {
         saving={saving}
         error={error}
         success={success}
+        websiteError={websiteError}
         onChange={setForm}
         onSubmit={onSubmit}
       />

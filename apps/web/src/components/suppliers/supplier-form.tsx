@@ -33,6 +33,7 @@ type SupplierFormProps = {
   saving: boolean;
   error: string;
   success: string;
+  websiteError?: string;
   onChange: (next: SupplierFormValues) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
@@ -43,6 +44,7 @@ export function SupplierForm({
   saving,
   error,
   success,
+  websiteError,
   onChange,
   onSubmit,
 }: SupplierFormProps) {
@@ -136,13 +138,17 @@ export function SupplierForm({
         <label className="text-sm text-zinc-700">
           Website
           <input
-            type="url"
+            type="text"
             className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
             value={values.website}
             onChange={(event) => onChange({ ...values, website: event.target.value })}
-            placeholder="https://example.com"
+            placeholder="www.example.com"
+            aria-invalid={Boolean(websiteError)}
             maxLength={240}
           />
+          {websiteError ? (
+            <span className="mt-1 block text-xs text-red-600">{websiteError}</span>
+          ) : null}
         </label>
 
         <label className="text-sm text-zinc-700 md:col-span-2">

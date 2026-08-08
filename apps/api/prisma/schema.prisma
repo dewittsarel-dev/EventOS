@@ -76,6 +76,7 @@ enum SupplierCategory {
   Venue
   Catering
   Decor
+  Lighting
   Photography
   Videography
   Entertainment
@@ -88,6 +89,34 @@ enum SupplierCategory {
   Staffing
   Accommodation
   Printing
+  Other
+}
+
+enum SupplierProductCategory {
+  Equipment
+  Service
+  Consumable
+  Material
+  Lighting
+  AudioVisual
+  Decor
+  Catering
+  Venue
+  Transport
+  Printing
+  Other
+}
+
+enum SupplierProductUnit {
+  Each
+  Box
+  Pack
+  Kg
+  Litre
+  Meter
+  Hour
+  Day
+  Service
   Other
 }
 
@@ -129,6 +158,25 @@ enum StockMovementType {
   Returned
 }
 
+enum InventoryResourceStatus {
+  Active
+  Maintenance
+  Damaged
+  Retired
+  Archived
+}
+
+enum InventoryIndoorOutdoor {
+  Indoor
+  Outdoor
+  Both
+}
+
+enum InventoryMarketplaceVisibility {
+  Private
+  Public
+}
+
 enum PurchaseOrderStatus {
   Draft
   PendingApproval
@@ -136,6 +184,111 @@ enum PurchaseOrderStatus {
   Sent
   PartiallyReceived
   FullyReceived
+  Cancelled
+}
+
+enum AiDraftCapability {
+  PurchaseOrder
+}
+
+enum AiDraftStatus {
+  ReviewPending
+  ReviewSaved
+  Committed
+  Discarded
+}
+
+enum AiDraftInputType {
+  Pdf
+  Image
+  Text
+}
+
+enum AiDraftFieldDecision {
+  Suggested
+  Accepted
+  Edited
+  Ignored
+  Manual
+}
+
+enum ResourceType {
+  ASSET
+  BULK_ITEM
+  CONSUMABLE
+  SERVICE
+  STAFF
+  VEHICLE
+  VENUE
+}
+
+enum ResourceQuantityMode {
+  SERIALIZED
+  QUANTITY
+  CAPACITY
+  UNLIMITED
+}
+
+enum ResourceStatus {
+  AVAILABLE
+  RESERVED
+  DISPATCHED
+  MAINTENANCE
+  DAMAGED
+  RETIRED
+}
+
+enum ResourceVisibility {
+  PRIVATE
+  MARKETPLACE
+  HIDDEN
+}
+
+enum ResourceCondition {
+  UNKNOWN
+  EXCELLENT
+  GOOD
+  FAIR
+  DAMAGED
+  RETIRED
+}
+
+enum ResourceReservationSourceType {
+  EVENT
+  RENTAL_ORDER
+  MARKETPLACE_BOOKING
+  INTERNAL_JOB
+  MAINTENANCE
+  MANUAL_HOLD
+}
+
+enum ResourceReservationStatus {
+  DRAFT
+  PENDING
+  RESERVED
+  CONFIRMED
+  RELEASED
+  CANCELLED
+  EXPIRED
+  DISPATCHED
+  RETURNED
+}
+
+enum EventResourceAllocationStatus {
+  Reserved
+  Picked
+  InTransit
+  OnSite
+  Returning
+  Returned
+  Damaged
+  Lost
+  Cancelled
+}
+
+enum EventResourceOutstandingStatus {
+  Open
+  Fulfilled
   Cancelled
 }
 
@@ -156,6 +309,10 @@ model User {
   purchaseOrdersCreated PurchaseOrder[] @relation("PurchaseOrderCreatedBy")
   purchaseOrdersApproved PurchaseOrder[] @relation("PurchaseOrderApprovedBy")
   goodsReceiptsReceived GoodsReceipt[] @relation("GoodsReceiptReceivedBy")
+  eventResourceAllocationsCreated EventResourceAllocation[] @relation("EventResourceAllocationCreatedBy")
+  eventResourceAllocationsUpdated EventResourceAllocation[] @relation("EventResourceAllocationUpdatedBy")
+  eventResourceOutstandingsCreated EventResourceOutstanding[] @relation("EventResourceOutstandingCreatedBy")
+  aiDrafts     AiDraft[]    @relation("AiDraftCreatedBy")
   auditLogs    AuditLog[]
   outboxEvents OutboxEvent[]
 
@@ -181,6 +338,7 @@ model Organization {
   roles        Role[]
   contacts     Contact[]
   suppliers    Supplier[]
+  supplierProducts SupplierProduct[]
   events       Event[]
   meetingNotes MeetingNote[]
   quotations   Quotation[]
@@ -191,6 +349,11 @@ model Organization {
   stockMovements StockMovement[]
   purchaseOrders PurchaseOrder[]
   goodsReceipts GoodsReceipt[]
+  aiDrafts     AiDraft[]
+  resources    Resource[]
+  resourceReservations ResourceReservation[]
+  eventResourceAllocations EventResourceAllocation[]
+  eventResourceOutstandings EventResourceOutstanding[]
   auditLogs    AuditLog[]
   outboxEvents OutboxEvent[]
 
@@ -236,6 +399,12 @@ model Contact {
   lastName       String?
   email          String?
   phone          String?
+  mobile         String?
+  companyName    String?
+  contactType    String?
+  address        String?
+  notes          String?
+  archivedAt     DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -244,6 +413,7 @@ model Contact {
 
   @@index([organizationId])
   @@index([email])
+  @@index([archivedAt])
 }
 
 model Event {
@@ -273,6 +443,8 @@ model Event {
   tasks          Task[]
   meetingNotes   MeetingNote[]
   supplierLinks  SupplierEvent[]
+  resourceAllocations EventResourceAllocation[]
+  resourceOutstandings EventResourceOutstanding[]
 
   @@index([organizationId])
   @@index([contactId])
@@ -452,6 +624,8 @@ model Supplier {
   eventLinks            SupplierEvent[]
   quotationLinks        SupplierQuotation[]
   taskLinks             SupplierTask[]
+  products              SupplierProduct[]
+  resources             Resource[]
 
   @@index([organizationId])
   @@index([companyName])
@@ -459,6 +633,39 @@ model Supplier {
   @@index([preferredSupplier])
   @@index([active])
   @@index([internalRating])
+}
+
+model SupplierProduct {
+  id                   String                  @id @default(uuid())
+  organizationId       String
+  supplierId           String
+  productName          String
+  sku                  String?
+  category             SupplierProductCategory
+  brand                String?
+  description          String?
+  unit                 SupplierProductUnit
+  costPrice            Float
+  sellingPrice         Float?
+  vatPercent           Float?
+  leadTimeDays         Int?
+  minimumOrderQuantity Float?
+  preferredProduct     Boolean                 @default(false)
+  active               Boolean                 @default(true)
+  notes                String?
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  organization         Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  supplier             Supplier                @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  purchaseOrderLineItems PurchaseOrderLineItem[]
+
+  @@unique([organizationId, sku])
+  @@index([organizationId])
+  @@index([supplierId])
+  @@index([productName])
+  @@index([category])
+  @@index([active])
+  @@index([preferredProduct])
 }
 
 model InventoryCategory {
@@ -494,23 +701,190 @@ model StorageLocation {
   stockMovements  StockMovement[]
   purchaseOrders  PurchaseOrder[] @relation("PurchaseOrderDeliveryLocation")
   goodsReceipts   GoodsReceipt[]
+  resources       Resource[]
 
   @@unique([organizationId, code])
   @@index([organizationId])
   @@index([active])
 }
 
+model Resource {
+  id               String               @id @default(uuid())
+  organizationId   String
+  supplierId       String?
+  name             String
+  description      String?
+  category         String
+  tags             String[]             @default([])
+  keywords         String[]             @default([])
+  aiSummary        String?
+  searchPhrases    String[]             @default([])
+  imageUrls        String[]             @default([])
+  resourceType     ResourceType
+  quantityMode     ResourceQuantityMode
+  sku              String?
+  barcode          String?
+  status           ResourceStatus       @default(AVAILABLE)
+  visibility       ResourceVisibility   @default(PRIVATE)
+  unit             String
+  totalQuantity    Float?
+  condition        ResourceCondition    @default(UNKNOWN)
+  locationId       String?
+  purchaseValue    Float?
+  replacementValue Float?
+  rentalPrice      Float?
+  damagedQuantity  Float                @default(0)
+  maintenanceQuantity Float             @default(0)
+  notes            String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  archivedAt       DateTime?
+  organization     Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  supplier         Supplier?            @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  location         StorageLocation?     @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  reservations     ResourceReservation[]
+  allocations      EventResourceAllocation[]
+  outstandings     EventResourceOutstanding[]
+
+  @@unique([organizationId, sku])
+  @@unique([organizationId, barcode])
+  @@index([organizationId])
+  @@index([resourceType])
+  @@index([quantityMode])
+  @@index([status])
+  @@index([visibility])
+  @@index([archivedAt])
+  @@index([supplierId])
+  @@index([locationId])
+}
+
+model ResourceReservation {
+  id            String                        @id @default(uuid())
+  organizationId String
+  resourceId    String
+  sourceType    ResourceReservationSourceType
+  sourceId      String
+  quantity      Float                         @default(1)
+  startDateTime DateTime
+  endDateTime   DateTime
+  status        ResourceReservationStatus     @default(DRAFT)
+  notes         String?
+  createdAt     DateTime                      @default(now())
+  updatedAt     DateTime                      @updatedAt
+  organization  Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  resource      Resource                      @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  allocation    EventResourceAllocation?
+
+  @@index([organizationId])
+  @@index([resourceId])
+  @@index([sourceType, sourceId])
+  @@index([status])
+  @@index([startDateTime, endDateTime])
+}
+
+model EventResourceAllocation {
+  id                 String                        @id @default(uuid())
+  organizationId     String
+  eventId            String
+  resourceId         String
+  resourceReservationId String?                    @unique
+  quantityRequested  Float
+  quantityReserved   Float
+  quantityReturned   Float                         @default(0)
+  quantityDamaged    Float                         @default(0)
+  quantityLost       Float                         @default(0)
+  reservedDate       DateTime
+  expectedReturnDate DateTime?
+  actualReturnDate   DateTime?
+  status             EventResourceAllocationStatus @default(Reserved)
+  createdByUserId    String
+  updatedByUserId    String
+  notes              String?
+  createdAt          DateTime                      @default(now())
+  updatedAt          DateTime                      @updatedAt
+  organization       Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event              Event                         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  resource           Resource                      @relation(fields: [resourceId], references: [id], onDelete: Restrict)
+  reservation        ResourceReservation?          @relation(fields: [resourceReservationId], references: [id], onDelete: SetNull)
+  createdBy          User                          @relation("EventResourceAllocationCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  updatedBy          User                          @relation("EventResourceAllocationUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: Restrict)
+  outstandings       EventResourceOutstanding[]
+
+  @@index([organizationId])
+  @@index([eventId])
+  @@index([resourceId])
+  @@index([status])
+  @@index([reservedDate])
+}
+
+model EventResourceOutstanding {
+  id                 String                        @id @default(uuid())
+  organizationId     String
+  eventId            String
+  resourceId         String
+  allocationId       String?
+  requestedQuantity  Float
+  reservedQuantity   Float
+  outstandingQuantity Float
+  status             EventResourceOutstandingStatus @default(Open)
+  createdByUserId    String
+  notes              String?
+  createdAt          DateTime                      @default(now())
+  updatedAt          DateTime                      @updatedAt
+  organization       Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event              Event                         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  resource           Resource                      @relation(fields: [resourceId], references: [id], onDelete: Restrict)
+  allocation         EventResourceAllocation?      @relation(fields: [allocationId], references: [id], onDelete: SetNull)
+  createdBy          User                          @relation("EventResourceOutstandingCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([eventId])
+  @@index([resourceId])
+  @@index([status])
+}
+
 model InventoryItem {
   id                 String            @id @default(uuid())
   organizationId     String
+  publicName         String?
+  internalName       String?
   sku                String
   barcode            String?
+  qrCode             String?
   name               String
   description        String?
+  shortDescription   String?
+  longDescription    String?
+  internalNotes      String?
+  marketplaceTitle   String?
+  marketplaceDescription String?
+  aiSummary          String?
+  aiKeywords         String[]          @default([])
+  aiTags             String[]          @default([])
+  aiConfidence       Float?
   categoryId         String
+  subCategory        String?
+  brand              String?
   preferredSupplierId String?
+  resourceStatus     InventoryResourceStatus      @default(Active)
   itemType           InventoryItemType
   unitOfMeasure      UnitOfMeasure
+  style              String?
+  theme              String?
+  colour             String?
+  material           String?
+  dimensions         String?
+  weight             String?
+  capacity           String?
+  indoorOutdoor      InventoryIndoorOutdoor       @default(Both)
+  suitableEventTypes String[]                    @default([])
+  manualTags         String[]                    @default([])
+  keywords           String[]                    @default([])
+  aiGeneratedTags    String[]                    @default([])
+  marketplaceVisibility InventoryMarketplaceVisibility @default(Private)
+  photoUrls          String[]                    @default([])
+  primaryPhotoUrl    String?
+  photoAssets        Json?
   costPrice          Float?
   replacementValue   Float?
   rentalPrice        Float?
@@ -538,6 +912,12 @@ model InventoryItem {
   @@index([categoryId])
   @@index([preferredSupplierId])
   @@index([itemType])
+  @@index([resourceStatus])
+  @@index([style])
+  @@index([theme])
+  @@index([material])
+  @@index([colour])
+  @@index([marketplaceVisibility])
   @@index([active])
   @@index([name])
 }
@@ -585,21 +965,29 @@ model PurchaseOrder {
   purchaseOrderNumber  String
   supplierId           String
   orderDate            DateTime
+  quotationDate        DateTime?
+  validUntilDate       DateTime?
   expectedDeliveryDate DateTime?
   deliveryLocationId   String
   status               PurchaseOrderStatus @default(Draft)
   currency             String              @default("ZAR")
   subtotal             Float               @default(0)
   taxAmount            Float               @default(0)
+  discountAmount       Float               @default(0)
+  deliveryFee          Float               @default(0)
   totalAmount          Float               @default(0)
   supplierReference    String?
   internalReference    String?
+  paymentTerms         String?
+  deliveryAddress      String?
+  eventReference       String?
   notes                String?
   createdByUserId      String
   approvedByUserId     String?
   approvedAt           DateTime?
   sentAt               DateTime?
   cancelledAt          DateTime?
+  archivedAt           DateTime?
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
   organization         Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -616,31 +1004,101 @@ model PurchaseOrder {
   @@index([status])
   @@index([orderDate])
   @@index([expectedDeliveryDate])
+  @@index([archivedAt])
 }
 
 model PurchaseOrderLineItem {
   id                   String        @id @default(uuid())
   purchaseOrderId      String
-  inventoryItemId      String
-  description          String
-  supplierSku          String?
+  supplierProductId    String
+  inventoryItemId      String?
+  productNameSnapshot  String
+  productSkuSnapshot   String?
+  productBrandSnapshot String?
+  productCostSnapshot  Float
+  productVatSnapshot   Float?
   quantityOrdered      Float
   quantityReceived     Float         @default(0)
   unitPrice            Float
   taxRate              Float         @default(0)
+  discountRate         Float         @default(0)
   lineSubtotal         Float
+  lineDiscount         Float
   lineTax              Float
   lineTotal            Float
   notes                String?
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
   purchaseOrder        PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  inventoryItem        InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  supplierProduct      SupplierProduct @relation(fields: [supplierProductId], references: [id], onDelete: Restrict)
+  inventoryItem        InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
   goodsReceiptLines    GoodsReceiptLine[]
 
-  @@unique([purchaseOrderId, inventoryItemId])
+  @@unique([purchaseOrderId, supplierProductId])
   @@index([purchaseOrderId])
+  @@index([supplierProductId])
   @@index([inventoryItemId])
+}
+
+model AiDraft {
+  id                String            @id @default(uuid())
+  capability        AiDraftCapability
+  organizationId    String
+  status            AiDraftStatus     @default(ReviewPending)
+  extractionAdapter String
+  draftPayload      Json
+  approvedPayload   Json?
+  warnings          Json?
+  committedTargetId String?
+  committedAt       DateTime?
+  createdByUserId   String
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  organization      Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy         User              @relation("AiDraftCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  sourceDocuments   AiDraftSourceDocument[]
+  extractedFields   AiDraftExtractedField[]
+
+  @@index([organizationId])
+  @@index([capability])
+  @@index([status])
+  @@index([createdByUserId])
+}
+
+model AiDraftSourceDocument {
+  id            String           @id @default(uuid())
+  draftId       String
+  inputType     AiDraftInputType
+  fileName      String?
+  mimeType      String?
+  sizeBytes     Int?
+  contentText   String?
+  contentBase64 String?
+  createdAt     DateTime         @default(now())
+  draft         AiDraft          @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@index([draftId])
+}
+
+model AiDraftExtractedField {
+  id              String               @id @default(uuid())
+  draftId         String
+  fieldPath       String
+  label           String
+  suggestedValue  Json?
+  finalValue      Json?
+  confidenceScore Float?
+  sourceReference String?
+  decision        AiDraftFieldDecision @default(Suggested)
+  isRequired      Boolean              @default(false)
+  lowConfidence   Boolean              @default(false)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  draft           AiDraft              @relation(fields: [draftId], references: [id], onDelete: Cascade)
+
+  @@unique([draftId, fieldPath])
+  @@index([draftId])
+  @@index([decision])
 }
 
 model GoodsReceipt {

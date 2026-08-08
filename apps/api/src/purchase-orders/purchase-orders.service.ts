@@ -57,6 +57,14 @@ export class PurchaseOrdersService {
     },
     lineItems: {
       include: {
+        supplierProduct: {
+          select: {
+            id: true,
+            productName: true,
+            sku: true,
+            brand: true,
+          },
+        },
         inventoryItem: {
           select: {
             id: true,
@@ -113,34 +121,61 @@ export class PurchaseOrdersService {
   } as const;
 
   async create(userId: string, dto: CreatePurchaseOrderDto) {
+    return this.prisma.$transaction((tx) =>
+      this.createWithDatabaseClient(tx, userId, dto),
+    );
+  }
+
+  async createInTransaction(
+    tx: Prisma.TransactionClient,
+    userId: string,
+    dto: CreatePurchaseOrderDto,
+  ) {
+    return this.createWithDatabaseClient(tx, userId, dto);
+  }
+
+  private async createWithDatabaseClient(
+    db: Prisma.TransactionClient | PrismaService,
+    userId: string,
+    dto: CreatePurchaseOrderDto,
+  ) {
     await this.ensureOrganizationPermission(
       userId,
       dto.organizationId,
       'Create',
+      db,
     );
     await this.ensureSupplierOwnership(
       dto.supplierId,
       dto.organizationId,
       true,
+      db,
     );
     await this.ensureLocationOwnership(
       dto.deliveryLocationId,
       dto.organizationId,
       true,
+      db,
     );
 
     const normalizedLines = await this.prepareLineItems(
       dto.organizationId,
+      dto.supplierId,
       dto.lineItems,
+      db,
     );
     const totals = this.calculateOrderTotals(normalizedLines);
 
-    const created = await this.prisma.purchaseOrder.create({
+    const created = await db.purchaseOrder.create({
       data: {
         organizationId: dto.organizationId,
         purchaseOrderNumber: dto.purchaseOrderNumber.trim(),
         supplierId: dto.supplierId,
         orderDate: new Date(dto.orderDate),
+        quotationDate: dto.quotationDate ? new Date(dto.quotationDate) : null,
+        validUntilDate: dto.validUntilDate
+          ? new Date(dto.validUntilDate)
+          : null,
         expectedDeliveryDate: dto.expectedDeliveryDate
           ? new Date(dto.expectedDeliveryDate)
           : null,
@@ -149,21 +184,32 @@ export class PurchaseOrdersService {
         currency: (dto.currency ?? 'ZAR').trim().toUpperCase(),
         subtotal: totals.subtotal,
         taxAmount: totals.taxAmount,
-        totalAmount: totals.totalAmount,
+        discountAmount: totals.discountAmount,
+        deliveryFee: dto.deliveryFee ?? 0,
+        totalAmount: this.round2(totals.totalAmount + (dto.deliveryFee ?? 0)),
         supplierReference: this.normalizeNullable(dto.supplierReference),
         internalReference: this.normalizeNullable(dto.internalReference),
+        paymentTerms: this.normalizeNullable(dto.paymentTerms),
+        deliveryAddress: this.normalizeNullable(dto.deliveryAddress),
+        eventReference: this.normalizeNullable(dto.eventReference),
         notes: this.normalizeNullable(dto.notes),
         createdByUserId: userId,
         lineItems: {
           create: normalizedLines.map((line) => ({
+            supplierProductId: line.supplierProductId,
             inventoryItemId: line.inventoryItemId,
-            description: line.description,
-            supplierSku: line.supplierSku,
+            productNameSnapshot: line.productNameSnapshot,
+            productSkuSnapshot: line.productSkuSnapshot,
+            productBrandSnapshot: line.productBrandSnapshot,
+            productCostSnapshot: line.productCostSnapshot,
+            productVatSnapshot: line.productVatSnapshot,
             quantityOrdered: line.quantityOrdered,
             quantityReceived: 0,
             unitPrice: line.unitPrice,
             taxRate: line.taxRate,
+            discountRate: line.discountRate,
             lineSubtotal: line.lineSubtotal,
+            lineDiscount: line.lineDiscount,
             lineTax: line.lineTax,
             lineTotal: line.lineTotal,
             notes: line.notes,
@@ -188,6 +234,7 @@ export class PurchaseOrdersService {
 
     const where: Prisma.PurchaseOrderWhereInput = {
       organizationId: query.organizationId,
+      archivedAt: null,
       ...(query.supplierId ? { supplierId: query.supplierId } : {}),
       ...(query.status ? { status: query.status } : {}),
       ...(query.search
@@ -322,6 +369,14 @@ export class PurchaseOrdersService {
       throw new BadRequestException('Only draft purchase orders may be edited');
     }
 
+    if (current.archivedAt) {
+      throw new BadRequestException(
+        'Archived purchase orders cannot be edited',
+      );
+    }
+
+    const supplierId = dto.supplierId ?? current.supplierId;
+
     if (dto.supplierId) {
       await this.ensureSupplierOwnership(
         dto.supplierId,
@@ -339,13 +394,19 @@ export class PurchaseOrdersService {
     }
 
     let lineItemsPayload: Array<{
-      inventoryItemId: string;
-      description: string;
-      supplierSku: string | null;
+      supplierProductId: string;
+      inventoryItemId: string | null;
+      productNameSnapshot: string;
+      productSkuSnapshot: string | null;
+      productBrandSnapshot: string | null;
+      productCostSnapshot: number;
+      productVatSnapshot: number | null;
       quantityOrdered: number;
       unitPrice: number;
       taxRate: number;
+      discountRate: number;
       lineSubtotal: number;
+      lineDiscount: number;
       lineTax: number;
       lineTotal: number;
       notes: string | null;
@@ -354,6 +415,7 @@ export class PurchaseOrdersService {
     if (dto.lineItems) {
       lineItemsPayload = await this.prepareLineItems(
         current.organizationId,
+        supplierId,
         dto.lineItems,
       );
     }
@@ -361,16 +423,10 @@ export class PurchaseOrdersService {
     const totals = this.calculateOrderTotals(
       lineItemsPayload ??
         current.lineItems.map((line) => ({
-          inventoryItemId: line.inventoryItemId,
-          description: line.description,
-          supplierSku: line.supplierSku,
-          quantityOrdered: line.quantityOrdered,
-          unitPrice: line.unitPrice,
-          taxRate: line.taxRate,
           lineSubtotal: line.lineSubtotal,
+          lineDiscount: line.lineDiscount,
           lineTax: line.lineTax,
           lineTotal: line.lineTotal,
-          notes: line.notes,
         })),
     );
 
@@ -392,6 +448,18 @@ export class PurchaseOrdersService {
               : dto.purchaseOrderNumber.trim(),
           supplierId: dto.supplierId,
           orderDate: dto.orderDate ? new Date(dto.orderDate) : undefined,
+          quotationDate:
+            dto.quotationDate === undefined
+              ? undefined
+              : dto.quotationDate
+                ? new Date(dto.quotationDate)
+                : null,
+          validUntilDate:
+            dto.validUntilDate === undefined
+              ? undefined
+              : dto.validUntilDate
+                ? new Date(dto.validUntilDate)
+                : null,
           expectedDeliveryDate:
             dto.expectedDeliveryDate === undefined
               ? undefined
@@ -405,7 +473,11 @@ export class PurchaseOrdersService {
               : dto.currency.trim().toUpperCase(),
           subtotal: totals.subtotal,
           taxAmount: totals.taxAmount,
-          totalAmount: totals.totalAmount,
+          discountAmount: totals.discountAmount,
+          deliveryFee: dto.deliveryFee,
+          totalAmount: this.round2(
+            totals.totalAmount + (dto.deliveryFee ?? current.deliveryFee),
+          ),
           supplierReference:
             dto.supplierReference === undefined
               ? undefined
@@ -414,6 +486,18 @@ export class PurchaseOrdersService {
             dto.internalReference === undefined
               ? undefined
               : this.normalizeNullable(dto.internalReference),
+          paymentTerms:
+            dto.paymentTerms === undefined
+              ? undefined
+              : this.normalizeNullable(dto.paymentTerms),
+          deliveryAddress:
+            dto.deliveryAddress === undefined
+              ? undefined
+              : this.normalizeNullable(dto.deliveryAddress),
+          eventReference:
+            dto.eventReference === undefined
+              ? undefined
+              : this.normalizeNullable(dto.eventReference),
           notes:
             dto.notes === undefined
               ? undefined
@@ -421,14 +505,20 @@ export class PurchaseOrdersService {
           lineItems: lineItemsPayload
             ? {
                 create: lineItemsPayload.map((line) => ({
+                  supplierProductId: line.supplierProductId,
                   inventoryItemId: line.inventoryItemId,
-                  description: line.description,
-                  supplierSku: line.supplierSku,
+                  productNameSnapshot: line.productNameSnapshot,
+                  productSkuSnapshot: line.productSkuSnapshot,
+                  productBrandSnapshot: line.productBrandSnapshot,
+                  productCostSnapshot: line.productCostSnapshot,
+                  productVatSnapshot: line.productVatSnapshot,
                   quantityOrdered: line.quantityOrdered,
                   quantityReceived: 0,
                   unitPrice: line.unitPrice,
                   taxRate: line.taxRate,
+                  discountRate: line.discountRate,
                   lineSubtotal: line.lineSubtotal,
+                  lineDiscount: line.lineDiscount,
                   lineTax: line.lineTax,
                   lineTotal: line.lineTotal,
                   notes: line.notes,
@@ -445,7 +535,43 @@ export class PurchaseOrdersService {
     return this.mapPurchaseOrder(updated);
   }
 
-  async deleteDraft(userId: string, id: string) {
+  async archive(userId: string, id: string) {
+    const po = await this.findPurchaseOrderForTransition(userId, id, 'Edit');
+
+    if (po.archivedAt) {
+      throw new BadRequestException('Purchase order is already archived');
+    }
+
+    const updated = await this.prisma.purchaseOrder.update({
+      where: { id: po.id },
+      data: {
+        archivedAt: new Date(),
+      },
+      include: this.purchaseOrderInclude,
+    });
+
+    return this.mapPurchaseOrder(updated);
+  }
+
+  async restore(userId: string, id: string) {
+    const po = await this.findPurchaseOrderForTransition(userId, id, 'Edit');
+
+    if (!po.archivedAt) {
+      throw new BadRequestException('Purchase order is not archived');
+    }
+
+    const updated = await this.prisma.purchaseOrder.update({
+      where: { id: po.id },
+      data: {
+        archivedAt: null,
+      },
+      include: this.purchaseOrderInclude,
+    });
+
+    return this.mapPurchaseOrder(updated);
+  }
+
+  async delete(userId: string, id: string) {
     const po = await this.prisma.purchaseOrder.findUnique({
       where: { id },
       include: {
@@ -461,17 +587,7 @@ export class PurchaseOrdersService {
       throw new NotFoundException(`Purchase order with id ${id} not found`);
     }
 
-    await this.ensureOrganizationPermission(
-      userId,
-      po.organizationId,
-      'Delete',
-    );
-
-    if (po.status !== PrismaPurchaseOrderStatus.Draft) {
-      throw new BadRequestException(
-        'Only draft purchase orders may be deleted',
-      );
-    }
+    await this.ensureAdminPermission(userId, po.organizationId);
 
     if (po.goodsReceipts.length > 0) {
       throw new BadRequestException(
@@ -493,6 +609,12 @@ export class PurchaseOrdersService {
       );
     }
 
+    if (po.archivedAt) {
+      throw new BadRequestException(
+        'Archived purchase orders cannot be submitted',
+      );
+    }
+
     const updated = await this.prisma.purchaseOrder.update({
       where: { id: po.id },
       data: {
@@ -510,6 +632,12 @@ export class PurchaseOrdersService {
     if (po.status !== PrismaPurchaseOrderStatus.PendingApproval) {
       throw new BadRequestException(
         'Only pending approval purchase orders may be approved',
+      );
+    }
+
+    if (po.archivedAt) {
+      throw new BadRequestException(
+        'Archived purchase orders cannot be approved',
       );
     }
 
@@ -555,6 +683,10 @@ export class PurchaseOrdersService {
       throw new BadRequestException(
         'Only approved purchase orders may be marked as sent',
       );
+    }
+
+    if (po.archivedAt) {
+      throw new BadRequestException('Archived purchase orders cannot be sent');
     }
 
     const updated = await this.prisma.purchaseOrder.update({
@@ -627,6 +759,12 @@ export class PurchaseOrdersService {
         );
       }
 
+      if (po.archivedAt) {
+        throw new BadRequestException(
+          'Archived purchase orders may not be received',
+        );
+      }
+
       if (po.status === PrismaPurchaseOrderStatus.Cancelled) {
         throw new BadRequestException(
           'Cancelled purchase orders may not be received',
@@ -662,6 +800,12 @@ export class PurchaseOrdersService {
         if (!poLine) {
           throw new BadRequestException(
             'Receipt line references purchase-order line outside this purchase order',
+          );
+        }
+
+        if (!poLine.inventoryItemId) {
+          throw new BadRequestException(
+            'Purchase-order line is not linked to an inventory item',
           );
         }
 
@@ -951,17 +1095,19 @@ export class PurchaseOrdersService {
       purchaseOrderId: po.id,
       purchaseOrderNumber: po.purchaseOrderNumber,
       status: po.status,
-      lines: po.lineItems.map((line) => ({
-        purchaseOrderLineItemId: line.id,
-        inventoryItemId: line.inventoryItemId,
-        inventoryItemName: line.inventoryItem.name,
-        quantityOrdered: line.quantityOrdered,
-        quantityReceived: line.quantityReceived,
-        quantityOutstanding: Math.max(
-          0,
-          line.quantityOrdered - line.quantityReceived,
-        ),
-      })),
+      lines: po.lineItems
+        .filter((line) => Boolean(line.inventoryItemId && line.inventoryItem))
+        .map((line) => ({
+          purchaseOrderLineItemId: line.id,
+          inventoryItemId: line.inventoryItemId as string,
+          inventoryItemName: line.inventoryItem?.name ?? 'Unlinked item',
+          quantityOrdered: line.quantityOrdered,
+          quantityReceived: line.quantityReceived,
+          quantityOutstanding: Math.max(
+            0,
+            line.quantityOrdered - line.quantityReceived,
+          ),
+        })),
     };
   }
 
@@ -1066,40 +1212,15 @@ export class PurchaseOrdersService {
 
   private async prepareLineItems(
     organizationId: string,
+    supplierId: string,
     lineItems: CreatePurchaseOrderLineItemDto[],
+    db?: Prisma.TransactionClient | PrismaService,
   ) {
+    const client = db ?? this.prisma;
     const seen = new Set<string>();
 
-    const normalized = lineItems.map((line) => {
-      if (seen.has(line.inventoryItemId)) {
-        throw new BadRequestException(
-          'Duplicate inventory line items are not allowed on purchase order',
-        );
-      }
-
-      seen.add(line.inventoryItemId);
-
-      const lineSubtotal = this.round2(line.quantityOrdered * line.unitPrice);
-      const taxRate = line.taxRate ?? 0;
-      const lineTax = this.round2((lineSubtotal * taxRate) / 100);
-      const lineTotal = this.round2(lineSubtotal + lineTax);
-
-      return {
-        inventoryItemId: line.inventoryItemId,
-        description: line.description.trim(),
-        supplierSku: this.normalizeNullable(line.supplierSku),
-        quantityOrdered: line.quantityOrdered,
-        unitPrice: line.unitPrice,
-        taxRate,
-        lineSubtotal,
-        lineTax,
-        lineTotal,
-        notes: this.normalizeNullable(line.notes),
-      };
-    });
-
-    const ids = normalized.map((line) => line.inventoryItemId);
-    const items = await this.prisma.inventoryItem.findMany({
+    const ids = lineItems.map((line) => line.supplierProductId);
+    const supplierProducts = await client.supplierProduct.findMany({
       where: {
         id: {
           in: ids,
@@ -1108,37 +1229,124 @@ export class PurchaseOrdersService {
       select: {
         id: true,
         organizationId: true,
+        supplierId: true,
         active: true,
+        productName: true,
+        sku: true,
+        brand: true,
+        costPrice: true,
+        vatPercent: true,
       },
     });
 
-    const byId = new Map(items.map((item) => [item.id, item]));
-    for (const itemId of ids) {
-      const item = byId.get(itemId);
-      if (!item || item.organizationId !== organizationId) {
-        throw new ForbiddenException(
-          'Inventory item is outside this organization',
-        );
-      }
-      if (!item.active) {
-        throw new BadRequestException(
-          'Only active inventory items may be ordered',
-        );
+    const productsById = new Map(
+      supplierProducts.map((item) => [item.id, item]),
+    );
+
+    const productSkus = supplierProducts
+      .map((product) => product.sku?.trim())
+      .filter((value): value is string => Boolean(value));
+
+    const inventoryBySku = new Map<string, { id: string }>();
+    if (productSkus.length > 0) {
+      const inventoryMatches = await client.inventoryItem.findMany({
+        where: {
+          organizationId,
+          active: true,
+          sku: {
+            in: productSkus,
+          },
+        },
+        select: {
+          id: true,
+          sku: true,
+        },
+      });
+
+      for (const item of inventoryMatches) {
+        const key = item.sku.trim().toLowerCase();
+        if (!inventoryBySku.has(key)) {
+          inventoryBySku.set(key, { id: item.id });
+        }
       }
     }
 
-    return normalized;
+    return lineItems.map((line) => {
+      if (seen.has(line.supplierProductId)) {
+        throw new BadRequestException(
+          'Duplicate supplier products are not allowed on purchase order',
+        );
+      }
+      seen.add(line.supplierProductId);
+
+      const product = productsById.get(line.supplierProductId);
+      if (!product || product.organizationId !== organizationId) {
+        throw new ForbiddenException(
+          'Supplier product is outside this organization',
+        );
+      }
+
+      if (product.supplierId !== supplierId) {
+        throw new BadRequestException(
+          'Supplier product does not belong to the selected supplier',
+        );
+      }
+
+      if (!product.active) {
+        throw new BadRequestException(
+          'Only active supplier products may be ordered',
+        );
+      }
+
+      const quantityOrdered = line.quantity;
+      const unitPrice = line.unitCost;
+      const taxRate = line.vatPercent ?? product.vatPercent ?? 0;
+      const discountRate = line.discountPercent ?? 0;
+
+      const lineSubtotal = this.round2(quantityOrdered * unitPrice);
+      const lineDiscount = this.round2((lineSubtotal * discountRate) / 100);
+      const taxableBase = this.round2(lineSubtotal - lineDiscount);
+      const lineTax = this.round2((taxableBase * taxRate) / 100);
+      const lineTotal = this.round2(taxableBase + lineTax);
+
+      const inventoryItemId = product.sku
+        ? (inventoryBySku.get(product.sku.trim().toLowerCase())?.id ?? null)
+        : null;
+
+      return {
+        supplierProductId: product.id,
+        inventoryItemId,
+        productNameSnapshot: product.productName,
+        productSkuSnapshot: product.sku,
+        productBrandSnapshot: product.brand,
+        productCostSnapshot: product.costPrice,
+        productVatSnapshot: product.vatPercent,
+        quantityOrdered,
+        unitPrice,
+        taxRate,
+        discountRate,
+        lineSubtotal,
+        lineDiscount,
+        lineTax,
+        lineTotal,
+        notes: this.normalizeNullable(line.notes),
+      };
+    });
   }
 
   private calculateOrderTotals(
     lines: Array<{
       lineSubtotal: number;
+      lineDiscount: number;
       lineTax: number;
       lineTotal: number;
     }>,
   ) {
     const subtotal = this.round2(
       lines.reduce((sum, line) => sum + line.lineSubtotal, 0),
+    );
+    const discountAmount = this.round2(
+      lines.reduce((sum, line) => sum + line.lineDiscount, 0),
     );
     const taxAmount = this.round2(
       lines.reduce((sum, line) => sum + line.lineTax, 0),
@@ -1149,6 +1357,7 @@ export class PurchaseOrdersService {
 
     return {
       subtotal,
+      discountAmount,
       taxAmount,
       totalAmount,
     };
@@ -1173,21 +1382,29 @@ export class PurchaseOrdersService {
     purchaseOrderNumber: string;
     supplierId: string;
     orderDate: Date;
+    quotationDate: Date | null;
+    validUntilDate: Date | null;
     expectedDeliveryDate: Date | null;
     deliveryLocationId: string;
     status: PrismaPurchaseOrderStatus;
     currency: string;
     subtotal: number;
     taxAmount: number;
+    discountAmount: number;
+    deliveryFee: number;
     totalAmount: number;
     supplierReference: string | null;
     internalReference: string | null;
+    paymentTerms: string | null;
+    deliveryAddress: string | null;
+    eventReference: string | null;
     notes: string | null;
     createdByUserId: string;
     approvedByUserId: string | null;
     approvedAt: Date | null;
     sentAt: Date | null;
     cancelledAt: Date | null;
+    archivedAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
     supplier: { id: string; companyName: string };
@@ -1197,20 +1414,37 @@ export class PurchaseOrdersService {
     lineItems: Array<{
       id: string;
       purchaseOrderId: string;
-      inventoryItemId: string;
-      description: string;
-      supplierSku: string | null;
+      supplierProductId: string;
+      inventoryItemId: string | null;
+      productNameSnapshot: string;
+      productSkuSnapshot: string | null;
+      productBrandSnapshot: string | null;
+      productCostSnapshot: number;
+      productVatSnapshot: number | null;
       quantityOrdered: number;
       quantityReceived: number;
       unitPrice: number;
       taxRate: number;
+      discountRate: number;
       lineSubtotal: number;
+      lineDiscount: number;
       lineTax: number;
       lineTotal: number;
       notes: string | null;
       createdAt: Date;
       updatedAt: Date;
-      inventoryItem: { id: string; name: string; sku: string; active: boolean };
+      supplierProduct: {
+        id: string;
+        productName: string;
+        sku: string | null;
+        brand: string | null;
+      };
+      inventoryItem: {
+        id: string;
+        name: string;
+        sku: string;
+        active: boolean;
+      } | null;
     }>;
   }) {
     const ordered = po.lineItems.reduce(
@@ -1232,6 +1466,8 @@ export class PurchaseOrdersService {
       supplierId: po.supplierId,
       supplierName: po.supplier.companyName,
       orderDate: po.orderDate,
+      quotationDate: po.quotationDate,
+      validUntilDate: po.validUntilDate,
       expectedDeliveryDate: po.expectedDeliveryDate,
       deliveryLocationId: po.deliveryLocationId,
       deliveryLocationName: po.deliveryLocation.name,
@@ -1239,9 +1475,14 @@ export class PurchaseOrdersService {
       currency: po.currency,
       subtotal: po.subtotal,
       taxAmount: po.taxAmount,
+      discountAmount: po.discountAmount,
+      deliveryFee: po.deliveryFee,
       totalAmount: po.totalAmount,
       supplierReference: po.supplierReference,
       internalReference: po.internalReference,
+      paymentTerms: po.paymentTerms,
+      deliveryAddress: po.deliveryAddress,
+      eventReference: po.eventReference,
       notes: po.notes,
       createdByUserId: po.createdByUserId,
       createdByUserName: po.createdBy.name,
@@ -1250,17 +1491,20 @@ export class PurchaseOrdersService {
       approvedAt: po.approvedAt,
       sentAt: po.sentAt,
       cancelledAt: po.cancelledAt,
+      archivedAt: po.archivedAt,
       createdAt: po.createdAt,
       updatedAt: po.updatedAt,
       receivedPercent,
       lineItems: po.lineItems.map((line) => ({
         id: line.id,
         purchaseOrderId: line.purchaseOrderId,
+        supplierProductId: line.supplierProductId,
+        supplierProductName: line.productNameSnapshot,
+        supplierProductSku: line.productSkuSnapshot,
+        supplierProductBrand: line.productBrandSnapshot,
         inventoryItemId: line.inventoryItemId,
-        inventoryItemName: line.inventoryItem.name,
-        inventoryItemSku: line.inventoryItem.sku,
-        description: line.description,
-        supplierSku: line.supplierSku,
+        inventoryItemName: line.inventoryItem?.name ?? null,
+        inventoryItemSku: line.inventoryItem?.sku ?? null,
         quantityOrdered: line.quantityOrdered,
         quantityReceived: line.quantityReceived,
         quantityOutstanding: Math.max(
@@ -1269,7 +1513,9 @@ export class PurchaseOrdersService {
         ),
         unitPrice: line.unitPrice,
         taxRate: line.taxRate,
+        discountRate: line.discountRate,
         lineSubtotal: line.lineSubtotal,
+        lineDiscount: line.lineDiscount,
         lineTax: line.lineTax,
         lineTotal: line.lineTotal,
         notes: line.notes,
@@ -1367,8 +1613,10 @@ export class PurchaseOrdersService {
     supplierId: string,
     organizationId: string,
     requireActive: boolean,
+    tx?: Prisma.TransactionClient | PrismaService,
   ) {
-    const supplier = await this.prisma.supplier.findUnique({
+    const db = tx ?? this.prisma;
+    const supplier = await db.supplier.findUnique({
       where: { id: supplierId },
       select: {
         id: true,
@@ -1392,7 +1640,7 @@ export class PurchaseOrdersService {
     locationId: string,
     organizationId: string,
     requireActive: boolean,
-    tx?: Prisma.TransactionClient,
+    tx?: Prisma.TransactionClient | PrismaService,
   ) {
     const db = tx ?? this.prisma;
     const location = await db.storageLocation.findUnique({
@@ -1417,11 +1665,7 @@ export class PurchaseOrdersService {
     }
   }
 
-  private async ensureOrganizationPermission(
-    userId: string,
-    organizationId: string,
-    action: PermissionAction,
-  ) {
+  private async ensureAdminPermission(userId: string, organizationId: string) {
     const membership = await this.prisma.membership.findUnique({
       where: {
         userId_organizationId: {
@@ -1442,7 +1686,39 @@ export class PurchaseOrdersService {
       return;
     }
 
-    const role = await this.prisma.role.findFirst({
+    throw new ForbiddenException(
+      'Only organization administrators can delete purchase orders',
+    );
+  }
+
+  private async ensureOrganizationPermission(
+    userId: string,
+    organizationId: string,
+    action: PermissionAction,
+    tx?: Prisma.TransactionClient | PrismaService,
+  ) {
+    const db = tx ?? this.prisma;
+    const membership = await db.membership.findUnique({
+      where: {
+        userId_organizationId: {
+          userId,
+          organizationId,
+        },
+      },
+    });
+
+    if (!membership) {
+      throw new ForbiddenException(
+        'You do not have access to this organization',
+      );
+    }
+
+    const normalizedRole = membership.role.trim().toLowerCase();
+    if (normalizedRole === 'owner' || normalizedRole === 'administrator') {
+      return;
+    }
+
+    const role = await db.role.findFirst({
       where: {
         organizationId,
         name: membership.role,

@@ -91,7 +91,17 @@ export class PurchaseOrdersController {
   @Delete(':id')
   @HttpCode(204)
   async remove(@CurrentUser() user: UserResponseDto, @Param('id') id: string) {
-    await this.purchaseOrdersService.deleteDraft(user.id, id);
+    await this.purchaseOrdersService.delete(user.id, id);
+  }
+
+  @Patch(':id/archive')
+  archive(@CurrentUser() user: UserResponseDto, @Param('id') id: string) {
+    return this.purchaseOrdersService.archive(user.id, id);
+  }
+
+  @Patch(':id/restore')
+  restore(@CurrentUser() user: UserResponseDto, @Param('id') id: string) {
+    return this.purchaseOrdersService.restore(user.id, id);
   }
 
   @Patch(':id/submit-approval')

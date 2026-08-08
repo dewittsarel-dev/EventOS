@@ -577,6 +577,26 @@ describe('EventsController (e2e)', () => {
       }),
     );
 
+    const replacedResponse = await request(app.getHttpServer())
+      .put(`/events/${created.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        title: 'Gamma Expo Confirmed',
+        eventType: 'Expo',
+        eventDate: '2026-12-20T00:00:00.000Z',
+        startTime: '08:00',
+        endTime: '18:00',
+        status: EventStatus.Confirmed,
+        venue: 'Durban ICC Hall B',
+      })
+      .expect(200);
+
+    expect(replacedResponse.body).toEqual(
+      expect.objectContaining({
+        venue: 'Durban ICC Hall B',
+      }),
+    );
+
     await request(app.getHttpServer())
       .delete(`/events/${created.id}`)
       .set('Authorization', `Bearer ${token}`)
@@ -605,6 +625,12 @@ describe('EventsController (e2e)', () => {
 
     await request(app.getHttpServer())
       .patch('/events/55555555-5555-5555-5555-555555555555')
+      .set('Authorization', `Bearer ${tokenUser2}`)
+      .send({ title: 'Unauthorized' })
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .put('/events/55555555-5555-5555-5555-555555555555')
       .set('Authorization', `Bearer ${tokenUser2}`)
       .send({ title: 'Unauthorized' })
       .expect(403);

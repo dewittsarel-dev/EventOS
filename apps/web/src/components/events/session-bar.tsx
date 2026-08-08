@@ -1,54 +1,25 @@
 'use client';
 
 import { useState } from 'react';
-
-type SessionValues = {
-  baseUrl: string;
-  token: string;
-  organizationId: string;
-};
+import {
+  readSessionSnapshot,
+  type SessionValues,
+  writeSessionSnapshot,
+} from '../../lib/session-storage';
 
 type SessionBarProps = {
   value: SessionValues;
   onChange: (next: SessionValues) => void;
 };
 
-const STORAGE_KEY = 'eventos.events.session';
-
 export function readStoredSession(): SessionValues {
-  if (typeof window === 'undefined') {
-    return {
-      baseUrl: 'http://localhost:3001',
-      token: '',
-      organizationId: '',
-    };
-  }
+  const snapshot = readSessionSnapshot();
 
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-
-  if (!stored) {
-    return {
-      baseUrl: 'http://localhost:3001',
-      token: '',
-      organizationId: '',
-    };
-  }
-
-  try {
-    const parsed = JSON.parse(stored) as SessionValues;
-
-    return {
-      baseUrl: parsed.baseUrl || 'http://localhost:3001',
-      token: parsed.token || '',
-      organizationId: parsed.organizationId || '',
-    };
-  } catch {
-    return {
-      baseUrl: 'http://localhost:3001',
-      token: '',
-      organizationId: '',
-    };
-  }
+  return {
+    baseUrl: snapshot.baseUrl,
+    token: snapshot.token,
+    organizationId: snapshot.organizationId,
+  };
 }
 
 export function SessionBar({ value, onChange }: SessionBarProps) {
@@ -57,7 +28,13 @@ export function SessionBar({ value, onChange }: SessionBarProps) {
 
   function handleSave() {
     onChange(draft);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+    const existing = readSessionSnapshot();
+    writeSessionSnapshot({
+      ...existing,
+      baseUrl: draft.baseUrl,
+      token: draft.token,
+      organizationId: draft.organizationId,
+    });
     setSaved(true);
     window.setTimeout(() => setSaved(false), 1200);
   }

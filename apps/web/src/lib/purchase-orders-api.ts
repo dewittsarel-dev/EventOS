@@ -1,8 +1,14 @@
 import type {
+  AIPurchaseOrderUploadDraftRecord,
+  CreateAIPurchaseOrderUploadDraftPayload,
+  CreateAIPurchaseOrderUploadDraftResponse,
   CreateGoodsReceiptPayload,
+  CreatePurchaseOrderDraftPayload,
   CreatePurchaseOrderPayload,
   GoodsReceiptRecord,
   PagedResponse,
+  PurchaseOrderDraftRecord,
+  PurchaseOrderDraftReviewPayload,
   PurchaseOrderRecord,
   PurchaseOrderSortBy,
   PurchaseOrderStatus,
@@ -14,6 +20,16 @@ type RequestOptions = {
   token: string;
   baseUrl: string;
 };
+
+export class PurchaseOrdersApiError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = 'PurchaseOrdersApiError';
+    this.status = status;
+  }
+}
 
 function normalizeBaseUrl(baseUrl: string) {
   return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
@@ -51,7 +67,7 @@ async function apiRequest<T>(
       // Keep fallback message.
     }
 
-    throw new Error(message);
+    throw new PurchaseOrdersApiError(response.status, message);
   }
 
   if (response.status === 204) {
@@ -141,6 +157,174 @@ export async function createPurchaseOrder(
   });
 }
 
+export async function createPurchaseOrderDraft(
+  options: RequestOptions,
+  payload: CreatePurchaseOrderDraftPayload,
+) {
+  const formData = new FormData();
+  formData.set('organizationId', payload.organizationId);
+
+  if (payload.sourceText) {
+    formData.set('sourceText', payload.sourceText);
+  }
+
+  if (payload.sourceFile) {
+    formData.set('sourceFile', payload.sourceFile);
+  }
+
+  const response = await fetch(
+    `${normalizeBaseUrl(options.baseUrl)}/purchase-orders/drafts`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${options.token}`,
+      },
+      body: formData,
+      cache: 'no-store',
+    },
+  );
+
+  if (!response.ok) {
+    let message = `Request failed with status ${response.status}`;
+
+    try {
+      const body = (await response.json()) as {
+        message?: string | string[];
+      };
+
+      if (Array.isArray(body.message)) {
+        message = body.message.join(', ');
+      } else if (body.message) {
+        message = body.message;
+      }
+    } catch {
+      // Keep fallback message.
+    }
+
+    throw new PurchaseOrdersApiError(response.status, message);
+  }
+
+  return (await response.json()) as PurchaseOrderDraftRecord;
+}
+
+export async function createAIPurchaseOrderUploadDraft(
+  options: RequestOptions,
+  payload: CreateAIPurchaseOrderUploadDraftPayload,
+) {
+  const formData = new FormData();
+  formData.set('sourceFile', payload.sourceFile);
+
+  const query = new URLSearchParams();
+  query.set('organizationId', payload.organizationId);
+
+  const response = await fetch(
+    `${normalizeBaseUrl(options.baseUrl)}/purchase-orders/drafts/ai-upload?${query.toString()}`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${options.token}`,
+      },
+      body: formData,
+      cache: 'no-store',
+    },
+  );
+
+  if (!response.ok) {
+    let message = `Request failed with status ${response.status}`;
+
+    try {
+      const body = (await response.json()) as {
+        message?: string | string[];
+      };
+
+      if (Array.isArray(body.message)) {
+        message = body.message.join(', ');
+      } else if (body.message) {
+        message = body.message;
+      }
+    } catch {
+      // Keep fallback message.
+    }
+
+    throw new PurchaseOrdersApiError(response.status, message);
+  }
+
+  return (await response.json()) as CreateAIPurchaseOrderUploadDraftResponse;
+}
+
+export async function getAIPurchaseOrderUploadDraft(
+  options: RequestOptions,
+  draftId: string,
+) {
+  return apiRequest<AIPurchaseOrderUploadDraftRecord>(
+    `/purchase-orders/drafts/ai-upload/${draftId}`,
+    options,
+  );
+}
+
+export async function getAIPurchaseOrderUploadDocumentBlob(
+  options: RequestOptions,
+  draftId: string,
+  documentId: string,
+) {
+  const response = await fetch(
+    `${normalizeBaseUrl(options.baseUrl)}/purchase-orders/drafts/ai-upload/${draftId}/documents/${documentId}/content`,
+    {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${options.token}`,
+      },
+      cache: 'no-store',
+    },
+  );
+
+  if (!response.ok) {
+    let message = `Request failed with status ${response.status}`;
+
+    try {
+      const body = (await response.json()) as {
+        message?: string | string[];
+      };
+
+      if (Array.isArray(body.message)) {
+        message = body.message.join(', ');
+      } else if (body.message) {
+        message = body.message;
+      }
+    } catch {
+      // Keep fallback message.
+    }
+
+    throw new PurchaseOrdersApiError(response.status, message);
+  }
+
+  return response.blob();
+}
+
+export async function getPurchaseOrderDraft(options: RequestOptions, id: string) {
+  return apiRequest<PurchaseOrderDraftRecord>(`/purchase-orders/drafts/${id}`, options);
+}
+
+export async function updatePurchaseOrderDraftReview(
+  options: RequestOptions,
+  id: string,
+  payload: PurchaseOrderDraftReviewPayload,
+) {
+  return apiRequest<PurchaseOrderDraftRecord>(`/purchase-orders/drafts/${id}`, options, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function commitPurchaseOrderDraft(
+  options: RequestOptions,
+  id: string,
+) {
+  return apiRequest<PurchaseOrderRecord>(`/purchase-orders/drafts/${id}/commit`, options, {
+    method: 'POST',
+  });
+}
+
 export async function getPurchaseOrder(options: RequestOptions, id: string) {
   return apiRequest<PurchaseOrderRecord>(`/purchase-orders/${id}`, options);
 }
@@ -159,6 +343,18 @@ export async function updatePurchaseOrder(
 export async function deletePurchaseOrder(options: RequestOptions, id: string) {
   await apiRequest<void>(`/purchase-orders/${id}`, options, {
     method: 'DELETE',
+  });
+}
+
+export async function archivePurchaseOrder(options: RequestOptions, id: string) {
+  return apiRequest<PurchaseOrderRecord>(`/purchase-orders/${id}/archive`, options, {
+    method: 'PATCH',
+  });
+}
+
+export async function restorePurchaseOrder(options: RequestOptions, id: string) {
+  return apiRequest<PurchaseOrderRecord>(`/purchase-orders/${id}/restore`, options, {
+    method: 'PATCH',
   });
 }
 

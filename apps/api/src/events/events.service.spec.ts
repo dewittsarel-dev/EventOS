@@ -62,11 +62,15 @@ describe('EventsService', () => {
     $transaction: jest.fn(),
   };
 
+  const resourceEngine = {
+    releaseEventAllocations: jest.fn(),
+  };
+
   let service: EventsService;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new EventsService(prisma as never);
+    service = new EventsService(prisma as never, resourceEngine as never);
 
     prisma.membership.findUnique.mockResolvedValue({
       id: 'membership-1',
@@ -79,6 +83,8 @@ describe('EventsService', () => {
       id: contactId,
       organizationId,
     });
+
+    resourceEngine.releaseEventAllocations.mockResolvedValue([]);
   });
 
   it('creates an event when access and contact ownership are valid', async () => {
@@ -175,6 +181,30 @@ describe('EventsService', () => {
 
     expect(prisma.event.delete).toHaveBeenCalledWith({
       where: { id: eventId },
+    });
+    expect(resourceEngine.releaseEventAllocations).toHaveBeenCalledWith({
+      actorUserId: userId,
+      organizationId,
+      eventId,
+      reason: 'Cancelled',
+    });
+  });
+
+  it('releases resource allocations when event transitions to completed', async () => {
+    prisma.event.findUnique.mockResolvedValue(makeEvent());
+    prisma.event.update.mockResolvedValue(
+      makeEvent({ status: EventStatus.Completed }),
+    );
+
+    await service.update(userId, eventId, {
+      status: EventStatus.Completed,
+    });
+
+    expect(resourceEngine.releaseEventAllocations).toHaveBeenCalledWith({
+      actorUserId: userId,
+      organizationId,
+      eventId,
+      reason: 'Completed',
     });
   });
 });

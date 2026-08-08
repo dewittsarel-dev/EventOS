@@ -249,4 +249,155 @@ describe('InventoryService', () => {
       }),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
+
+  it('persists resource intelligence fields when creating an item', async () => {
+    prisma.inventoryCategory.findUnique.mockResolvedValue({
+      id: 'cat-1',
+      organizationId,
+      active: true,
+    });
+
+    prisma.supplier.findUnique.mockResolvedValue({
+      id: 'supplier-1',
+      organizationId,
+      active: true,
+    });
+
+    prisma.inventoryItem.create.mockResolvedValue({
+      id: 'item-2',
+      organizationId,
+      sku: 'CHAIR-002',
+      publicName: 'Banquet Chair Gold',
+      internalName: 'Warehouse Chair 02',
+      barcode: '123456',
+      qrCode: 'QR-123456',
+      name: 'Banquet Chair',
+      description: 'Primary description',
+      shortDescription: 'Short description',
+      longDescription: 'Long description',
+      internalNotes: 'Internal only',
+      aiSummary: 'AI summary',
+      aiKeywords: ['chair', 'gold'],
+      aiTags: ['wedding'],
+      aiConfidence: 0.92,
+      categoryId: 'cat-1',
+      subCategory: 'Seating',
+      brand: 'Acme',
+      preferredSupplierId: 'supplier-1',
+      resourceStatus: 'Active',
+      itemType: 'Furniture',
+      unitOfMeasure: 'Each',
+      style: 'Luxury',
+      colour: 'Gold',
+      material: 'Metal',
+      dimensions: '50cm x 45cm x 90cm',
+      weight: '6kg',
+      capacity: '1 person',
+      indoorOutdoor: 'Both',
+      suitableEventTypes: ['Wedding', 'Corporate'],
+      manualTags: ['hero'],
+      aiGeneratedTags: ['premium'],
+      marketplaceVisibility: 'Private',
+      photoUrls: ['https://cdn.example.com/photo-1.jpg'],
+      costPrice: 400,
+      replacementValue: 800,
+      rentalPrice: 120,
+      sellingPrice: 0,
+      taxable: false,
+      active: true,
+      trackQuantity: true,
+      trackSerialNumbers: false,
+      minimumStock: 10,
+      reorderLevel: 20,
+      notes: 'Handle with care',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      category: {
+        id: 'cat-1',
+        name: 'Furniture',
+      },
+      preferredSupplier: {
+        id: 'supplier-1',
+        companyName: 'Acme Supplies',
+      },
+    });
+
+    await service.createItem(userId, {
+      organizationId,
+      sku: 'CHAIR-002',
+      publicName: 'Banquet Chair Gold',
+      internalName: 'Warehouse Chair 02',
+      barcode: '123456',
+      qrCode: 'QR-123456',
+      name: 'Banquet Chair',
+      description: 'Primary description',
+      shortDescription: 'Short description',
+      longDescription: 'Long description',
+      internalNotes: 'Internal only',
+      aiSummary: 'AI summary',
+      aiKeywords: ['chair', 'gold'],
+      aiTags: ['wedding'],
+      aiConfidence: 0.92,
+      categoryId: 'cat-1',
+      subCategory: 'Seating',
+      brand: 'Acme',
+      preferredSupplierId: 'supplier-1',
+      resourceStatus: 'Active',
+      itemType: 'Furniture',
+      unitOfMeasure: 'Each',
+      style: 'Luxury',
+      colour: 'Gold',
+      material: 'Metal',
+      dimensions: '50cm x 45cm x 90cm',
+      weight: '6kg',
+      capacity: '1 person',
+      indoorOutdoor: 'Both',
+      suitableEventTypes: ['Wedding', 'Corporate'],
+      manualTags: ['hero'],
+      aiGeneratedTags: ['premium'],
+      marketplaceVisibility: 'Private',
+      photoUrls: ['https://cdn.example.com/photo-1.jpg'],
+      costPrice: 400,
+      replacementValue: 800,
+      rentalPrice: 120,
+      sellingPrice: 0,
+      minimumStock: 10,
+      reorderLevel: 20,
+      notes: 'Handle with care',
+    });
+
+    expect(prisma.inventoryItem.create).toHaveBeenCalled();
+
+    const createCall = prisma.inventoryItem.create.mock.calls[0] as
+      | [
+          {
+            data: Record<string, unknown>;
+          },
+        ]
+      | undefined;
+    expect(createCall).toBeDefined();
+
+    const createArgs = createCall?.[0];
+    expect(createArgs).toBeDefined();
+    expect(createArgs!.data).toMatchObject({
+      publicName: 'Banquet Chair Gold',
+      internalName: 'Warehouse Chair 02',
+      qrCode: 'QR-123456',
+      shortDescription: 'Short description',
+      longDescription: 'Long description',
+      aiSummary: 'AI summary',
+      aiKeywords: ['chair', 'gold'],
+      aiTags: ['wedding'],
+      resourceStatus: 'Active',
+      style: 'Luxury',
+      material: 'Metal',
+      colour: 'Gold',
+      dimensions: '50cm x 45cm x 90cm',
+      suitableEventTypes: ['Wedding', 'Corporate'],
+      manualTags: ['hero'],
+      aiGeneratedTags: ['premium'],
+      marketplaceVisibility: 'Private',
+      photoUrls: ['https://cdn.example.com/photo-1.jpg'],
+    });
+  });
 });

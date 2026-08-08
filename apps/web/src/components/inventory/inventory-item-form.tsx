@@ -1,11 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import type { FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import {
+  INVENTORY_INDOOR_OUTDOOR_OPTIONS,
+  INVENTORY_MARKETPLACE_VISIBILITY_OPTIONS,
+  INVENTORY_RESOURCE_STATUSES,
   INVENTORY_ITEM_TYPES,
   UNIT_OF_MEASURE_OPTIONS,
   type InventoryCategoryRecord,
+  type InventoryIndoorOutdoor,
+  type InventoryMarketplaceVisibility,
+  type InventoryResourceStatus,
   type InventoryItemType,
   type UnitOfMeasure,
 } from '../../lib/inventory-types';
@@ -13,13 +19,44 @@ import type { SupplierRecord } from '../../lib/suppliers-types';
 
 export type InventoryItemFormValues = {
   sku: string;
+  publicName: string;
+  internalName: string;
   barcode: string;
+  qrCode: string;
   name: string;
   description: string;
+  shortDescription: string;
+  longDescription: string;
+  internalNotes: string;
+  marketplaceTitle: string;
+  marketplaceDescription: string;
+  aiSummary: string;
+  aiKeywords: string;
+  aiTags: string;
+  aiConfidence: string;
   categoryId: string;
+  subCategory: string;
+  brand: string;
   preferredSupplierId: string;
+  resourceStatus: InventoryResourceStatus;
   itemType: InventoryItemType;
   unitOfMeasure: UnitOfMeasure;
+  style: string;
+  theme: string;
+  colour: string;
+  material: string;
+  dimensions: string;
+  weight: string;
+  capacity: string;
+  indoorOutdoor: InventoryIndoorOutdoor;
+  suitableEventTypes: string;
+  manualTags: string;
+  keywords: string;
+  aiGeneratedTags: string;
+  marketplaceVisibility: InventoryMarketplaceVisibility;
+  photoUrls: string;
+  primaryPhotoUrl: string;
+  photoAssetsJson: string;
   costPrice: string;
   replacementValue: string;
   rentalPrice: string;
@@ -47,6 +84,8 @@ type InventoryItemFormProps = {
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
 
+type AiSuggestionDecision = 'accept' | 'edit' | 'ignore';
+
 export function InventoryItemForm({
   mode,
   values,
@@ -60,13 +99,52 @@ export function InventoryItemForm({
   onChange,
   onSubmit,
 }: InventoryItemFormProps) {
+  const [summaryDecision, setSummaryDecision] = useState<AiSuggestionDecision>('edit');
+  const [keywordsDecision, setKeywordsDecision] = useState<AiSuggestionDecision>('edit');
+  const [tagsDecision, setTagsDecision] = useState<AiSuggestionDecision>('edit');
+
+  function setDecision(
+    decision: AiSuggestionDecision,
+    target: 'summary' | 'keywords' | 'tags',
+  ) {
+    if (target === 'summary') {
+      setSummaryDecision(decision);
+      if (decision === 'accept') {
+        onChange({ ...values, marketplaceDescription: values.aiSummary });
+      }
+      if (decision === 'ignore') {
+        onChange({ ...values, aiSummary: '' });
+      }
+      return;
+    }
+
+    if (target === 'keywords') {
+      setKeywordsDecision(decision);
+      if (decision === 'accept') {
+        onChange({ ...values, keywords: values.aiKeywords });
+      }
+      if (decision === 'ignore') {
+        onChange({ ...values, aiKeywords: '' });
+      }
+      return;
+    }
+
+    setTagsDecision(decision);
+    if (decision === 'accept') {
+      onChange({ ...values, manualTags: values.aiGeneratedTags || values.aiTags });
+    }
+    if (decision === 'ignore') {
+      onChange({ ...values, aiGeneratedTags: '', aiTags: '' });
+    }
+  }
+
   return (
     <form
       className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm"
       onSubmit={onSubmit}
     >
       <h2 className="text-lg font-semibold text-zinc-900">
-        {mode === 'create' ? 'Create Inventory Item' : 'Edit Inventory Item'}
+        {mode === 'create' ? 'Create Resource Item' : 'Edit Resource Item'}
       </h2>
 
       <section className="mt-5 space-y-3">
@@ -84,6 +162,30 @@ export function InventoryItemForm({
           </label>
 
           <label className="text-sm text-zinc-700">
+            Public Name
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.publicName}
+              onChange={(event) =>
+                onChange({ ...values, publicName: event.target.value })
+              }
+              maxLength={180}
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700">
+            Internal Name
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.internalName}
+              onChange={(event) =>
+                onChange({ ...values, internalName: event.target.value })
+              }
+              maxLength={180}
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700">
             Barcode
             <input
               className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
@@ -95,8 +197,20 @@ export function InventoryItemForm({
             />
           </label>
 
+          <label className="text-sm text-zinc-700">
+            QR Code
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.qrCode}
+              onChange={(event) =>
+                onChange({ ...values, qrCode: event.target.value })
+              }
+              maxLength={120}
+            />
+          </label>
+
           <label className="text-sm text-zinc-700 md:col-span-2">
-            Item Name
+            Resource Name
             <input
               className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
               value={values.name}
@@ -114,7 +228,19 @@ export function InventoryItemForm({
               onChange={(event) =>
                 onChange({ ...values, description: event.target.value })
               }
-              maxLength={2000}
+              maxLength={3000}
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700 md:col-span-2">
+            Short Description
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.shortDescription}
+              onChange={(event) =>
+                onChange({ ...values, shortDescription: event.target.value })
+              }
+              maxLength={300}
             />
           </label>
         </div>
@@ -140,6 +266,28 @@ export function InventoryItemForm({
                 </option>
               ))}
             </select>
+          </label>
+
+          <label className="text-sm text-zinc-700">
+            Sub Category
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.subCategory}
+              onChange={(event) =>
+                onChange({ ...values, subCategory: event.target.value })
+              }
+              maxLength={120}
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700">
+            Brand
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.brand}
+              onChange={(event) => onChange({ ...values, brand: event.target.value })}
+              maxLength={120}
+            />
           </label>
 
           <label className="text-sm text-zinc-700">
@@ -183,8 +331,427 @@ export function InventoryItemForm({
               ))}
             </select>
           </label>
+
+          <label className="text-sm text-zinc-700">
+            Resource Status
+            <select
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.resourceStatus}
+              onChange={(event) =>
+                onChange({
+                  ...values,
+                  resourceStatus: event.target.value as InventoryResourceStatus,
+                })
+              }
+            >
+              {INVENTORY_RESOURCE_STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
       </section>
+
+      <details className="mt-5 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+        <summary className="cursor-pointer text-sm font-semibold text-zinc-800">
+          Manual Information and AI Suggestions
+        </summary>
+
+        <p className="mt-4 text-xs text-zinc-600">
+          Manual fields remain the source of truth. AI suggestions can be accepted, edited,
+          or ignored without blocking manual workflow.
+        </p>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <p className="md:col-span-2 text-sm font-semibold text-zinc-800">Manual Information</p>
+
+          <label className="text-sm text-zinc-700 md:col-span-2">
+            Long Description
+            <textarea
+              className="mt-1 min-h-24 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.longDescription}
+              onChange={(event) =>
+                onChange({ ...values, longDescription: event.target.value })
+              }
+              maxLength={6000}
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700 md:col-span-2">
+            Marketplace Title
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.marketplaceTitle}
+              onChange={(event) =>
+                onChange({ ...values, marketplaceTitle: event.target.value })
+              }
+              maxLength={180}
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700 md:col-span-2">
+            Marketplace Description
+            <textarea
+              className="mt-1 min-h-24 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.marketplaceDescription}
+              onChange={(event) =>
+                onChange({ ...values, marketplaceDescription: event.target.value })
+              }
+              maxLength={3000}
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700 md:col-span-2">
+            Internal Notes
+            <textarea
+              className="mt-1 min-h-24 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.internalNotes}
+              onChange={(event) =>
+                onChange({ ...values, internalNotes: event.target.value })
+              }
+              maxLength={4000}
+            />
+          </label>
+
+          <p className="md:col-span-2 mt-2 text-sm font-semibold text-zinc-800">AI Suggestions</p>
+
+          <div className="md:col-span-2 rounded-lg border border-zinc-200 bg-white p-3">
+            <p className="text-sm font-medium text-zinc-800">AI Summary Suggestion</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={`rounded border px-2 py-1 text-xs ${summaryDecision === 'accept' ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-zinc-300 text-zinc-700'}`}
+                onClick={() => setDecision('accept', 'summary')}
+              >
+                Accept
+              </button>
+              <button
+                type="button"
+                className={`rounded border px-2 py-1 text-xs ${summaryDecision === 'edit' ? 'border-amber-600 bg-amber-50 text-amber-700' : 'border-zinc-300 text-zinc-700'}`}
+                onClick={() => setDecision('edit', 'summary')}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                className={`rounded border px-2 py-1 text-xs ${summaryDecision === 'ignore' ? 'border-rose-600 bg-rose-50 text-rose-700' : 'border-zinc-300 text-zinc-700'}`}
+                onClick={() => setDecision('ignore', 'summary')}
+              >
+                Ignore
+              </button>
+            </div>
+
+            <textarea
+              className="mt-2 min-h-24 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
+              value={values.aiSummary}
+              onChange={(event) => onChange({ ...values, aiSummary: event.target.value })}
+              maxLength={3000}
+            />
+          </div>
+
+          <label className="text-sm text-zinc-700">
+            AI Keywords (comma-separated)
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.aiKeywords}
+              onChange={(event) =>
+                onChange({ ...values, aiKeywords: event.target.value })
+              }
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700">
+            AI Tags (comma-separated)
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.aiTags}
+              onChange={(event) =>
+                onChange({ ...values, aiTags: event.target.value })
+              }
+            />
+          </label>
+
+          <div className="rounded-lg border border-zinc-200 bg-white p-3 text-sm text-zinc-700">
+            <p className="font-medium text-zinc-800">AI Keywords Decision</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={`rounded border px-2 py-1 text-xs ${keywordsDecision === 'accept' ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-zinc-300 text-zinc-700'}`}
+                onClick={() => setDecision('accept', 'keywords')}
+              >
+                Accept
+              </button>
+              <button
+                type="button"
+                className={`rounded border px-2 py-1 text-xs ${keywordsDecision === 'edit' ? 'border-amber-600 bg-amber-50 text-amber-700' : 'border-zinc-300 text-zinc-700'}`}
+                onClick={() => setDecision('edit', 'keywords')}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                className={`rounded border px-2 py-1 text-xs ${keywordsDecision === 'ignore' ? 'border-rose-600 bg-rose-50 text-rose-700' : 'border-zinc-300 text-zinc-700'}`}
+                onClick={() => setDecision('ignore', 'keywords')}
+              >
+                Ignore
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-zinc-200 bg-white p-3 text-sm text-zinc-700">
+            <p className="font-medium text-zinc-800">AI Tags Decision</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={`rounded border px-2 py-1 text-xs ${tagsDecision === 'accept' ? 'border-emerald-600 bg-emerald-50 text-emerald-700' : 'border-zinc-300 text-zinc-700'}`}
+                onClick={() => setDecision('accept', 'tags')}
+              >
+                Accept
+              </button>
+              <button
+                type="button"
+                className={`rounded border px-2 py-1 text-xs ${tagsDecision === 'edit' ? 'border-amber-600 bg-amber-50 text-amber-700' : 'border-zinc-300 text-zinc-700'}`}
+                onClick={() => setDecision('edit', 'tags')}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                className={`rounded border px-2 py-1 text-xs ${tagsDecision === 'ignore' ? 'border-rose-600 bg-rose-50 text-rose-700' : 'border-zinc-300 text-zinc-700'}`}
+                onClick={() => setDecision('ignore', 'tags')}
+              >
+                Ignore
+              </button>
+            </div>
+          </div>
+
+          <label className="text-sm text-zinc-700">
+            AI Confidence (0-1)
+            <input
+              type="number"
+              step="0.0001"
+              min={0}
+              max={1}
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.aiConfidence}
+              onChange={(event) =>
+                onChange({ ...values, aiConfidence: event.target.value })
+              }
+            />
+          </label>
+        </div>
+      </details>
+
+      <details className="mt-5 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+        <summary className="cursor-pointer text-sm font-semibold text-zinc-800">
+          Classification and Search Metadata
+        </summary>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <label className="text-sm text-zinc-700">
+            Style
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.style}
+              onChange={(event) => onChange({ ...values, style: event.target.value })}
+              maxLength={80}
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700">
+            Theme
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.theme}
+              onChange={(event) => onChange({ ...values, theme: event.target.value })}
+              maxLength={80}
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700">
+            Colour
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.colour}
+              onChange={(event) => onChange({ ...values, colour: event.target.value })}
+              maxLength={80}
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700">
+            Material
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.material}
+              onChange={(event) =>
+                onChange({ ...values, material: event.target.value })
+              }
+              maxLength={80}
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700">
+            Dimensions
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.dimensions}
+              onChange={(event) =>
+                onChange({ ...values, dimensions: event.target.value })
+              }
+              maxLength={160}
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700">
+            Weight
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.weight}
+              onChange={(event) => onChange({ ...values, weight: event.target.value })}
+              maxLength={80}
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700">
+            Capacity
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.capacity}
+              onChange={(event) => onChange({ ...values, capacity: event.target.value })}
+              maxLength={80}
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700">
+            Indoor/Outdoor
+            <select
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.indoorOutdoor}
+              onChange={(event) =>
+                onChange({
+                  ...values,
+                  indoorOutdoor: event.target.value as InventoryIndoorOutdoor,
+                })
+              }
+            >
+              {INVENTORY_INDOOR_OUTDOOR_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-sm text-zinc-700 md:col-span-2">
+            Suitable Event Types (comma-separated)
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.suitableEventTypes}
+              onChange={(event) =>
+                onChange({ ...values, suitableEventTypes: event.target.value })
+              }
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700">
+            Keywords (comma-separated)
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.keywords}
+              onChange={(event) => onChange({ ...values, keywords: event.target.value })}
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700">
+            Manual Tags (comma-separated)
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.manualTags}
+              onChange={(event) =>
+                onChange({ ...values, manualTags: event.target.value })
+              }
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700 md:col-span-2">
+            AI Generated Tags (comma-separated)
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.aiGeneratedTags}
+              onChange={(event) =>
+                onChange({ ...values, aiGeneratedTags: event.target.value })
+              }
+            />
+          </label>
+        </div>
+      </details>
+
+      <details className="mt-5 rounded-xl border border-zinc-200 bg-zinc-50 p-4">
+        <summary className="cursor-pointer text-sm font-semibold text-zinc-800">
+          Marketplace and Photos
+        </summary>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <label className="text-sm text-zinc-700">
+            Marketplace Visibility
+            <select
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.marketplaceVisibility}
+              onChange={(event) =>
+                onChange({
+                  ...values,
+                  marketplaceVisibility: event.target
+                    .value as InventoryMarketplaceVisibility,
+                })
+              }
+            >
+              {INVENTORY_MARKETPLACE_VISIBILITY_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="text-sm text-zinc-700">
+            Primary Photo URL
+            <input
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.primaryPhotoUrl}
+              onChange={(event) =>
+                onChange({ ...values, primaryPhotoUrl: event.target.value })
+              }
+              placeholder="https://cdn.example.com/photo-1.jpg"
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700 md:col-span-2">
+            Photo URLs (one per line, order preserved)
+            <textarea
+              className="mt-1 min-h-24 w-full rounded-md border border-zinc-300 px-3 py-2"
+              value={values.photoUrls}
+              onChange={(event) =>
+                onChange({ ...values, photoUrls: event.target.value })
+              }
+              placeholder="https://cdn.example.com/photo-1.jpg&#10;https://cdn.example.com/photo-2.jpg"
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700 md:col-span-2">
+            Photo Metadata Foundation (JSON array)
+            <textarea
+              className="mt-1 min-h-20 w-full rounded-md border border-zinc-300 px-3 py-2 font-mono text-xs"
+              value={values.photoAssetsJson}
+              onChange={(event) =>
+                onChange({ ...values, photoAssetsJson: event.target.value })
+              }
+              placeholder='[{"url":"https://cdn.example.com/photo-1.jpg","isPrimary":true,"aiAnalysisSummary":null,"backgroundEnhancementStatus":"pending"}]'
+            />
+          </label>
+        </div>
+      </details>
 
       <section className="mt-5 space-y-3">
         <h3 className="text-sm font-semibold text-zinc-800">3. Pricing</h3>
@@ -401,8 +968,8 @@ export function InventoryItemForm({
               ? 'Creating...'
               : 'Saving...'
             : mode === 'create'
-              ? 'Create Item'
-              : 'Save Item'}
+              ? 'Create Resource'
+              : 'Save Resource'}
         </button>
       </div>
     </form>

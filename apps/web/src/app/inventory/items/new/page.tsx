@@ -16,15 +16,78 @@ import {
 import { listSuppliers } from '../../../../lib/suppliers-api';
 import type { SupplierRecord } from '../../../../lib/suppliers-types';
 
+function parseCsv(value: string) {
+  return value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+}
+
+function parseLines(value: string) {
+  return value
+    .split(/\r?\n/)
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
+}
+
+function parsePhotoAssets(value: string) {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return [];
+  }
+
+  const parsed = JSON.parse(trimmed) as unknown;
+  if (!Array.isArray(parsed)) {
+    throw new Error('Photo metadata must be a JSON array.');
+  }
+
+  return parsed.filter(
+    (entry): entry is Record<string, unknown> =>
+      typeof entry === 'object' && entry !== null,
+  );
+}
+
 const defaultForm: InventoryItemFormValues = {
   sku: '',
+  publicName: '',
+  internalName: '',
   barcode: '',
+  qrCode: '',
   name: '',
   description: '',
+  shortDescription: '',
+  longDescription: '',
+  internalNotes: '',
+  marketplaceTitle: '',
+  marketplaceDescription: '',
+  aiSummary: '',
+  aiKeywords: '',
+  aiTags: '',
+  aiConfidence: '',
   categoryId: '',
+  subCategory: '',
+  brand: '',
   preferredSupplierId: '',
+  resourceStatus: 'Active',
   itemType: 'Equipment',
   unitOfMeasure: 'Each',
+  style: '',
+  theme: '',
+  colour: '',
+  material: '',
+  dimensions: '',
+  weight: '',
+  capacity: '',
+  indoorOutdoor: 'Both',
+  suitableEventTypes: '',
+  manualTags: '',
+  keywords: '',
+  aiGeneratedTags: '',
+  marketplaceVisibility: 'Private',
+  photoUrls: '',
+  primaryPhotoUrl: '',
+  photoAssetsJson: '',
   costPrice: '',
   replacementValue: '',
   rentalPrice: '',
@@ -142,16 +205,49 @@ export default function NewInventoryItemPage() {
     setSaving(true);
 
     try {
+      const photoAssets = parsePhotoAssets(form.photoAssetsJson);
+
       await createInventoryItem(requestOptions, {
         organizationId: session.organizationId,
         sku: form.sku.trim(),
+        publicName: form.publicName.trim() || undefined,
+        internalName: form.internalName.trim() || undefined,
         barcode: form.barcode.trim() || undefined,
+        qrCode: form.qrCode.trim() || undefined,
         name: form.name.trim(),
         description: form.description.trim() || undefined,
+        shortDescription: form.shortDescription.trim() || undefined,
+        longDescription: form.longDescription.trim() || undefined,
+        internalNotes: form.internalNotes.trim() || undefined,
+        marketplaceTitle: form.marketplaceTitle.trim() || undefined,
+        marketplaceDescription: form.marketplaceDescription.trim() || undefined,
+        aiSummary: form.aiSummary.trim() || undefined,
+        aiKeywords: parseCsv(form.aiKeywords),
+        aiTags: parseCsv(form.aiTags),
+        aiConfidence: form.aiConfidence ? Number(form.aiConfidence) : undefined,
         categoryId: form.categoryId,
+        subCategory: form.subCategory.trim() || undefined,
+        brand: form.brand.trim() || undefined,
         preferredSupplierId: form.preferredSupplierId || undefined,
+        resourceStatus: form.resourceStatus,
         itemType: form.itemType as InventoryItemType,
         unitOfMeasure: form.unitOfMeasure as UnitOfMeasure,
+        style: form.style.trim() || undefined,
+        theme: form.theme.trim() || undefined,
+        colour: form.colour.trim() || undefined,
+        material: form.material.trim() || undefined,
+        dimensions: form.dimensions.trim() || undefined,
+        weight: form.weight.trim() || undefined,
+        capacity: form.capacity.trim() || undefined,
+        indoorOutdoor: form.indoorOutdoor,
+        suitableEventTypes: parseCsv(form.suitableEventTypes),
+        manualTags: parseCsv(form.manualTags),
+        keywords: parseCsv(form.keywords),
+        aiGeneratedTags: parseCsv(form.aiGeneratedTags),
+        marketplaceVisibility: form.marketplaceVisibility,
+        photoUrls: parseLines(form.photoUrls),
+        primaryPhotoUrl: form.primaryPhotoUrl.trim() || undefined,
+        photoAssets: photoAssets.length > 0 ? photoAssets : undefined,
         costPrice: form.costPrice ? Number(form.costPrice) : undefined,
         replacementValue: form.replacementValue
           ? Number(form.replacementValue)
@@ -167,7 +263,7 @@ export default function NewInventoryItemPage() {
         notes: form.notes.trim() || undefined,
       });
 
-      setSuccess('Inventory item created successfully.');
+      setSuccess('Resource item created successfully.');
       setForm({
         ...defaultForm,
         categoryId: categories[0]?.id ?? '',
@@ -176,7 +272,7 @@ export default function NewInventoryItemPage() {
       setError(
         requestError instanceof Error
           ? requestError.message
-          : 'Failed to create inventory item.',
+          : 'Failed to create resource item.',
       );
     } finally {
       setSaving(false);
@@ -186,13 +282,13 @@ export default function NewInventoryItemPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        title="Create Inventory Item"
-        description="Add a new inventory item to the active organization."
+        title="Create Resource Item"
+        description="Add a new resource item to the active organization."
       />
 
       {!session.organizationId ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
-          Select an organization in the header to create inventory items.
+          Select an organization in the header to create resource items.
         </div>
       ) : null}
 
@@ -204,7 +300,7 @@ export default function NewInventoryItemPage() {
 
       {canLoad && !loadingRefs && categories.length === 0 ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
-          Create a category before assigning one to an inventory item.
+          Create a category before assigning one to a resource item.
         </div>
       ) : null}
 

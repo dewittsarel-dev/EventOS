@@ -1,7 +1,9 @@
 import type {
+  ContactDetailsRecord,
   ContactListResponse,
   ContactRecord,
   CreateContactPayload,
+  UpdateContactPayload,
 } from './contacts-types';
 
 type RequestOptions = {
@@ -68,5 +70,26 @@ export async function createContact(
   return apiRequest<ContactRecord>('/contacts', options, {
     method: 'POST',
     body: JSON.stringify(payload),
+  });
+}
+
+export async function getContact(options: RequestOptions, id: string) {
+  return apiRequest<ContactDetailsRecord>(`/contacts/${id}`, options);
+}
+
+export async function updateContact(
+  options: RequestOptions,
+  id: string,
+  payload: UpdateContactPayload,
+) {
+  return apiRequest<ContactRecord>(`/contacts/${id}`, options, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function archiveContact(options: RequestOptions, id: string) {
+  return apiRequest<ContactRecord>(`/contacts/${id}/archive`, options, {
+    method: 'PATCH',
   });
 }

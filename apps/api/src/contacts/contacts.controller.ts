@@ -30,6 +30,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserResponseDto } from '../auth/dto/auth-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
+  ContactDetailsResponseDto,
   ContactListResponseDto,
   ContactResponseDto,
 } from './dto/contact-response.dto';
@@ -81,7 +82,7 @@ export class ContactsController {
   @ApiParam({ name: 'id', type: String })
   @ApiOkResponse({
     description: 'Contact retrieved successfully',
-    type: ContactResponseDto,
+    type: ContactDetailsResponseDto,
   })
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   @ApiForbiddenResponse({ description: 'No access to organization' })
@@ -120,5 +121,19 @@ export class ContactsController {
   @ApiNotFoundResponse({ description: 'Contact not found' })
   async remove(@CurrentUser() user: UserResponseDto, @Param('id') id: string) {
     await this.contactsService.remove(user.id, id);
+  }
+
+  @Patch(':id/archive')
+  @ApiOperation({ summary: 'Archive a contact by id' })
+  @ApiParam({ name: 'id', type: String })
+  @ApiOkResponse({
+    description: 'Contact archived successfully',
+    type: ContactResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({ description: 'No access to organization' })
+  @ApiNotFoundResponse({ description: 'Contact not found' })
+  archive(@CurrentUser() user: UserResponseDto, @Param('id') id: string) {
+    return this.contactsService.archive(user.id, id);
   }
 }

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildLoginRedirectPath, isProtectedAppPath } from './protected-routes';
+import {
+  buildLoginRedirectPath,
+  isDevelopmentAuthBypassEnabled,
+  isProtectedAppPath,
+} from './protected-routes';
 
 describe('protected routes', () => {
   it('protects operational routes including nested and settings paths', () => {
@@ -34,5 +38,31 @@ describe('protected routes', () => {
     expect(buildLoginRedirectPath('/suppliers/new', '')).toBe(
       '/login?next=%2Fsuppliers%2Fnew',
     );
+  });
+
+  it('does not enable bypass by default in test environment', () => {
+    const currentBypassValue = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS;
+
+    delete process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS;
+    expect(isDevelopmentAuthBypassEnabled()).toBe(false);
+
+    if (currentBypassValue === undefined) {
+      delete process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS;
+    } else {
+      process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS = currentBypassValue;
+    }
+  });
+
+  it('enables bypass when NEXT_PUBLIC_DEV_AUTH_BYPASS is true', () => {
+    const currentBypassValue = process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS;
+
+    process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS = 'true';
+    expect(isDevelopmentAuthBypassEnabled()).toBe(true);
+
+    if (currentBypassValue === undefined) {
+      delete process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS;
+    } else {
+      process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS = currentBypassValue;
+    }
   });
 });

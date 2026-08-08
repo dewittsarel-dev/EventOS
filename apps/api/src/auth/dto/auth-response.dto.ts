@@ -54,3 +54,29 @@ export class AuthResponseDto {
   @ApiProperty({ type: UserResponseDto })
   user: UserResponseDto;
 }
+
+export class DevelopmentSeedResponseDto {
+  @ApiProperty({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9' })
+  accessToken: string;
+
+  @ApiProperty({ example: 'Bearer' })
+  tokenType: string;
+
+  @ApiProperty({ example: 900 })
+  expiresIn: number;
+
+  @ApiProperty({ type: UserResponseDto })
+  user: UserResponseDto;
+
+  @ApiProperty({ type: WorkspaceOrganizationResponseDto })
+  organization: WorkspaceOrganizationResponseDto;
+
+  @ApiProperty({ type: [WorkspaceOrganizationResponseDto] })
+  organizations: WorkspaceOrganizationResponseDto[];
+
+  @ApiProperty({ example: 'org-1' })
+  organizationId: string;
+
+  @ApiProperty({ example: 'administrator' })
+  membershipRole: string;
+}

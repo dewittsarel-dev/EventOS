@@ -17,7 +17,15 @@ describe('AuthService', () => {
     user: {
       findUnique: jest.Mock;
       create: jest.Mock;
+      upsert: jest.Mock;
     };
+    organization: {
+      upsert: jest.Mock;
+    };
+    membership: {
+      upsert: jest.Mock;
+    };
+    $transaction: jest.Mock;
   };
   let jwtService: { sign: jest.Mock };
   let configService: { get: jest.Mock };
@@ -27,8 +35,27 @@ describe('AuthService', () => {
       user: {
         findUnique: jest.fn(),
         create: jest.fn(),
+        upsert: jest.fn(),
       },
+      organization: {
+        upsert: jest.fn(),
+      },
+      membership: {
+        upsert: jest.fn(),
+      },
+      $transaction: jest.fn(),
     };
+
+    prisma.$transaction.mockImplementation(async (handler: unknown) => {
+      if (typeof handler === 'function') {
+        const transactionHandler = handler as (
+          client: typeof prisma,
+        ) => Promise<unknown>;
+        return transactionHandler(prisma);
+      }
+
+      return Promise.all(handler as Promise<unknown>[]);
+    });
     jwtService = {
       sign: jest.fn().mockReturnValue('signed-token'),
     };
@@ -138,5 +165,65 @@ describe('AuthService', () => {
     await expect(
       service.login({ email: 'user@example.com', password: 'wrong-password' }),
     ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('seeds deterministic development workspace in development mode', async () => {
+    const originalNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'development';
+
+    (bcrypt.hash as jest.Mock).mockResolvedValue('demo-hash');
+
+    prisma.user.upsert.mockResolvedValue({
+      id: 'demo-user-id',
+      email: 'demo@eventos.local',
+      name: 'Demo Administrator',
+      passwordHash: 'demo-hash',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    prisma.organization.upsert.mockResolvedValue({
+      id: 'demo-org-id',
+      name: 'EventOS Demo Organization',
+      slug: 'eventos-demo-organization',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    prisma.membership.upsert.mockResolvedValue({
+      id: 'membership-1',
+      role: 'administrator',
+      isDisabled: false,
+      userId: 'demo-user-id',
+      organizationId: 'demo-org-id',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const response = await service.seedDevelopmentWorkspace();
+
+    expect(prisma.user.upsert).toHaveBeenCalled();
+    expect(prisma.organization.upsert).toHaveBeenCalled();
+    expect(prisma.membership.upsert).toHaveBeenCalled();
+    expect(response.accessToken).toBe('signed-token');
+    expect(response.tokenType).toBe('Bearer');
+    expect(response.expiresIn).toBe(900);
+    expect(response.user.email).toBe('demo@eventos.local');
+    expect(response.organization.name).toBe('EventOS Demo Organization');
+    expect(response.organizationId).toBe('demo-org-id');
+    expect(response.organizations).toEqual([
+      {
+        id: 'demo-org-id',
+        name: 'EventOS Demo Organization',
+        slug: 'eventos-demo-organization',
+      },
+    ]);
+    expect(response.membershipRole).toBe('administrator');
+
+    if (originalNodeEnv === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = originalNodeEnv;
+    }
   });
 });

@@ -1,0 +1,6 @@
+export enum MarketplaceFulfilmentStatus {
+  OWN_STOCK = 'OWN_STOCK',
+  SOURCING_POSSIBLE = 'SOURCING_POSSIBLE',
+  PARTIAL_ONLY = 'PARTIAL_ONLY',
+  UNAVAILABLE = 'UNAVAILABLE',
+}

@@ -8,11 +8,14 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  Matches,
   Max,
   MaxLength,
   Min,
 } from 'class-validator';
 import { SupplierCategory } from './supplier-category.enum';
+
+const PHONE_PATTERN = /^[0-9+()\-\s]{7,40}$/;
 
 function trimOptionalString(value: unknown) {
   if (typeof value !== 'string') {
@@ -21,6 +24,20 @@ function trimOptionalString(value: unknown) {
 
   const trimmed = value.trim();
   return trimmed.length === 0 ? undefined : trimmed;
+}
+
+function normalizeWebsite(value: unknown) {
+  const trimmed = trimOptionalString(value);
+
+  if (typeof trimmed !== 'string') {
+    return trimmed;
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  return `https://${trimmed}`;
 }
 
 export class UpdateSupplierDto {
@@ -50,6 +67,9 @@ export class UpdateSupplierDto {
   @Transform(({ value }) => trimOptionalString(value))
   @IsOptional()
   @IsString()
+  @Matches(PHONE_PATTERN, {
+    message: 'phone must be a valid phone number',
+  })
   @MaxLength(40)
   phone?: string | null;
 
@@ -57,6 +77,9 @@ export class UpdateSupplierDto {
   @Transform(({ value }) => trimOptionalString(value))
   @IsOptional()
   @IsString()
+  @Matches(PHONE_PATTERN, {
+    message: 'mobile must be a valid phone number',
+  })
   @MaxLength(40)
   mobile?: string | null;
 
@@ -74,9 +97,12 @@ export class UpdateSupplierDto {
     example: 'https://sunrise-catering.co.za',
     nullable: true,
   })
-  @Transform(({ value }) => trimOptionalString(value))
+  @Transform(({ value }) => normalizeWebsite(value))
   @IsOptional()
-  @IsUrl({ require_protocol: true })
+  @IsUrl(
+    { require_protocol: true },
+    { message: 'website must be a valid website URL' },
+  )
   @MaxLength(240)
   website?: string | null;
 

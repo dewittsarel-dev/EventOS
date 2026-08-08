@@ -5,6 +5,7 @@ describe('PurchaseOrdersService', () => {
   const organizationId = '11111111-1111-4111-8111-111111111111';
   const supplierId = '22222222-2222-4222-8222-222222222222';
   const locationId = '33333333-3333-4333-8333-333333333333';
+  const supplierProductId = '55555555-5555-4555-8555-555555555555';
   const itemId = '44444444-4444-4444-8444-444444444444';
   const userId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
@@ -21,6 +22,9 @@ describe('PurchaseOrdersService', () => {
     },
     supplier: {
       findUnique: jest.fn(),
+    },
+    supplierProduct: {
+      findMany: jest.fn(),
     },
     storageLocation: {
       findUnique: jest.fn(),
@@ -79,11 +83,26 @@ describe('PurchaseOrdersService', () => {
       active: true,
     });
 
+    prisma.supplierProduct.findMany.mockResolvedValue([
+      {
+        id: supplierProductId,
+        organizationId,
+        supplierId,
+        active: true,
+        productName: 'Chair',
+        sku: 'CHR-1',
+        brand: 'Demo Brand',
+        costPrice: 100,
+        vatPercent: 15,
+      },
+    ]);
+
     prisma.inventoryItem.findMany.mockResolvedValue([
       {
         id: itemId,
         organizationId,
         active: true,
+        sku: 'CHR-1',
       },
     ]);
 
@@ -112,6 +131,7 @@ describe('PurchaseOrdersService', () => {
       currency: 'ZAR',
       subtotal: 200,
       taxAmount: 30,
+      discountAmount: 0,
       totalAmount: 230,
       supplierReference: null,
       internalReference: null,
@@ -121,6 +141,7 @@ describe('PurchaseOrdersService', () => {
       approvedAt: null,
       sentAt: null,
       cancelledAt: null,
+      archivedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       supplier: { id: supplierId, companyName: 'Supplier' },
@@ -131,19 +152,31 @@ describe('PurchaseOrdersService', () => {
         {
           id: 'line-1',
           purchaseOrderId: 'po-1',
+          supplierProductId,
           inventoryItemId: itemId,
-          description: 'Chair',
-          supplierSku: null,
+          productNameSnapshot: 'Chair',
+          productSkuSnapshot: 'CHR-1',
+          productBrandSnapshot: 'Demo Brand',
+          productCostSnapshot: 100,
+          productVatSnapshot: 15,
           quantityOrdered: 2,
           quantityReceived: 0,
           unitPrice: 100,
           taxRate: 15,
+          discountRate: 0,
           lineSubtotal: 200,
+          lineDiscount: 0,
           lineTax: 30,
           lineTotal: 230,
           notes: null,
           createdAt: new Date(),
           updatedAt: new Date(),
+          supplierProduct: {
+            id: supplierProductId,
+            productName: 'Chair',
+            sku: 'CHR-1',
+            brand: 'Demo Brand',
+          },
           inventoryItem: {
             id: itemId,
             name: 'Chair',
@@ -162,11 +195,10 @@ describe('PurchaseOrdersService', () => {
       deliveryLocationId: locationId,
       lineItems: [
         {
-          inventoryItemId: itemId,
-          description: 'Chair',
-          quantityOrdered: 2,
-          unitPrice: 100,
-          taxRate: 15,
+          supplierProductId,
+          quantity: 2,
+          unitCost: 100,
+          vatPercent: 15,
         },
       ],
     });
@@ -186,16 +218,14 @@ describe('PurchaseOrdersService', () => {
         deliveryLocationId: locationId,
         lineItems: [
           {
-            inventoryItemId: itemId,
-            description: 'Chair',
-            quantityOrdered: 1,
-            unitPrice: 50,
+            supplierProductId,
+            quantity: 1,
+            unitCost: 50,
           },
           {
-            inventoryItemId: itemId,
-            description: 'Chair duplicate',
-            quantityOrdered: 2,
-            unitPrice: 55,
+            supplierProductId,
+            quantity: 2,
+            unitCost: 55,
           },
         ],
       }),
@@ -215,6 +245,7 @@ describe('PurchaseOrdersService', () => {
       currency: 'ZAR',
       subtotal: 0,
       taxAmount: 0,
+      discountAmount: 0,
       totalAmount: 0,
       supplierReference: null,
       internalReference: null,
@@ -224,6 +255,7 @@ describe('PurchaseOrdersService', () => {
       approvedAt: null,
       sentAt: null,
       cancelledAt: null,
+      archivedAt: null,
       createdAt: new Date(),
       updatedAt: new Date(),
       supplier: { id: supplierId, companyName: 'Supplier' },

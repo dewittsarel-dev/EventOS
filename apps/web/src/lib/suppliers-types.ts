@@ -2,6 +2,7 @@ export type SupplierCategory =
   | 'Venue'
   | 'Catering'
   | 'Decor'
+  | 'Lighting'
   | 'Photography'
   | 'Videography'
   | 'Entertainment'
@@ -81,6 +82,7 @@ export const SUPPLIER_CATEGORIES: SupplierCategory[] = [
   'Venue',
   'Catering',
   'Decor',
+  'Lighting',
   'Photography',
   'Videography',
   'Entertainment',

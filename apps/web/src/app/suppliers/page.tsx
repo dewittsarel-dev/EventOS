@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '../../components/app-shell/page-header';
 import { useAppSession } from '../../components/app-shell/session-context';
-import { deleteSupplier, listSuppliers } from '../../lib/suppliers-api';
+import { archiveSupplier, listSuppliers } from '../../lib/suppliers-api';
 import {
   SUPPLIER_CATEGORIES,
   type SupplierRecord,
@@ -20,6 +21,7 @@ function ratingText(value: number | null) {
 
 export default function SuppliersPage() {
   const { session } = useAppSession();
+  const router = useRouter();
 
   const [suppliers, setSuppliers] = useState<SupplierRecord[]>([]);
   const [loading, setLoading] = useState(false);
@@ -30,7 +32,7 @@ export default function SuppliersPage() {
   const [category, setCategory] = useState<CategoryFilter>('ALL');
   const [preferredSupplier, setPreferredSupplier] =
     useState<BooleanFilter>('ALL');
-  const [active, setActive] = useState<BooleanFilter>('ALL');
+  const [active, setActive] = useState<BooleanFilter>('true');
   const [sortBy, setSortBy] = useState<SupplierSortBy>('companyName');
 
   const [page, setPage] = useState(1);
@@ -76,7 +78,10 @@ export default function SuppliersPage() {
         },
       );
 
-      setSuppliers(response.data);
+      const uniqueSuppliers = Array.from(
+        new Map(response.data.map((supplier) => [supplier.id, supplier])).values(),
+      );
+      setSuppliers(uniqueSuppliers);
       setTotal(response.meta.total);
     } catch (requestError) {
       setError(
@@ -106,13 +111,15 @@ export default function SuppliersPage() {
     await loadSuppliers();
   }
 
-  async function onDelete(id: string) {
+  async function onArchive(id: string) {
     if (!session.token) {
       setError('Please save Bearer token first.');
       return;
     }
 
-    const confirmed = window.confirm('Delete this supplier?');
+    const confirmed = window.confirm(
+      'Archive this supplier? This keeps historical records and removes it from active supplier lists.',
+    );
 
     if (!confirmed) {
       return;
@@ -122,7 +129,7 @@ export default function SuppliersPage() {
     setSuccess('');
 
     try {
-      await deleteSupplier(
+      await archiveSupplier(
         {
           token: session.token,
           baseUrl: session.baseUrl,
@@ -130,13 +137,13 @@ export default function SuppliersPage() {
         id,
       );
 
-      setSuccess('Supplier deleted.');
+      setSuccess('Supplier archived.');
       await loadSuppliers();
     } catch (requestError) {
       setError(
         requestError instanceof Error
           ? requestError.message
-          : 'Failed to delete supplier.',
+          : 'Failed to archive supplier.',
       );
     }
   }
@@ -197,7 +204,7 @@ export default function SuppliersPage() {
         >
           <option value="ALL">Status: All</option>
           <option value="true">Active</option>
-          <option value="false">Inactive</option>
+          <option value="false">Archived</option>
         </select>
 
         <select
@@ -262,13 +269,26 @@ export default function SuppliersPage() {
                   <th className="px-4 py-3 text-left font-medium text-zinc-600">City</th>
                   <th className="px-4 py-3 text-left font-medium text-zinc-600">Rating</th>
                   <th className="px-4 py-3 text-left font-medium text-zinc-600">Preferred</th>
-                  <th className="px-4 py-3 text-left font-medium text-zinc-600">Active</th>
+                  <th className="px-4 py-3 text-left font-medium text-zinc-600">Status</th>
                   <th className="px-4 py-3 text-left font-medium text-zinc-600">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {suppliers.map((supplier) => (
-                  <tr key={supplier.id} className="border-t border-zinc-200">
+                  <tr
+                    key={supplier.id}
+                    className="cursor-pointer border-t border-zinc-200 hover:bg-zinc-50"
+                    onClick={() => router.push(`/suppliers/${supplier.id}`)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        router.push(`/suppliers/${supplier.id}`);
+                      }
+                    }}
+                    tabIndex={0}
+                    role="link"
+                    aria-label={`Open ${supplier.companyName} details`}
+                  >
                     <td className="px-4 py-3 text-zinc-900">{supplier.companyName}</td>
                     <td className="px-4 py-3 text-zinc-700">{supplier.category}</td>
                     <td className="px-4 py-3 text-zinc-700">{supplier.primaryContactName ?? '-'}</td>
@@ -279,28 +299,35 @@ export default function SuppliersPage() {
                     <td className="px-4 py-3 text-zinc-700">{supplier.city ?? '-'}</td>
                     <td className="px-4 py-3 text-zinc-700">{ratingText(supplier.internalRating)}</td>
                     <td className="px-4 py-3 text-zinc-700">{supplier.preferredSupplier ? 'Yes' : 'No'}</td>
-                    <td className="px-4 py-3 text-zinc-700">{supplier.active ? 'Active' : 'Inactive'}</td>
+                    <td className="px-4 py-3 text-zinc-700">{supplier.active ? 'Active' : 'Archived'}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-2">
                         <Link
                           className="rounded-md border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-100"
                           href={`/suppliers/${supplier.id}`}
+                          onClick={(event) => event.stopPropagation()}
                         >
                           View
                         </Link>
                         <Link
                           className="rounded-md border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-100"
                           href={`/suppliers/${supplier.id}/edit`}
+                          onClick={(event) => event.stopPropagation()}
                         >
                           Edit
                         </Link>
-                        <button
-                          type="button"
-                          className="rounded-md border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50"
-                          onClick={() => void onDelete(supplier.id)}
-                        >
-                          Delete
-                        </button>
+                        {supplier.active ? (
+                          <button
+                            type="button"
+                            className="rounded-md border border-amber-300 px-2 py-1 text-xs text-amber-700 hover:bg-amber-50"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              void onArchive(supplier.id);
+                            }}
+                          >
+                            Archive
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>

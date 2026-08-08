@@ -1,13 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { PageHeader } from '../../components/app-shell/page-header';
 import { useAppSession } from '../../components/app-shell/session-context';
 import {
+  archivePurchaseOrder,
   cancelPurchaseOrder,
+  createAIPurchaseOrderUploadDraft,
+  deletePurchaseOrder,
   listPurchaseOrders,
   markPurchaseOrderSent,
+  restorePurchaseOrder,
   submitPurchaseOrderForApproval,
 } from '../../lib/purchase-orders-api';
 import {
@@ -55,6 +60,7 @@ function statusClass(status: PurchaseOrderStatus) {
 }
 
 export default function PurchaseOrdersPage() {
+  const router = useRouter();
   const { session } = useAppSession();
 
   const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrderRecord[]>([]);
@@ -72,6 +78,13 @@ export default function PurchaseOrdersPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
+
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiDragging, setAiDragging] = useState(false);
+  const [aiSourceFile, setAiSourceFile] = useState<File | null>(null);
+  const [aiSaving, setAiSaving] = useState(false);
+  const [aiError, setAiError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const canLoad = Boolean(session.token && session.organizationId);
 
@@ -100,7 +113,7 @@ export default function PurchaseOrdersPage() {
         const response = await listSuppliers(requestOptions, {
           organizationId: session.organizationId,
           page: 1,
-          limit: 200,
+          limit: 100,
           active: true,
         });
 
@@ -229,18 +242,165 @@ export default function PurchaseOrdersPage() {
     }
   }
 
+  async function onArchive(id: string) {
+    setError('');
+    setSuccess('');
+
+    try {
+      await archivePurchaseOrder(requestOptions, id);
+      setSuccess('Purchase order archived.');
+      await loadPurchaseOrders();
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Failed to archive purchase order.',
+      );
+    }
+  }
+
+  async function onRestore(id: string) {
+    setError('');
+    setSuccess('');
+
+    try {
+      await restorePurchaseOrder(requestOptions, id);
+      setSuccess('Purchase order restored.');
+      await loadPurchaseOrders();
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Failed to restore purchase order.',
+      );
+    }
+  }
+
+  async function onDelete(id: string) {
+    const confirmed = window.confirm('Delete this purchase order permanently?');
+    if (!confirmed) {
+      return;
+    }
+
+    setError('');
+    setSuccess('');
+
+    try {
+      await deletePurchaseOrder(requestOptions, id);
+      setSuccess('Purchase order deleted.');
+      await loadPurchaseOrders();
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Failed to delete purchase order.',
+      );
+    }
+  }
+
+  function resetAiModal() {
+    setAiDragging(false);
+    setAiSourceFile(null);
+    setAiError('');
+  }
+
+  function closeAiModal() {
+    if (aiSaving) {
+      return;
+    }
+
+    setAiModalOpen(false);
+    resetAiModal();
+  }
+
+  function openAiModal() {
+    setAiModalOpen(true);
+    resetAiModal();
+  }
+
+  function setPdfFile(file: File | null) {
+    if (!file) {
+      setAiSourceFile(null);
+      return;
+    }
+
+    const isPdfByMime = file.type === 'application/pdf';
+    const isPdfByName = file.name.toLowerCase().endsWith('.pdf');
+
+    if (!isPdfByMime && !isPdfByName) {
+      setAiError('Only PDF files are supported.');
+      setAiSourceFile(null);
+      return;
+    }
+
+    setAiError('');
+    setAiSourceFile(file);
+  }
+
+  async function onCreateWithAi() {
+    setAiError('');
+
+    if (!session.organizationId) {
+      setAiError('Select an organization first.');
+      return;
+    }
+
+    if (!aiSourceFile) {
+      setAiError('Choose a PDF file to continue.');
+      return;
+    }
+
+    setAiSaving(true);
+
+    try {
+      const response = await createAIPurchaseOrderUploadDraft(requestOptions, {
+        organizationId: session.organizationId,
+        sourceFile: aiSourceFile,
+      });
+
+      setAiModalOpen(false);
+      resetAiModal();
+      router.push(
+        `/purchase-orders/drafts/${response.draftId}?documentId=${response.documentId}`,
+      );
+    } catch (requestError) {
+      setAiError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Failed to create AI purchase-order draft.',
+      );
+    } finally {
+      setAiSaving(false);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Purchase Orders"
         description="Create, approve, send and track supplier purchasing."
         actions={
-          <Link
-            href="/purchase-orders/new"
-            className="rounded-md bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-700"
-          >
-            Create Purchase Order
-          </Link>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100"
+              onClick={openAiModal}
+            >
+              Create with AI
+            </button>
+            <Link
+              href="/purchase-orders/drafts/new"
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100"
+            >
+              Create from Quotation Draft
+            </Link>
+            <Link
+              href="/purchase-orders/new"
+              className="rounded-md bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-700"
+            >
+              Manual Purchase Order
+            </Link>
+          </div>
         }
       />
 
@@ -417,6 +577,30 @@ export default function PurchaseOrdersPage() {
                           Cancel
                         </button>
                       ) : null}
+                      {!row.archivedAt ? (
+                        <button
+                          type="button"
+                          className="rounded border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-100"
+                          onClick={() => void onArchive(row.id)}
+                        >
+                          Archive
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="rounded border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-100"
+                          onClick={() => void onRestore(row.id)}
+                        >
+                          Restore
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="rounded border border-rose-300 px-2 py-1 text-xs text-rose-700 hover:bg-rose-50"
+                        onClick={() => void onDelete(row.id)}
+                      >
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -465,6 +649,87 @@ export default function PurchaseOrdersPage() {
           </button>
         </div>
       </div>
+
+      {aiModalOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/40 p-4">
+          <div className="w-full max-w-xl rounded-xl border border-zinc-200 bg-white p-5 shadow-2xl">
+            <h2 className="text-lg font-semibold text-zinc-900">Create Purchase Order with AI</h2>
+            <p className="mt-1 text-sm text-zinc-600">
+              Upload a supplier PDF quotation to create an AI draft shell.
+            </p>
+
+            <div
+              className={`mt-4 rounded-lg border-2 border-dashed p-6 text-center ${
+                aiDragging
+                  ? 'border-zinc-900 bg-zinc-50'
+                  : 'border-zinc-300 bg-zinc-50/50'
+              }`}
+              onDragOver={(event) => {
+                event.preventDefault();
+                setAiDragging(true);
+              }}
+              onDragEnter={(event) => {
+                event.preventDefault();
+                setAiDragging(true);
+              }}
+              onDragLeave={(event) => {
+                event.preventDefault();
+                setAiDragging(false);
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                setAiDragging(false);
+                setPdfFile(event.dataTransfer.files?.[0] ?? null);
+              }}
+            >
+              <p className="text-sm font-medium text-zinc-700">Drag and drop PDF here</p>
+              <p className="mt-1 text-xs text-zinc-500">Only .pdf files are accepted</p>
+              {aiSourceFile ? (
+                <p className="mt-3 rounded-md border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-700">
+                  Selected: {aiSourceFile.name}
+                </p>
+              ) : null}
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf,.pdf"
+              className="hidden"
+              onChange={(event) => setPdfFile(event.target.files?.[0] ?? null)}
+            />
+
+            {aiError ? <p className="mt-3 text-sm text-red-700">{aiError}</p> : null}
+
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={aiSaving}
+              >
+                Browse
+              </button>
+              <button
+                type="button"
+                className="rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100"
+                onClick={closeAiModal}
+                disabled={aiSaving}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="rounded-md bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-700 disabled:opacity-50"
+                onClick={() => void onCreateWithAi()}
+                disabled={aiSaving || !aiSourceFile}
+              >
+                {aiSaving ? 'Uploading...' : 'Create Draft'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -15,3 +15,4 @@ This repository now includes a permanent AI development kit for consistent, scop
 - [docs/PRODUCTION_PACKAGE_TEMPLATE.md](docs/PRODUCTION_PACKAGE_TEMPLATE.md) for new package definitions
 - [docs/DEFINITION_OF_DONE.md](docs/DEFINITION_OF_DONE.md) for completion criteria
 - [docs/AI_WORKFLOW.md](docs/AI_WORKFLOW.md) for the working workflow
+- [docs/LOCAL_DEVELOPMENT_DATABASE.md](docs/LOCAL_DEVELOPMENT_DATABASE.md) for local PostgreSQL startup and Prisma setup

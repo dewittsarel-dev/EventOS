@@ -4,46 +4,25 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '../../../components/app-shell/page-header';
 import { useAppSession } from '../../../components/app-shell/session-context';
-import { listInventoryItems, listStorageLocations } from '../../../lib/inventory-api';
-import type { InventoryItemRecord, StorageLocationRecord } from '../../../lib/inventory-types';
 import {
-  createPurchaseOrder,
-} from '../../../lib/purchase-orders-api';
-import type { CreatePurchaseOrderLineItemPayload } from '../../../lib/purchase-orders-types';
+  applySupplierProductDefaults,
+  calculatePurchaseOrderTotals,
+  createPurchaseOrderLine,
+  type PurchaseOrderLineForm,
+} from '../../../lib/capabilities/purchase-orders/purchase-order-form.service';
+import { listStorageLocations } from '../../../lib/inventory-api';
+import type { StorageLocationRecord } from '../../../lib/inventory-types';
+import { createPurchaseOrder } from '../../../lib/purchase-orders-api';
+import { listSupplierProducts } from '../../../lib/supplier-products-api';
+import type { SupplierProductRecord } from '../../../lib/supplier-products-types';
 import { listSuppliers } from '../../../lib/suppliers-api';
 import type { SupplierRecord } from '../../../lib/suppliers-types';
-
-type LineForm = CreatePurchaseOrderLineItemPayload & { key: string };
-
-function newLine(items: InventoryItemRecord[]): LineForm {
-  const first = items[0];
-  return {
-    key: crypto.randomUUID(),
-    inventoryItemId: first?.id ?? '',
-    description: first?.name ?? '',
-    supplierSku: '',
-    quantityOrdered: 1,
-    unitPrice: 0,
-    taxRate: 0,
-    notes: '',
-  };
-}
-
-function lineTotals(line: LineForm) {
-  const subtotal = line.quantityOrdered * line.unitPrice;
-  const tax = subtotal * ((line.taxRate ?? 0) / 100);
-  return {
-    subtotal,
-    tax,
-    total: subtotal + tax,
-  };
-}
 
 export default function NewPurchaseOrderPage() {
   const { session } = useAppSession();
 
   const [suppliers, setSuppliers] = useState<SupplierRecord[]>([]);
-  const [items, setItems] = useState<InventoryItemRecord[]>([]);
+  const [products, setProducts] = useState<SupplierProductRecord[]>([]);
   const [locations, setLocations] = useState<StorageLocationRecord[]>([]);
 
   const [purchaseOrderNumber, setPurchaseOrderNumber] = useState('');
@@ -52,12 +31,11 @@ export default function NewPurchaseOrderPage() {
   const [expectedDeliveryDate, setExpectedDeliveryDate] = useState('');
   const [deliveryLocationId, setDeliveryLocationId] = useState('');
   const currency = 'ZAR';
-  const [supplierReference, setSupplierReference] = useState('');
-  const [internalReference, setInternalReference] = useState('');
   const [notes, setNotes] = useState('');
-  const [lines, setLines] = useState<LineForm[]>([]);
+  const [lines, setLines] = useState<PurchaseOrderLineForm[]>([]);
 
   const [loadingRefs, setLoadingRefs] = useState(false);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -81,37 +59,28 @@ export default function NewPurchaseOrderPage() {
       setError('');
 
       try {
-        const [suppliersResponse, itemsResponse, locationsResponse] = await Promise.all([
+        const [suppliersResponse, locationsResponse] = await Promise.all([
           listSuppliers(requestOptions, {
             organizationId: session.organizationId,
             page: 1,
-            limit: 200,
-            active: true,
-          }),
-          listInventoryItems(requestOptions, {
-            organizationId: session.organizationId,
-            page: 1,
-            limit: 300,
+            limit: 100,
             active: true,
           }),
           listStorageLocations(requestOptions, {
             organizationId: session.organizationId,
             page: 1,
-            limit: 200,
+            limit: 100,
             active: true,
           }),
         ]);
 
         if (!cancelled) {
           setSuppliers(suppliersResponse.data);
-          setItems(itemsResponse.data);
           setLocations(locationsResponse.data);
-
           setSupplierId((current) => current || suppliersResponse.data[0]?.id || '');
           setDeliveryLocationId(
             (current) => current || locationsResponse.data[0]?.id || '',
           );
-          setLines([newLine(itemsResponse.data)]);
         }
       } catch (requestError) {
         if (!cancelled) {
@@ -135,7 +104,63 @@ export default function NewPurchaseOrderPage() {
     };
   }, [canLoad, requestOptions, session.organizationId]);
 
-  function updateLine(key: string, updater: (line: LineForm) => LineForm) {
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProductsForSupplier() {
+      if (!canLoad || !session.organizationId || !supplierId) {
+        setProducts([]);
+        setLines([]);
+        return;
+      }
+
+      setLoadingProducts(true);
+      setError('');
+
+      try {
+        const response = await listSupplierProducts(requestOptions, {
+          organizationId: session.organizationId,
+          supplierId,
+          page: 1,
+          limit: 100,
+          active: true,
+          sortBy: 'productName',
+        });
+
+        if (!cancelled) {
+          setProducts(response.data);
+          setLines(
+            response.data.length > 0 ? [createPurchaseOrderLine(response.data)] : [],
+          );
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setProducts([]);
+          setLines([]);
+          setError(
+            requestError instanceof Error
+              ? requestError.message
+              : 'Failed to load supplier products.',
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingProducts(false);
+        }
+      }
+    }
+
+    void loadProductsForSupplier();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [canLoad, requestOptions, session.organizationId, supplierId]);
+
+  function updateLine(
+    key: string,
+    updater: (line: PurchaseOrderLineForm) => PurchaseOrderLineForm,
+  ) {
     setLines((current) => current.map((line) => (line.key === key ? updater(line) : line)));
   }
 
@@ -146,6 +171,11 @@ export default function NewPurchaseOrderPage() {
 
     if (!session.organizationId) {
       setError('Select an organization first.');
+      return;
+    }
+
+    if (lines.length === 0) {
+      setError('Add at least one supplier product line item.');
       return;
     }
 
@@ -162,26 +192,21 @@ export default function NewPurchaseOrderPage() {
           : undefined,
         deliveryLocationId,
         currency,
-        supplierReference,
-        internalReference,
         notes,
         lineItems: lines.map((line) => ({
-          inventoryItemId: line.inventoryItemId,
-          description: line.description,
-          supplierSku: line.supplierSku,
-          quantityOrdered: line.quantityOrdered,
-          unitPrice: line.unitPrice,
-          taxRate: line.taxRate,
+          supplierProductId: line.supplierProductId,
+          quantity: line.quantity,
+          unitCost: line.unitCost,
+          vatPercent: line.vatPercent,
+          discountPercent: line.discountPercent,
           notes: line.notes,
         })),
       });
 
       setSuccess('Purchase order created.');
       setPurchaseOrderNumber('');
-      setSupplierReference('');
-      setInternalReference('');
       setNotes('');
-      setLines([newLine(items)]);
+      setLines(products.length > 0 ? [createPurchaseOrderLine(products)] : []);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -193,35 +218,33 @@ export default function NewPurchaseOrderPage() {
     }
   }
 
-  const totals = lines.reduce(
-    (acc, line) => {
-      const computed = lineTotals(line);
-      return {
-        subtotal: acc.subtotal + computed.subtotal,
-        tax: acc.tax + computed.tax,
-        total: acc.total + computed.total,
-      };
-    },
-    { subtotal: 0, tax: 0, total: 0 },
-  );
+  const totals = calculatePurchaseOrderTotals(lines);
 
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
         title="Create Purchase Order"
         actions={
-          <Link
-            href="/purchase-orders"
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100"
-          >
-            Back to Purchase Orders
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href="/purchase-orders/drafts/new"
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100"
+            >
+              Create from Quotation Draft
+            </Link>
+            <Link
+              href="/purchase-orders"
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100"
+            >
+              Back to Purchase Orders
+            </Link>
+          </div>
         }
       />
 
-      {loadingRefs ? (
+      {loadingRefs || loadingProducts ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-600">
-          Loading suppliers, items and locations...
+          Loading suppliers, products and locations...
         </div>
       ) : null}
 
@@ -234,12 +257,9 @@ export default function NewPurchaseOrderPage() {
         </div>
       ) : null}
 
-      {items.length === 0 ? (
+      {supplierId && products.length === 0 ? (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-          You must first create at least one Inventory Item before creating a Purchase Order.{' '}
-          <Link href="/inventory/items/new" className="underline">
-            /inventory/items/new
-          </Link>
+          The selected supplier has no active products. Add products first from supplier details.
         </div>
       ) : null}
 
@@ -257,7 +277,7 @@ export default function NewPurchaseOrderPage() {
         className="grid gap-4 rounded-xl border border-zinc-200 bg-white p-5"
       >
         <section className="grid gap-3 md:grid-cols-2">
-          <h2 className="text-sm font-semibold text-zinc-800 md:col-span-2">1. Supplier and Delivery</h2>
+          <h2 className="text-sm font-semibold text-zinc-800 md:col-span-2">1. Purchase Order Header</h2>
           <select
             required
             className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
@@ -272,9 +292,32 @@ export default function NewPurchaseOrderPage() {
             ))}
           </select>
 
-          <select
+          <input
             required
             className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+            placeholder="Purchase Order Number"
+            value={purchaseOrderNumber}
+            onChange={(event) => setPurchaseOrderNumber(event.target.value)}
+          />
+
+          <input
+            type="date"
+            required
+            className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+            value={orderDate}
+            onChange={(event) => setOrderDate(event.target.value)}
+          />
+
+          <input
+            type="date"
+            className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+            value={expectedDeliveryDate}
+            onChange={(event) => setExpectedDeliveryDate(event.target.value)}
+          />
+
+          <select
+            required
+            className="rounded-md border border-zinc-300 px-3 py-2 text-sm md:col-span-2"
             value={deliveryLocationId}
             onChange={(event) => setDeliveryLocationId(event.target.value)}
           >
@@ -285,96 +328,96 @@ export default function NewPurchaseOrderPage() {
               </option>
             ))}
           </select>
-        </section>
 
-        <section className="grid gap-3 md:grid-cols-3">
-          <h2 className="text-sm font-semibold text-zinc-800 md:col-span-3">2. Order Information</h2>
           <input
-            required
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
-            placeholder="PO Number"
-            value={purchaseOrderNumber}
-            onChange={(event) => setPurchaseOrderNumber(event.target.value)}
-          />
-          <input
-            type="date"
-            required
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
-            value={orderDate}
-            onChange={(event) => setOrderDate(event.target.value)}
-          />
-          <input
-            type="date"
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
-            value={expectedDeliveryDate}
-            onChange={(event) => setExpectedDeliveryDate(event.target.value)}
+            className="rounded-md border border-zinc-300 px-3 py-2 text-sm md:col-span-2"
+            placeholder="Notes"
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
           />
         </section>
 
         <section className="grid gap-3">
-          <h2 className="text-sm font-semibold text-zinc-800">3. Line Items</h2>
+          <h2 className="text-sm font-semibold text-zinc-800">2. Purchase Order Items</h2>
           {lines.map((line) => {
-            const computed = lineTotals(line);
+            const computed = calculatePurchaseOrderTotals([line]);
             return (
-              <div key={line.key} className="grid gap-2 rounded-md border border-zinc-200 p-3 md:grid-cols-7">
+              <div key={line.key} className="grid gap-2 rounded-md border border-zinc-200 p-3 md:grid-cols-8">
                 <select
                   required
                   className="rounded-md border border-zinc-300 px-2 py-2 text-sm md:col-span-2"
-                  value={line.inventoryItemId}
+                  value={line.supplierProductId}
                   onChange={(event) => {
-                    const nextItem = items.find((item) => item.id === event.target.value);
-                    updateLine(line.key, (current) => ({
-                      ...current,
-                      inventoryItemId: event.target.value,
-                      description: nextItem?.name ?? current.description,
-                    }));
+                    const nextProduct = products.find((product) => product.id === event.target.value);
+                    updateLine(line.key, (current) =>
+                      applySupplierProductDefaults(
+                        {
+                          ...current,
+                          supplierProductId: event.target.value,
+                        },
+                        nextProduct,
+                      ),
+                    );
                   }}
                 >
-                  <option value="">Select inventory item</option>
-                  {items.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name} ({item.sku})
+                  <option value="">Select supplier product</option>
+                  {products.map((product) => (
+                    <option key={product.id} value={product.id}>
+                      {product.productName} {product.brand ? `(${product.brand})` : ''}
                     </option>
                   ))}
                 </select>
                 <input
                   required
                   className="rounded-md border border-zinc-300 px-2 py-2 text-sm"
-                  value={line.quantityOrdered}
+                  value={line.quantity}
                   type="number"
                   step="0.001"
                   min="0.001"
                   onChange={(event) =>
                     updateLine(line.key, (current) => ({
                       ...current,
-                      quantityOrdered: Number(event.target.value),
+                      quantity: Number(event.target.value),
                     }))
                   }
                 />
                 <input
                   required
                   className="rounded-md border border-zinc-300 px-2 py-2 text-sm"
-                  value={line.unitPrice}
+                  value={line.unitCost}
                   type="number"
                   step="0.01"
                   min="0"
                   onChange={(event) =>
                     updateLine(line.key, (current) => ({
                       ...current,
-                      unitPrice: Number(event.target.value),
+                      unitCost: Number(event.target.value),
                     }))
                   }
                 />
                 <input
                   className="rounded-md border border-zinc-300 px-2 py-2 text-sm"
-                  value={line.taxRate ?? 0}
+                  value={line.vatPercent ?? 0}
                   type="number"
                   step="0.01"
                   min="0"
                   onChange={(event) =>
                     updateLine(line.key, (current) => ({
                       ...current,
-                      taxRate: Number(event.target.value),
+                      vatPercent: Number(event.target.value),
+                    }))
+                  }
+                />
+                <input
+                  className="rounded-md border border-zinc-300 px-2 py-2 text-sm"
+                  value={line.discountPercent ?? 0}
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  onChange={(event) =>
+                    updateLine(line.key, (current) => ({
+                      ...current,
+                      discountPercent: Number(event.target.value),
                     }))
                   }
                 />
@@ -398,42 +441,21 @@ export default function NewPurchaseOrderPage() {
           <button
             type="button"
             className="w-fit rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100"
-            onClick={() => setLines((current) => [...current, newLine(items)])}
+            onClick={() =>
+              setLines((current) => [...current, createPurchaseOrderLine(products)])
+            }
+            disabled={products.length === 0}
           >
             Add Line
           </button>
         </section>
 
         <section className="grid gap-2 rounded-md border border-zinc-200 bg-zinc-50 p-3 text-sm">
-          <h2 className="font-semibold text-zinc-800">4. Totals</h2>
+          <h2 className="font-semibold text-zinc-800">3. Totals</h2>
           <p>Subtotal: {totals.subtotal.toFixed(2)}</p>
-          <p>Tax: {totals.tax.toFixed(2)}</p>
-          <p className="font-medium">Total: {totals.total.toFixed(2)}</p>
-        </section>
-
-        <section className="grid gap-3 md:grid-cols-2">
-          <h2 className="text-sm font-semibold text-zinc-800 md:col-span-2">5. References</h2>
-          <input
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
-            placeholder="Supplier reference"
-            value={supplierReference}
-            onChange={(event) => setSupplierReference(event.target.value)}
-          />
-          <input
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
-            placeholder="Internal reference"
-            value={internalReference}
-            onChange={(event) => setInternalReference(event.target.value)}
-          />
-        </section>
-
-        <section className="grid gap-2">
-          <h2 className="text-sm font-semibold text-zinc-800">6. Notes</h2>
-          <textarea
-            className="min-h-24 rounded-md border border-zinc-300 px-3 py-2 text-sm"
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-          />
+          <p>VAT: {totals.vat.toFixed(2)}</p>
+          <p>Discount: {totals.discount.toFixed(2)}</p>
+          <p className="font-medium">Grand Total: {totals.total.toFixed(2)}</p>
         </section>
 
         {error ? <p className="text-sm text-red-700">{error}</p> : null}
@@ -441,8 +463,8 @@ export default function NewPurchaseOrderPage() {
 
         <button
           type="submit"
-          disabled={saving || suppliers.length === 0 || items.length === 0 || locations.length === 0}
-          className="w-fit rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={saving || lines.length === 0 || !supplierId}
+          className="w-fit rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50"
         >
           {saving ? 'Saving...' : 'Create Purchase Order'}
         </button>

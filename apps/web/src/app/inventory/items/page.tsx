@@ -8,13 +8,18 @@ import {
   deleteInventoryItem,
   listInventoryCategories,
   listInventoryItems,
+  updateInventoryItem,
 } from '../../../lib/inventory-api';
 import {
+  INVENTORY_MARKETPLACE_VISIBILITY_OPTIONS,
+  INVENTORY_RESOURCE_STATUSES,
   INVENTORY_ITEM_TYPES,
   INVENTORY_SORT_OPTIONS,
   type InventoryCategoryRecord,
   type InventoryItemRecord,
   type InventoryItemType,
+  type InventoryMarketplaceVisibility,
+  type InventoryResourceStatus,
   type InventorySortBy,
 } from '../../../lib/inventory-types';
 import { listSuppliers } from '../../../lib/suppliers-api';
@@ -23,6 +28,8 @@ import type { SupplierRecord } from '../../../lib/suppliers-types';
 type BoolFilter = 'ALL' | 'true' | 'false';
 
 type ItemTypeFilter = 'ALL' | InventoryItemType;
+type ResourceStatusFilter = 'ALL' | InventoryResourceStatus;
+type MarketplaceVisibilityFilter = 'ALL' | InventoryMarketplaceVisibility;
 
 export default function InventoryItemsPage() {
   const { session } = useAppSession();
@@ -39,7 +46,17 @@ export default function InventoryItemsPage() {
   const [categoryId, setCategoryId] = useState('ALL');
   const [itemType, setItemType] = useState<ItemTypeFilter>('ALL');
   const [active, setActive] = useState<BoolFilter>('ALL');
+  const [style, setStyle] = useState('');
+  const [material, setMaterial] = useState('');
+  const [colour, setColour] = useState('');
+  const [dimensions, setDimensions] = useState('');
+  const [tags, setTags] = useState('');
+  const [keywords, setKeywords] = useState('');
   const [preferredSupplierId, setPreferredSupplierId] = useState('ALL');
+  const [resourceStatus, setResourceStatus] =
+    useState<ResourceStatusFilter>('ALL');
+  const [marketplaceVisibility, setMarketplaceVisibility] =
+    useState<MarketplaceVisibilityFilter>('ALL');
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [sortBy, setSortBy] = useState<InventorySortBy>('name');
 
@@ -121,8 +138,18 @@ export default function InventoryItemsPage() {
         page,
         limit,
         search,
+        style: style || undefined,
+        material: material || undefined,
+        colour: colour || undefined,
+        dimensions: dimensions || undefined,
+        tags: tags || undefined,
+        keywords: keywords || undefined,
         categoryId: categoryId === 'ALL' ? undefined : categoryId,
         itemType: itemType === 'ALL' ? undefined : itemType,
+        resourceStatus:
+          resourceStatus === 'ALL' ? undefined : resourceStatus,
+        marketplaceVisibility:
+          marketplaceVisibility === 'ALL' ? undefined : marketplaceVisibility,
         active: active === 'ALL' ? undefined : active === 'true',
         preferredSupplierId:
           preferredSupplierId === 'ALL' ? undefined : preferredSupplierId,
@@ -134,7 +161,9 @@ export default function InventoryItemsPage() {
       setTotal(response.meta.total);
     } catch (requestError) {
       setError(
-        requestError instanceof Error ? requestError.message : 'Failed to load inventory items.',
+        requestError instanceof Error
+          ? requestError.message
+          : 'Failed to load resource items.',
       );
     } finally {
       setLoading(false);
@@ -146,12 +175,20 @@ export default function InventoryItemsPage() {
     itemType,
     limit,
     lowStockOnly,
+    material,
+    marketplaceVisibility,
     page,
     preferredSupplierId,
+    resourceStatus,
     requestOptions,
     search,
     session.organizationId,
     sortBy,
+    style,
+    tags,
+    dimensions,
+    keywords,
+    colour,
   ]);
 
   useEffect(() => {
@@ -170,7 +207,7 @@ export default function InventoryItemsPage() {
       return;
     }
 
-    const confirmed = window.confirm('Delete this inventory item?');
+    const confirmed = window.confirm('Delete this resource item?');
 
     if (!confirmed) {
       return;
@@ -181,11 +218,55 @@ export default function InventoryItemsPage() {
 
     try {
       await deleteInventoryItem(requestOptions, id);
-      setSuccess('Inventory item deleted.');
+      setSuccess('Resource item deleted.');
       await loadItems();
     } catch (requestError) {
       setError(
-        requestError instanceof Error ? requestError.message : 'Failed to delete inventory item.',
+        requestError instanceof Error
+          ? requestError.message
+          : 'Failed to delete resource item.',
+      );
+    }
+  }
+
+  async function onArchiveToggle(item: InventoryItemRecord) {
+    if (!session.token) {
+      setError('Please save Bearer token first.');
+      return;
+    }
+
+    const shouldArchive = item.active;
+    const confirmed = window.confirm(
+      shouldArchive
+        ? 'Archive this resource item?'
+        : 'Restore this resource item?',
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setError('');
+    setSuccess('');
+
+    try {
+      await updateInventoryItem(requestOptions, item.id, {
+        active: !shouldArchive,
+        resourceStatus: shouldArchive ? 'Archived' : 'Active',
+      });
+      setSuccess(
+        shouldArchive
+          ? 'Resource item archived.'
+          : 'Resource item restored.',
+      );
+      await loadItems();
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : shouldArchive
+            ? 'Failed to archive resource item.'
+            : 'Failed to restore resource item.',
       );
     }
   }
@@ -199,21 +280,21 @@ export default function InventoryItemsPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        title="Inventory Items"
-        description="Manage organization inventory catalog and stock signals."
+        title="Resource Items"
+        description="Manage the organization resource catalog and stock signals."
         actions={
           <Link
             href="/inventory/items/new"
             className="rounded-md bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-700"
           >
-            Create Item
+            Create Resource
           </Link>
         }
       />
 
       {!session.organizationId ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
-          Select an organization in the header to manage inventory items.
+          Select an organization in the header to manage resource items.
         </div>
       ) : null}
 
@@ -225,7 +306,49 @@ export default function InventoryItemsPage() {
           className="rounded-md border border-zinc-300 px-3 py-2 text-sm md:col-span-2"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
-          placeholder="Search name, SKU, barcode or description"
+          placeholder="Search name, description, tags, style, material"
+        />
+
+        <input
+          className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+          value={style}
+          onChange={(event) => setStyle(event.target.value)}
+          placeholder="Style"
+        />
+
+        <input
+          className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+          value={material}
+          onChange={(event) => setMaterial(event.target.value)}
+          placeholder="Material"
+        />
+
+        <input
+          className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+          value={colour}
+          onChange={(event) => setColour(event.target.value)}
+          placeholder="Colour"
+        />
+
+        <input
+          className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+          value={dimensions}
+          onChange={(event) => setDimensions(event.target.value)}
+          placeholder="Dimensions"
+        />
+
+        <input
+          className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+          value={tags}
+          onChange={(event) => setTags(event.target.value)}
+          placeholder="Tags (comma-separated)"
+        />
+
+        <input
+          className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+          value={keywords}
+          onChange={(event) => setKeywords(event.target.value)}
+          placeholder="Keywords (comma-separated)"
         />
 
         <select
@@ -250,6 +373,38 @@ export default function InventoryItemsPage() {
           {INVENTORY_ITEM_TYPES.map((entry) => (
             <option key={entry} value={entry}>
               {entry}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+          value={resourceStatus}
+          onChange={(event) =>
+            setResourceStatus(event.target.value as ResourceStatusFilter)
+          }
+        >
+          <option value="ALL">All resource statuses</option>
+          {INVENTORY_RESOURCE_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="rounded-md border border-zinc-300 px-3 py-2 text-sm"
+          value={marketplaceVisibility}
+          onChange={(event) =>
+            setMarketplaceVisibility(
+              event.target.value as MarketplaceVisibilityFilter,
+            )
+          }
+        >
+          <option value="ALL">Marketplace: All</option>
+          {INVENTORY_MARKETPLACE_VISIBILITY_OPTIONS.map((visibility) => (
+            <option key={visibility} value={visibility}>
+              {visibility}
             </option>
           ))}
         </select>
@@ -312,11 +467,11 @@ export default function InventoryItemsPage() {
 
       {loading ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
-          Loading inventory items...
+          Loading resource items...
         </div>
       ) : canLoad && items.length === 0 ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
-          No inventory items found.
+          No resource items found.
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white">
@@ -362,6 +517,15 @@ export default function InventoryItemsPage() {
                         >
                           Edit
                         </Link>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void onArchiveToggle(item);
+                          }}
+                          className="rounded-md border border-zinc-300 px-2 py-1 text-xs hover:bg-zinc-100"
+                        >
+                          {item.active ? 'Archive' : 'Restore'}
+                        </button>
                         <button
                           type="button"
                           onClick={() => {

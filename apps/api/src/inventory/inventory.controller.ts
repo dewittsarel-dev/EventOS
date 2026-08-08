@@ -35,6 +35,7 @@ import { CreateOpeningBalanceDto } from './dto/create-opening-balance.dto';
 import { CreateStockAdjustmentDto } from './dto/create-stock-adjustment.dto';
 import { CreateStockTransferDto } from './dto/create-stock-transfer.dto';
 import { CreateStorageLocationDto } from './dto/create-storage-location.dto';
+import { FindResourceWorkspaceCardsQueryDto } from './dto/find-resource-workspace-cards-query.dto';
 import { FindInventoryCategoriesQueryDto } from './dto/find-inventory-categories-query.dto';
 import { FindInventoryItemsQueryDto } from './dto/find-inventory-items-query.dto';
 import { FindStockLevelsQueryDto } from './dto/find-stock-levels-query.dto';
@@ -46,6 +47,8 @@ import {
   InventoryItemListResponseDto,
   InventoryItemResponseDto,
   InventoryOverviewResponseDto,
+  ResourceWorkspaceCardListResponseDto,
+  ResourceWorkspaceSummaryResponseDto,
   StockLevelListResponseDto,
   StockMovementListResponseDto,
   StockMovementResponseDto,
@@ -53,6 +56,7 @@ import {
   StorageLocationResponseDto,
 } from './dto/inventory-response.dto';
 import { InventoryService } from './inventory.service';
+import { ResourceWorkspaceSummaryQueryDto } from './dto/resource-workspace-summary-query.dto';
 import { UpdateInventoryCategoryDto } from './dto/update-inventory-category.dto';
 import { UpdateInventoryItemDto } from './dto/update-inventory-item.dto';
 import { UpdateStorageLocationDto } from './dto/update-storage-location.dto';
@@ -78,6 +82,41 @@ export class InventoryController {
     @Query('organizationId') organizationId: string,
   ) {
     return this.inventoryService.getOverview(user.id, organizationId);
+  }
+
+  @Get('resource-workspace/summary')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  @ApiOperation({ summary: 'Get resource workspace summary metrics' })
+  @ApiOkResponse({ type: ResourceWorkspaceSummaryResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({
+    description: 'No access to organization or permission',
+  })
+  getResourceWorkspaceSummary(
+    @CurrentUser() user: UserResponseDto,
+    @Query() query: ResourceWorkspaceSummaryQueryDto,
+  ) {
+    return this.inventoryService.getResourceWorkspaceSummary(
+      user.id,
+      query.organizationId,
+    );
+  }
+
+  @Get('resource-workspace/cards')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  @ApiOperation({
+    summary: 'List resource workspace cards with search and filters',
+  })
+  @ApiOkResponse({ type: ResourceWorkspaceCardListResponseDto })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({
+    description: 'No access to organization or permission',
+  })
+  findResourceWorkspaceCards(
+    @CurrentUser() user: UserResponseDto,
+    @Query() query: FindResourceWorkspaceCardsQueryDto,
+  ) {
+    return this.inventoryService.findResourceWorkspaceCards(user.id, query);
   }
 
   @Post('categories')

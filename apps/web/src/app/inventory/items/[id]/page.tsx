@@ -45,7 +45,7 @@ export default function InventoryItemDetailsPage() {
           setError(
             requestError instanceof Error
               ? requestError.message
-              : 'Failed to load inventory item.',
+              : 'Failed to load resource item.',
           );
         }
       } finally {
@@ -65,7 +65,7 @@ export default function InventoryItemDetailsPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        title="Inventory Item Details"
+        title="Resource Item Details"
         actions={
           <>
             <Link
@@ -86,7 +86,7 @@ export default function InventoryItemDetailsPage() {
 
       {loading ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-600">
-          Loading inventory item...
+          Loading resource item...
         </div>
       ) : error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -94,15 +94,22 @@ export default function InventoryItemDetailsPage() {
         </div>
       ) : item ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <h2 className="text-xl font-semibold text-zinc-900">{item.name}</h2>
+          <h2 className="text-xl font-semibold text-zinc-900">
+            {item.publicName ?? item.name}
+          </h2>
           <p className="mt-1 text-sm text-zinc-600">SKU: {item.sku}</p>
 
           <dl className="mt-4 grid gap-3 text-sm md:grid-cols-2">
             <Detail label="Category" value={item.categoryName} />
+            <Detail label="Sub Category" value={item.subCategory ?? '-'} />
+            <Detail label="Brand" value={item.brand ?? '-'} />
             <Detail label="Item Type" value={item.itemType} />
+            <Detail label="Resource Status" value={item.resourceStatus} />
             <Detail label="Unit of Measure" value={item.unitOfMeasure} />
             <Detail label="Preferred Supplier" value={item.preferredSupplierName ?? '-'} />
             <Detail label="Barcode" value={item.barcode ?? '-'} />
+            <Detail label="QR Code" value={item.qrCode ?? '-'} />
+            <Detail label="Internal Name" value={item.internalName ?? '-'} />
             <Detail label="Taxable" value={item.taxable ? 'Yes' : 'No'} />
             <Detail label="Active" value={item.active ? 'Yes' : 'No'} />
             <Detail label="Track Quantity" value={item.trackQuantity ? 'Yes' : 'No'} />
@@ -127,7 +134,83 @@ export default function InventoryItemDetailsPage() {
           <div className="mt-4">
             <p className="text-sm font-medium text-zinc-700">Description</p>
             <p className="mt-1 whitespace-pre-wrap text-sm text-zinc-600">
-              {item.description || 'No description provided.'}
+              {item.shortDescription || item.description || 'No description provided.'}
+            </p>
+          </div>
+
+          <details className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-3">
+            <summary className="cursor-pointer text-sm font-medium text-zinc-700">
+              Intelligence Metadata
+            </summary>
+
+            <dl className="mt-3 grid gap-3 text-sm md:grid-cols-2">
+              <Detail label="Style" value={item.style ?? '-'} />
+              <Detail label="Colour" value={item.colour ?? '-'} />
+              <Detail label="Material" value={item.material ?? '-'} />
+              <Detail label="Dimensions" value={item.dimensions ?? '-'} />
+              <Detail label="Weight" value={item.weight ?? '-'} />
+              <Detail label="Capacity" value={item.capacity ?? '-'} />
+              <Detail label="Indoor/Outdoor" value={item.indoorOutdoor} />
+              <Detail
+                label="Suitable Event Types"
+                value={item.suitableEventTypes.length > 0 ? item.suitableEventTypes.join(', ') : '-'}
+              />
+              <Detail
+                label="Manual Tags"
+                value={item.manualTags.length > 0 ? item.manualTags.join(', ') : '-'}
+              />
+              <Detail
+                label="AI Generated Tags"
+                value={
+                  item.aiGeneratedTags.length > 0
+                    ? item.aiGeneratedTags.join(', ')
+                    : '-'
+                }
+              />
+              <Detail
+                label="AI Keywords"
+                value={item.aiKeywords.length > 0 ? item.aiKeywords.join(', ') : '-'}
+              />
+              <Detail
+                label="AI Tags"
+                value={item.aiTags.length > 0 ? item.aiTags.join(', ') : '-'}
+              />
+              <Detail
+                label="AI Confidence"
+                value={item.aiConfidence === null ? '-' : String(item.aiConfidence)}
+              />
+              <Detail
+                label="Marketplace Visibility"
+                value={item.marketplaceVisibility}
+              />
+            </dl>
+
+            <div className="mt-3">
+              <p className="text-sm font-medium text-zinc-700">Long Description</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-zinc-600">
+                {item.longDescription || 'No long description provided.'}
+              </p>
+            </div>
+
+            <div className="mt-3">
+              <p className="text-sm font-medium text-zinc-700">AI Summary</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-zinc-600">
+                {item.aiSummary || 'No AI summary available.'}
+              </p>
+            </div>
+
+            <div className="mt-3">
+              <p className="text-sm font-medium text-zinc-700">Photo URLs</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-zinc-600">
+                {item.photoUrls.length > 0 ? item.photoUrls.join('\n') : 'No photos linked.'}
+              </p>
+            </div>
+          </details>
+
+          <div className="mt-4">
+            <p className="text-sm font-medium text-zinc-700">Internal Notes</p>
+            <p className="mt-1 whitespace-pre-wrap text-sm text-zinc-600">
+              {item.internalNotes || 'No internal notes provided.'}
             </p>
           </div>
 
@@ -140,7 +223,7 @@ export default function InventoryItemDetailsPage() {
         </div>
       ) : (
         <div className="rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-600">
-          Inventory item not found.
+          Resource item not found.
         </div>
       )}
     </div>

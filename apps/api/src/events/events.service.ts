@@ -1,12 +1,19 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  RESOURCE_ENGINE_PORT,
+  type ResourceEnginePort,
+} from '../resources/resource-engine.port';
 import { CreateEventDto } from './dto/create-event.dto';
+import { EventStatus } from './dto/event-status.enum';
 import {
   EventSortOrder,
   FindEventsQueryDto,
@@ -15,7 +22,12 @@ import { UpdateEventDto } from './dto/update-event.dto';
 
 @Injectable()
 export class EventsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional()
+    @Inject(RESOURCE_ENGINE_PORT)
+    private readonly resourceEngine?: ResourceEnginePort,
+  ) {}
 
   async create(userId: string, data: CreateEventDto) {
     await this.ensureOrganizationAccess(userId, data.organizationId);
@@ -176,6 +188,8 @@ export class EventsService {
       nextEndTime,
     );
 
+    const previousStatus = String(event.status);
+
     const updated = await this.prisma.event.update({
       where: { id: event.id },
       data: {
@@ -202,6 +216,26 @@ export class EventsService {
       include: this.defaultIncludes,
     });
 
+    const nextStatus = data.status;
+    const isLifecycleTerminalStatus =
+      nextStatus === EventStatus.Completed ||
+      nextStatus === EventStatus.Cancelled;
+
+    if (
+      this.resourceEngine &&
+      nextStatus &&
+      String(nextStatus) !== previousStatus &&
+      isLifecycleTerminalStatus
+    ) {
+      await this.resourceEngine.releaseEventAllocations({
+        actorUserId: userId,
+        organizationId: event.organizationId,
+        eventId: event.id,
+        reason:
+          nextStatus === EventStatus.Completed ? 'Completed' : 'Cancelled',
+      });
+    }
+
     return this.toEventResponse(updated);
   }
 
@@ -213,6 +247,15 @@ export class EventsService {
     }
 
     await this.ensureOrganizationAccess(userId, event.organizationId);
+
+    if (this.resourceEngine) {
+      await this.resourceEngine.releaseEventAllocations({
+        actorUserId: userId,
+        organizationId: event.organizationId,
+        eventId: event.id,
+        reason: 'Cancelled',
+      });
+    }
 
     await this.prisma.event.delete({ where: { id: event.id } });
   }

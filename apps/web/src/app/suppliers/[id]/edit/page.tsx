@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 import { PageHeader } from '../../../../components/app-shell/page-header';
 import { useAppSession } from '../../../../components/app-shell/session-context';
@@ -11,6 +11,7 @@ import {
 } from '../../../../components/suppliers/supplier-form';
 import { getSupplier, updateSupplier } from '../../../../lib/suppliers-api';
 import type { SupplierRecord } from '../../../../lib/suppliers-types';
+import { validateSupplierWebsite } from '../../../../lib/suppliers-website';
 
 const defaultForm: SupplierFormValues = {
   companyName: '',
@@ -60,6 +61,7 @@ function supplierToForm(supplier: SupplierRecord): SupplierFormValues {
 export default function EditSupplierPage() {
   const params = useParams<{ id: string }>();
   const supplierId = String(params.id);
+  const router = useRouter();
 
   const { session } = useAppSession();
   const [supplier, setSupplier] = useState<SupplierRecord | null>(null);
@@ -68,6 +70,7 @@ export default function EditSupplierPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [websiteError, setWebsiteError] = useState('');
 
   useEffect(() => {
     async function loadSupplier() {
@@ -107,14 +110,22 @@ export default function EditSupplierPage() {
     event.preventDefault();
     setError('');
     setSuccess('');
+    setWebsiteError('');
 
-    if (!session.token) {
-      setError('Please save a Bearer token first.');
+    if (!session.token || !session.organizationId) {
+      setError('Your session is unavailable. Please sign in again.');
       return;
     }
 
     if (!form.companyName.trim()) {
       setError('Company name is required.');
+      return;
+    }
+
+    const websiteValidation = validateSupplierWebsite(form.website);
+
+    if (websiteValidation.error) {
+      setWebsiteError(websiteValidation.error);
       return;
     }
 
@@ -134,7 +145,7 @@ export default function EditSupplierPage() {
           phone: form.phone.trim() || undefined,
           mobile: form.mobile.trim() || undefined,
           email: form.email.trim() || undefined,
-          website: form.website.trim() || undefined,
+          website: websiteValidation.normalized || undefined,
           physicalAddress: form.physicalAddress.trim() || undefined,
           city: form.city.trim() || undefined,
           province: form.province.trim() || undefined,
@@ -151,7 +162,8 @@ export default function EditSupplierPage() {
         },
       );
 
-      setSuccess('Supplier updated successfully.');
+      setSuccess('Supplier updated successfully. Redirecting...');
+      router.push(`/suppliers/${supplierId}`);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -188,6 +200,7 @@ export default function EditSupplierPage() {
           saving={saving}
           error={error}
           success={success}
+          websiteError={websiteError}
           onChange={setForm}
           onSubmit={onSubmit}
         />

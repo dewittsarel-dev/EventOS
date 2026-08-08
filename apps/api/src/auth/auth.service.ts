@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -13,6 +14,16 @@ import { JwtPayload } from './jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
+  private readonly developmentUserEmail = 'demo@eventos.local';
+
+  private readonly developmentUserPassword = 'Demo123!ChangeMe';
+
+  private readonly developmentUserName = 'Demo Administrator';
+
+  private readonly developmentOrganizationName = 'EventOS Demo Organization';
+
+  private readonly developmentOrganizationSlug = 'eventos-demo-organization';
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
@@ -132,6 +143,93 @@ export class AuthService {
       user: this.toPublicUser(user),
       organizations: memberships.map((membership) => membership.organization),
     };
+  }
+
+  async seedDevelopmentWorkspace() {
+    if (!this.isDevelopmentMode()) {
+      throw new NotFoundException('Not found');
+    }
+
+    const workspace = await this.prisma.$transaction(async (tx) => {
+      const passwordHash = await bcrypt.hash(this.developmentUserPassword, 12);
+
+      const user = await tx.user.upsert({
+        where: {
+          email: this.developmentUserEmail,
+        },
+        create: {
+          email: this.developmentUserEmail,
+          name: this.developmentUserName,
+          passwordHash,
+        },
+        update: {
+          name: this.developmentUserName,
+          passwordHash,
+        },
+      });
+
+      const organization = await tx.organization.upsert({
+        where: {
+          slug: this.developmentOrganizationSlug,
+        },
+        create: {
+          name: this.developmentOrganizationName,
+          slug: this.developmentOrganizationSlug,
+        },
+        update: {
+          name: this.developmentOrganizationName,
+        },
+      });
+
+      await tx.membership.upsert({
+        where: {
+          userId_organizationId: {
+            userId: user.id,
+            organizationId: organization.id,
+          },
+        },
+        create: {
+          userId: user.id,
+          organizationId: organization.id,
+          role: 'administrator',
+          isDisabled: false,
+        },
+        update: {
+          role: 'administrator',
+          isDisabled: false,
+        },
+      });
+
+      return {
+        user,
+        organization,
+      };
+    });
+
+    return {
+      accessToken: this.issueAccessToken(workspace.user),
+      tokenType: 'Bearer',
+      expiresIn: this.getAccessTokenTtlSeconds(),
+      user: this.toPublicUser(workspace.user),
+      organization: {
+        id: workspace.organization.id,
+        name: workspace.organization.name,
+        slug: workspace.organization.slug,
+      },
+      organizations: [
+        {
+          id: workspace.organization.id,
+          name: workspace.organization.name,
+          slug: workspace.organization.slug,
+        },
+      ],
+      organizationId: workspace.organization.id,
+      membershipRole: 'administrator',
+    };
+  }
+
+  private isDevelopmentMode() {
+    return process.env.NODE_ENV !== 'production';
   }
 
   private issueAccessToken(user: { id: string; email: string }) {

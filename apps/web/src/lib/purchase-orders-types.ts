@@ -17,17 +17,21 @@ export type PurchaseOrderSortBy =
 export type PurchaseOrderLineItemRecord = {
   id: string;
   purchaseOrderId: string;
-  inventoryItemId: string;
-  inventoryItemName: string;
-  inventoryItemSku: string;
-  description: string;
-  supplierSku: string | null;
+  supplierProductId: string;
+  supplierProductName: string;
+  supplierProductSku: string | null;
+  supplierProductBrand: string | null;
+  inventoryItemId: string | null;
+  inventoryItemName: string | null;
+  inventoryItemSku: string | null;
   quantityOrdered: number;
   quantityReceived: number;
   quantityOutstanding: number;
   unitPrice: number;
   taxRate: number;
+  discountRate: number;
   lineSubtotal: number;
+  lineDiscount: number;
   lineTax: number;
   lineTotal: number;
   notes: string | null;
@@ -42,6 +46,8 @@ export type PurchaseOrderRecord = {
   supplierId: string;
   supplierName: string;
   orderDate: string;
+  quotationDate?: string | null;
+  validUntilDate?: string | null;
   expectedDeliveryDate: string | null;
   deliveryLocationId: string;
   deliveryLocationName: string;
@@ -49,9 +55,14 @@ export type PurchaseOrderRecord = {
   currency: string;
   subtotal: number;
   taxAmount: number;
+  discountAmount: number;
+  deliveryFee?: number;
   totalAmount: number;
   supplierReference: string | null;
   internalReference: string | null;
+  paymentTerms?: string | null;
+  deliveryAddress?: string | null;
+  eventReference?: string | null;
   notes: string | null;
   createdByUserId: string;
   createdByUserName: string | null;
@@ -60,6 +71,7 @@ export type PurchaseOrderRecord = {
   approvedAt: string | null;
   sentAt: string | null;
   cancelledAt: string | null;
+  archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
   receivedPercent: number;
@@ -120,12 +132,11 @@ export type SupplierPurchaseHistory = {
 };
 
 export type CreatePurchaseOrderLineItemPayload = {
-  inventoryItemId: string;
-  description: string;
-  supplierSku?: string;
-  quantityOrdered: number;
-  unitPrice: number;
-  taxRate?: number;
+  supplierProductId: string;
+  quantity: number;
+  unitCost: number;
+  vatPercent?: number;
+  discountPercent?: number;
   notes?: string;
 };
 
@@ -134,11 +145,17 @@ export type CreatePurchaseOrderPayload = {
   purchaseOrderNumber: string;
   supplierId: string;
   orderDate: string;
+  quotationDate?: string;
+  validUntilDate?: string;
   expectedDeliveryDate?: string;
   deliveryLocationId: string;
   currency?: string;
   supplierReference?: string;
   internalReference?: string;
+  paymentTerms?: string;
+  deliveryAddress?: string;
+  eventReference?: string;
+  deliveryFee?: number;
   notes?: string;
   lineItems: CreatePurchaseOrderLineItemPayload[];
 };
@@ -174,3 +191,35 @@ export const PURCHASE_ORDER_STATUSES: PurchaseOrderStatus[] = [
   'FullyReceived',
   'Cancelled',
 ];
+
+export type CreatePurchaseOrderDraftPayload = {
+  organizationId: string;
+  sourceText?: string;
+  sourceFile?: File;
+};
+
+export type CreateAIPurchaseOrderUploadDraftPayload = {
+  organizationId: string;
+  sourceFile: File;
+};
+
+export type CreateAIPurchaseOrderUploadDraftResponse = {
+  draftId: string;
+  documentId: string;
+};
+
+export type AIPurchaseOrderUploadDraftRecord = {
+  id: string;
+  status: 'ReviewPending' | 'ReviewSaved' | 'Committed' | 'Discarded';
+  sourceDocument: {
+    id: string;
+    fileName: string | null;
+    mimeType: string | null;
+    sizeBytes: number | null;
+  } | null;
+};
+
+export type {
+  PurchaseOrderDraftRecord,
+  PurchaseOrderDraftReviewPayload,
+} from './purchase-order-drafts-types';

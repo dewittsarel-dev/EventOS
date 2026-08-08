@@ -24,6 +24,7 @@ import {
   ApiParam,
   ApiQuery,
   ApiTags,
+  ApiConflictResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -127,7 +128,25 @@ export class SuppliersController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   @ApiForbiddenResponse({ description: 'No access to organization' })
   @ApiNotFoundResponse({ description: 'Supplier not found' })
+  @ApiConflictResponse({
+    description:
+      'Supplier is referenced by purchase orders, inventory, or quotations',
+  })
   async remove(@CurrentUser() user: UserResponseDto, @Param('id') id: string) {
     await this.suppliersService.remove(user.id, id);
+  }
+
+  @Patch(':id/archive')
+  @ApiOperation({ summary: 'Archive a supplier by id' })
+  @ApiParam({ name: 'id' })
+  @ApiOkResponse({
+    description: 'Supplier archived successfully',
+    type: SupplierResponseDto,
+  })
+  @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
+  @ApiForbiddenResponse({ description: 'No access to organization' })
+  @ApiNotFoundResponse({ description: 'Supplier not found' })
+  archive(@CurrentUser() user: UserResponseDto, @Param('id') id: string) {
+    return this.suppliersService.archive(user.id, id);
   }
 }

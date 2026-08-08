@@ -1,4 +1,8 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { SupplierCategory } from './dto/supplier-category.enum';
 import { SuppliersService } from './suppliers.service';
 
@@ -47,10 +51,20 @@ describe('SuppliersService', () => {
     supplier: {
       create: jest.fn(),
       findMany: jest.fn(),
+      findFirst: jest.fn(),
       count: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
       delete: jest.fn(),
+    },
+    purchaseOrder: {
+      count: jest.fn(),
+    },
+    inventoryItem: {
+      count: jest.fn(),
+    },
+    supplierQuotation: {
+      count: jest.fn(),
     },
     $transaction: jest.fn(),
   };
@@ -67,6 +81,13 @@ describe('SuppliersService', () => {
       organizationId,
       role: 'owner',
     });
+    prisma.supplier.findFirst.mockResolvedValue(null);
+    prisma.purchaseOrder.count.mockResolvedValue(0);
+    prisma.inventoryItem.count.mockResolvedValue(0);
+    prisma.supplierQuotation.count.mockResolvedValue(0);
+    prisma.$transaction.mockImplementation(
+      async (queries: Promise<unknown>[]) => Promise.all(queries),
+    );
   });
 
   it('creates a supplier with organization scope enforcement', async () => {
@@ -129,7 +150,7 @@ describe('SuppliersService', () => {
     );
   });
 
-  it('deletes supplier in own organization', async () => {
+  it('deletes supplier in own organization when no dependencies exist', async () => {
     prisma.supplier.findUnique.mockResolvedValue(makeSupplier());
 
     await service.remove(userId, supplierId);
@@ -137,5 +158,47 @@ describe('SuppliersService', () => {
     expect(prisma.supplier.delete).toHaveBeenCalledWith({
       where: { id: supplierId },
     });
+  });
+
+  it('archives supplier by setting active to false', async () => {
+    prisma.supplier.findUnique.mockResolvedValue(makeSupplier());
+    prisma.supplier.update.mockResolvedValue(
+      makeSupplier({
+        active: false,
+      }),
+    );
+
+    const result = await service.archive(userId, supplierId);
+
+    expect(prisma.supplier.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: supplierId },
+        data: { active: false },
+      }),
+    );
+    expect(result.active).toBe(false);
+  });
+
+  it('fails delete when supplier has dependencies', async () => {
+    prisma.supplier.findUnique.mockResolvedValue(makeSupplier());
+    prisma.purchaseOrder.count.mockResolvedValue(1);
+
+    await expect(service.remove(userId, supplierId)).rejects.toBeInstanceOf(
+      ConflictException,
+    );
+    expect(prisma.supplier.delete).not.toHaveBeenCalled();
+  });
+
+  it('fails create on duplicate VAT number in organization', async () => {
+    prisma.supplier.findFirst.mockResolvedValue({ id: 'existing-supplier' });
+
+    await expect(
+      service.create(userId, {
+        organizationId,
+        companyName: 'New Supplier',
+        category: SupplierCategory.Other,
+        vatNumber: '12345',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
   });
 });

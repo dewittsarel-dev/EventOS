@@ -3,12 +3,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import SuppliersPage from './page';
 
 const listSuppliers = vi.fn();
-const deleteSupplier = vi.fn();
+const archiveSupplier = vi.fn();
+const push = vi.fn();
 const sessionState = {
   token: 'token-1',
   baseUrl: 'http://localhost:3001',
   organizationId: '11111111-1111-4111-8111-111111111111',
 };
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push,
+  }),
+}));
 
 vi.mock('../../components/app-shell/session-context', () => ({
   useAppSession: () => ({
@@ -18,13 +25,14 @@ vi.mock('../../components/app-shell/session-context', () => ({
 
 vi.mock('../../lib/suppliers-api', () => ({
   listSuppliers: (...args: unknown[]) => listSuppliers(...args),
-  deleteSupplier: (...args: unknown[]) => deleteSupplier(...args),
+  archiveSupplier: (...args: unknown[]) => archiveSupplier(...args),
 }));
 
 describe('SuppliersPage', () => {
   beforeEach(() => {
     listSuppliers.mockReset();
-    deleteSupplier.mockReset();
+    archiveSupplier.mockReset();
+    push.mockReset();
     sessionState.token = 'token-1';
     sessionState.organizationId = '11111111-1111-4111-8111-111111111111';
     vi.stubGlobal('confirm', vi.fn(() => true));
@@ -60,7 +68,7 @@ describe('SuppliersPage', () => {
       meta: { page: 1, limit: 10, total: 1 },
     });
 
-    deleteSupplier.mockResolvedValue(undefined);
+    archiveSupplier.mockResolvedValue(undefined);
   });
 
   it('renders supplier table and applies filters', async () => {
@@ -68,6 +76,7 @@ describe('SuppliersPage', () => {
 
     expect(await screen.findByText('Company')).toBeInTheDocument();
     expect(screen.getByText('Blue Ribbon Catering')).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Lighting' })).toBeInTheDocument();
 
     fireEvent.change(
       screen.getByPlaceholderText('Search name, contact, email, phone or city'),
@@ -89,15 +98,26 @@ describe('SuppliersPage', () => {
     });
   });
 
-  it('deletes a supplier', async () => {
+  it('archives a supplier', async () => {
     render(<SuppliersPage />);
 
     await screen.findByText('Blue Ribbon Catering');
-    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Archive' }));
 
     await waitFor(() => {
-      expect(deleteSupplier).toHaveBeenCalledWith(expect.anything(), 'supplier-1');
+      expect(archiveSupplier).toHaveBeenCalledWith(expect.anything(), 'supplier-1');
     });
+  });
+
+  it('opens supplier details when row is clicked', async () => {
+    render(<SuppliersPage />);
+
+    const row = await screen.findByRole('link', {
+      name: 'Open Blue Ribbon Catering details',
+    });
+    fireEvent.click(row);
+
+    expect(push).toHaveBeenCalledWith('/suppliers/supplier-1');
   });
 
   it('shows organization guidance and skips data load when organization is missing', async () => {

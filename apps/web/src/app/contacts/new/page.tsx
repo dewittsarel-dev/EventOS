@@ -11,6 +11,11 @@ type ContactForm = {
   lastName: string;
   email: string;
   phone: string;
+  mobile: string;
+  companyName: string;
+  contactType: string;
+  address: string;
+  notes: string;
 };
 
 const defaultForm: ContactForm = {
@@ -18,6 +23,11 @@ const defaultForm: ContactForm = {
   lastName: '',
   email: '',
   phone: '',
+  mobile: '',
+  companyName: '',
+  contactType: '',
+  address: '',
+  notes: '',
 };
 
 export default function NewContactPage() {
@@ -56,6 +66,11 @@ export default function NewContactPage() {
           lastName: form.lastName.trim() || undefined,
           email: form.email.trim() || undefined,
           phone: form.phone.trim() || undefined,
+          mobile: form.mobile.trim() || undefined,
+          companyName: form.companyName.trim() || undefined,
+          contactType: form.contactType.trim() || undefined,
+          address: form.address.trim() || undefined,
+          notes: form.notes.trim() || undefined,
         },
       );
 
@@ -135,6 +150,61 @@ export default function NewContactPage() {
                 setForm((prev) => ({ ...prev, phone: event.target.value }))
               }
               className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700">
+            Mobile
+            <input
+              value={form.mobile}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, mobile: event.target.value }))
+              }
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700">
+            Company or Organization
+            <input
+              value={form.companyName}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, companyName: event.target.value }))
+              }
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700">
+            Contact Type
+            <input
+              value={form.contactType}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, contactType: event.target.value }))
+              }
+              className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700 md:col-span-2">
+            Address
+            <textarea
+              value={form.address}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, address: event.target.value }))
+              }
+              className="mt-1 min-h-20 w-full rounded-md border border-zinc-300 px-3 py-2"
+            />
+          </label>
+
+          <label className="text-sm text-zinc-700 md:col-span-2">
+            Notes
+            <textarea
+              value={form.notes}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, notes: event.target.value }))
+              }
+              className="mt-1 min-h-24 w-full rounded-md border border-zinc-300 px-3 py-2"
             />
           </label>
         </div>

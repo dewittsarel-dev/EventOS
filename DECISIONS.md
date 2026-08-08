@@ -58,6 +58,39 @@ Each entry should contain:
   - Lower regression risk while new capabilities are added.
   - Better traceability for package outcomes and review quality.
 
+## DEC-005
+
+- Date: 2026-08-02
+- Status: accepted
+- Context: ClientOS needs future modules, AI callers, marketplace surfaces and guided workflows to reuse the same application behavior without copying business rules into pages or external clients.
+- Decision: Introduce a capability-oriented architecture with explicit capability action definitions, API-side registry contracts, AI and Marketplace service ports, and client-side capability services for reusable UI logic.
+- Consequences:
+  - New modules have a clear extension path without changing current routes or UI composition.
+  - Existing working modules can be migrated incrementally instead of through a broad rewrite.
+  - Pages should increasingly act as presentation and orchestration shells rather than business-logic containers.
+
+## DEC-006
+
+- Date: 2026-08-02
+- Status: accepted
+- Context: Inventory, purchase orders, suppliers and events currently contain resource-adjacent concepts, but the platform lacks a generic resource abstraction that can later support multiple industries and external callers.
+- Decision: Introduce Resource Engine as a standalone capability with generic resource model contracts, lifecycle action definitions and a dedicated service/module, while keeping current Inventory and related modules unchanged in Phase 1.
+- Consequences:
+  - Existing operational modules remain the active system of record until migration packages are planned.
+  - Future resource workflows can evolve without coupling to event-specific nouns.
+  - Marketplace, AI, dispatch and maintenance extensions can attach to a generic resource capability instead of to Inventory directly.
+
+## DEC-007
+
+- Date: 2026-08-02
+- Status: accepted
+- Context: Events currently exist as records, but the platform needs a future-safe way to orchestrate planning, reservation, procurement, staffing, dispatch and completion as an executable workflow without breaking current Event CRUD.
+- Decision: Introduce Event Execution Engine as a standalone capability with lifecycle action contracts, a dedicated service/module and explicit phase-1 placeholders, while keeping the existing Event module unchanged.
+- Consequences:
+  - Current Event pages and CRUD behavior remain stable.
+  - Future workflow orchestration can evolve independently from record management.
+  - Resource, Purchase Order, Task and supplier-booking capabilities can later integrate through capability contracts instead of direct page-specific logic.
+
 ## Superseding a Decision
 
 When replacing a decision:

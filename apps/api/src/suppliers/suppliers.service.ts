@@ -1,4 +1,6 @@
 import {
+  BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -26,10 +28,21 @@ export class SuppliersService {
   async create(userId: string, data: CreateSupplierDto) {
     await this.ensureOrganizationAccess(userId, data.organizationId);
 
+    const companyName = this.normalizeRequiredString(data.companyName);
+    const vatNumber = this.normalizeNullableString(data.vatNumber);
+    const registrationNumber = this.normalizeNullableString(
+      data.registrationNumber,
+    );
+
+    await this.ensureUniqueIdentifiers(data.organizationId, {
+      vatNumber,
+      registrationNumber,
+    });
+
     const created = await this.prisma.supplier.create({
       data: {
         organizationId: data.organizationId,
-        companyName: this.normalizeRequiredString(data.companyName),
+        companyName,
         category: data.category,
         primaryContactName: this.normalizeNullableString(
           data.primaryContactName,
@@ -42,10 +55,8 @@ export class SuppliersService {
         city: this.normalizeNullableString(data.city),
         province: this.normalizeNullableString(data.province),
         postalCode: this.normalizeNullableString(data.postalCode),
-        vatNumber: this.normalizeNullableString(data.vatNumber),
-        registrationNumber: this.normalizeNullableString(
-          data.registrationNumber,
-        ),
+        vatNumber,
+        registrationNumber,
         preferredSupplier: data.preferredSupplier ?? false,
         active: data.active ?? true,
         preferredPaymentTerms: this.normalizeNullableString(
@@ -169,6 +180,24 @@ export class SuppliersService {
 
     await this.ensureOrganizationAccess(userId, supplier.organizationId);
 
+    const vatNumber =
+      data.vatNumber !== undefined
+        ? this.normalizeNullableString(data.vatNumber)
+        : undefined;
+    const registrationNumber =
+      data.registrationNumber !== undefined
+        ? this.normalizeNullableString(data.registrationNumber)
+        : undefined;
+
+    await this.ensureUniqueIdentifiers(
+      supplier.organizationId,
+      {
+        vatNumber,
+        registrationNumber,
+      },
+      supplier.id,
+    );
+
     const updateData: Prisma.SupplierUpdateInput = {};
 
     if (data.companyName !== undefined) {
@@ -220,13 +249,11 @@ export class SuppliersService {
     }
 
     if (data.vatNumber !== undefined) {
-      updateData.vatNumber = this.normalizeNullableString(data.vatNumber);
+      updateData.vatNumber = vatNumber;
     }
 
     if (data.registrationNumber !== undefined) {
-      updateData.registrationNumber = this.normalizeNullableString(
-        data.registrationNumber,
-      );
+      updateData.registrationNumber = registrationNumber;
     }
 
     if (data.preferredSupplier !== undefined) {
@@ -269,7 +296,29 @@ export class SuppliersService {
 
     await this.ensureOrganizationAccess(userId, supplier.organizationId);
 
+    await this.ensureSupplierCanBeDeleted(supplier.organizationId, supplier.id);
+
     await this.prisma.supplier.delete({ where: { id: supplier.id } });
+  }
+
+  async archive(userId: string, id: string) {
+    const supplier = await this.prisma.supplier.findUnique({ where: { id } });
+
+    if (!supplier) {
+      throw new NotFoundException(`Supplier with id ${id} not found`);
+    }
+
+    await this.ensureOrganizationAccess(userId, supplier.organizationId);
+
+    const archived = await this.prisma.supplier.update({
+      where: { id: supplier.id },
+      data: {
+        active: false,
+      },
+      include: this.supplierInclude,
+    });
+
+    return this.mapSupplier(archived);
   }
 
   private resolveOrderBy(
@@ -309,7 +358,13 @@ export class SuppliersService {
   }
 
   private normalizeRequiredString(value: string) {
-    return value.trim();
+    const trimmed = value.trim();
+
+    if (trimmed.length === 0) {
+      throw new BadRequestException('Company name is required');
+    }
+
+    return trimmed;
   }
 
   private normalizeNullableString(value: string | null | undefined) {
@@ -337,6 +392,110 @@ export class SuppliersService {
     if (!membership) {
       throw new ForbiddenException(
         'You do not have access to this organization',
+      );
+    }
+  }
+
+  private async ensureUniqueIdentifiers(
+    organizationId: string,
+    identifiers: {
+      vatNumber?: string | null;
+      registrationNumber?: string | null;
+    },
+    ignoreSupplierId?: string,
+  ) {
+    if (identifiers.vatNumber) {
+      const duplicateVat = await this.prisma.supplier.findFirst({
+        where: {
+          organizationId,
+          vatNumber: {
+            equals: identifiers.vatNumber,
+            mode: 'insensitive',
+          },
+          ...(ignoreSupplierId
+            ? {
+                id: {
+                  not: ignoreSupplierId,
+                },
+              }
+            : {}),
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (duplicateVat) {
+        throw new ConflictException(
+          'VAT number already exists for this organization',
+        );
+      }
+    }
+
+    if (identifiers.registrationNumber) {
+      const duplicateRegistration = await this.prisma.supplier.findFirst({
+        where: {
+          organizationId,
+          registrationNumber: {
+            equals: identifiers.registrationNumber,
+            mode: 'insensitive',
+          },
+          ...(ignoreSupplierId
+            ? {
+                id: {
+                  not: ignoreSupplierId,
+                },
+              }
+            : {}),
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (duplicateRegistration) {
+        throw new ConflictException(
+          'Registration number already exists for this organization',
+        );
+      }
+    }
+  }
+
+  private async ensureSupplierCanBeDeleted(
+    organizationId: string,
+    supplierId: string,
+  ) {
+    const [
+      purchaseOrderCount,
+      preferredInventoryItemCount,
+      quotationLinkCount,
+    ] = await this.prisma.$transaction([
+      this.prisma.purchaseOrder.count({
+        where: {
+          organizationId,
+          supplierId,
+        },
+      }),
+      this.prisma.inventoryItem.count({
+        where: {
+          organizationId,
+          preferredSupplierId: supplierId,
+        },
+      }),
+      this.prisma.supplierQuotation.count({
+        where: {
+          supplierId,
+        },
+      }),
+    ]);
+
+    if (
+      purchaseOrderCount > 0 ||
+      preferredInventoryItemCount > 0 ||
+      quotationLinkCount > 0
+    ) {
+      throw new ConflictException(
+        'Supplier cannot be deleted because it is referenced by purchase orders, inventory, or quotations. Archive the supplier instead.',
       );
     }
   }

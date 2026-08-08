@@ -3,8 +3,9 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState, type FormEvent } from 'react';
 import { PageHeader } from '../../components/app-shell/page-header';
+import { isDevelopmentAuthBypassEnabled } from '../../components/app-shell/protected-routes';
 import { useAppSession } from '../../components/app-shell/session-context';
-import { loginWithPassword } from '../../lib/auth-api';
+import { loginWithPassword, seedDevelopmentWorkspace } from '../../lib/auth-api';
 
 function LoginPageContent() {
   const router = useRouter();
@@ -45,6 +46,31 @@ function LoginPageContent() {
     } catch (requestError) {
       setError(
         requestError instanceof Error ? requestError.message : 'Login failed.',
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onDemoSignIn() {
+    setError('');
+    setSaving(true);
+
+    try {
+      const response = await seedDevelopmentWorkspace(baseUrl);
+
+      setSession({
+        baseUrl,
+        token: response.accessToken,
+        organizationId: response.organizationId,
+      });
+
+      router.replace(nextPath);
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Demo sign in failed.',
       );
     } finally {
       setSaving(false);
@@ -97,7 +123,7 @@ function LoginPageContent() {
 
         {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
 
-        <div className="mt-4">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <button
             type="submit"
             disabled={saving}
@@ -105,6 +131,17 @@ function LoginPageContent() {
           >
             {saving ? 'Signing in...' : 'Sign In'}
           </button>
+
+          {isDevelopmentAuthBypassEnabled() ? (
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => void onDemoSignIn()}
+              className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100 disabled:opacity-60"
+            >
+              Sign in as Demo Administrator
+            </button>
+          ) : null}
         </div>
       </form>
     </div>

@@ -50,6 +50,23 @@ type SupplierRecord = {
   updatedAt: Date;
 };
 
+type PurchaseOrderRecord = {
+  id: string;
+  organizationId: string;
+  supplierId: string;
+};
+
+type InventoryItemRecord = {
+  id: string;
+  organizationId: string;
+  preferredSupplierId: string | null;
+};
+
+type SupplierQuotationRecord = {
+  id: string;
+  supplierId: string;
+};
+
 const ORG_1 = '11111111-1111-4111-8111-111111111111';
 const ORG_2 = '22222222-2222-4222-8222-222222222222';
 
@@ -87,6 +104,9 @@ describe('SuppliersController (e2e)', () => {
   let users: UserRecord[];
   let memberships: MembershipRecord[];
   let suppliers: SupplierRecord[];
+  let purchaseOrders: PurchaseOrderRecord[];
+  let inventoryItems: InventoryItemRecord[];
+  let supplierQuotations: SupplierQuotationRecord[];
 
   let supplierSequence = 0;
 
@@ -150,6 +170,10 @@ describe('SuppliersController (e2e)', () => {
         city: 'Cape Town',
       }),
     ];
+
+    purchaseOrders = [];
+    inventoryItems = [];
+    supplierQuotations = [];
 
     const prismaMock = {
       user: {
@@ -364,11 +388,92 @@ describe('SuppliersController (e2e)', () => {
             });
           },
         ),
+        findFirst: jest.fn(
+          ({
+            where,
+          }: {
+            where: {
+              organizationId: string;
+              vatNumber?: { equals: string; mode: 'insensitive' };
+              registrationNumber?: { equals: string; mode: 'insensitive' };
+              id?: { not: string };
+            };
+          }) => {
+            const match = suppliers.find((supplier) => {
+              if (supplier.organizationId !== where.organizationId) {
+                return false;
+              }
+
+              if (where.id?.not && supplier.id === where.id.not) {
+                return false;
+              }
+
+              if (where.vatNumber) {
+                return (
+                  (supplier.vatNumber ?? '').toLowerCase() ===
+                  where.vatNumber.equals.toLowerCase()
+                );
+              }
+
+              if (where.registrationNumber) {
+                return (
+                  (supplier.registrationNumber ?? '').toLowerCase() ===
+                  where.registrationNumber.equals.toLowerCase()
+                );
+              }
+
+              return false;
+            });
+
+            return Promise.resolve(match ? { id: match.id } : null);
+          },
+        ),
         delete: jest.fn(({ where }: { where: { id: string } }) => {
           const supplier = suppliers.find((entry) => entry.id === where.id);
           suppliers = suppliers.filter((entry) => entry.id !== where.id);
           return Promise.resolve(supplier);
         }),
+      },
+      purchaseOrder: {
+        count: jest.fn(
+          ({
+            where,
+          }: {
+            where: { organizationId: string; supplierId: string };
+          }) =>
+            Promise.resolve(
+              purchaseOrders.filter(
+                (order) =>
+                  order.organizationId === where.organizationId &&
+                  order.supplierId === where.supplierId,
+              ).length,
+            ),
+        ),
+      },
+      inventoryItem: {
+        count: jest.fn(
+          ({
+            where,
+          }: {
+            where: { organizationId: string; preferredSupplierId: string };
+          }) =>
+            Promise.resolve(
+              inventoryItems.filter(
+                (item) =>
+                  item.organizationId === where.organizationId &&
+                  item.preferredSupplierId === where.preferredSupplierId,
+              ).length,
+            ),
+        ),
+      },
+      supplierQuotation: {
+        count: jest.fn(({ where }: { where: { supplierId: string } }) =>
+          Promise.resolve(
+            supplierQuotations.filter(
+              (link) => link.supplierId === where.supplierId,
+            ).length,
+          ),
+        ),
       },
       organization: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -416,7 +521,7 @@ describe('SuppliersController (e2e)', () => {
     return body.accessToken;
   }
 
-  it('supports create, list with filtering, get, update and delete', async () => {
+  it('supports create, list with filtering, get, update and archive', async () => {
     const token = await login('user1@example.com');
 
     const createdResponse = await request(app.getHttpServer())
@@ -479,15 +584,76 @@ describe('SuppliersController (e2e)', () => {
       }),
     );
 
-    await request(app.getHttpServer())
-      .delete(`/suppliers/${created.id}`)
+    const archivedResponse = await request(app.getHttpServer())
+      .patch(`/suppliers/${created.id}/archive`)
       .set('Authorization', `Bearer ${token}`)
-      .expect(204);
+      .expect(200);
+
+    expect(archivedResponse.body).toEqual(
+      expect.objectContaining({
+        active: false,
+      }),
+    );
+
+    const archivedListResponse = await request(app.getHttpServer())
+      .get('/suppliers')
+      .query({
+        organizationId: ORG_1,
+        active: false,
+      })
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+
+    const archivedListBody = archivedListResponse.body as {
+      data: SupplierRecord[];
+    };
+
+    expect(archivedListBody.data.some((item) => item.id === created.id)).toBe(
+      true,
+    );
+  });
+
+  it('accepts Lighting category and normalizes website without protocol', async () => {
+    const token = await login('user1@example.com');
+
+    const createdResponse = await request(app.getHttpServer())
+      .post('/suppliers')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        organizationId: ORG_1,
+        companyName: 'CuStech Lighting',
+        category: SupplierCategory.Lighting,
+        website: 'www.custechonline.com',
+      })
+      .expect(201);
+
+    expect(createdResponse.body).toEqual(
+      expect.objectContaining({
+        category: SupplierCategory.Lighting,
+        website: 'https://www.custechonline.com',
+      }),
+    );
+  });
+
+  it('blocks delete when supplier has dependencies', async () => {
+    const token = await login('user1@example.com');
+
+    const supplier = makeSupplier({
+      id: 'supplier-with-po',
+    });
+
+    suppliers.push(supplier);
+
+    purchaseOrders.push({
+      id: 'po-1',
+      organizationId: ORG_1,
+      supplierId: supplier.id,
+    });
 
     await request(app.getHttpServer())
-      .get(`/suppliers/${created.id}`)
+      .delete(`/suppliers/${supplier.id}`)
       .set('Authorization', `Bearer ${token}`)
-      .expect(404);
+      .expect(409);
   });
 
   it('enforces authentication and organization isolation', async () => {

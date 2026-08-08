@@ -1,5 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { InventoryIndoorOutdoor } from './inventory-indoor-outdoor.enum';
 import { InventoryItemType } from './inventory-item-type.enum';
+import { InventoryMarketplaceVisibility } from './inventory-marketplace-visibility.enum';
+import { InventoryResourceStatus } from './inventory-resource-status.enum';
 import { StockMovementType } from './stock-movement-type.enum';
 import { UnitOfMeasure } from './unit-of-measure.enum';
 
@@ -82,8 +85,17 @@ export class InventoryItemResponseDto {
   @ApiProperty({ example: 'CHAIR-001' })
   sku: string;
 
+  @ApiProperty({ example: 'Banquet Chair - Gold Frame', nullable: true })
+  publicName: string | null;
+
+  @ApiProperty({ example: 'Chair GF Batch A', nullable: true })
+  internalName: string | null;
+
   @ApiProperty({ example: '1234567890123', nullable: true })
   barcode: string | null;
+
+  @ApiProperty({ example: 'QR-CHAIR-001', nullable: true })
+  qrCode: string | null;
 
   @ApiProperty({ example: 'Banquet Chair' })
   name: string;
@@ -91,8 +103,56 @@ export class InventoryItemResponseDto {
   @ApiProperty({ example: 'Gold frame banquet chair', nullable: true })
   description: string | null;
 
+  @ApiProperty({ example: 'Premium gold banquet chair', nullable: true })
+  shortDescription: string | null;
+
+  @ApiProperty({
+    example: 'Long-form narrative description for AI and marketplace.',
+    nullable: true,
+  })
+  longDescription: string | null;
+
+  @ApiProperty({
+    example: 'Internal handling notes for warehouse team.',
+    nullable: true,
+  })
+  internalNotes: string | null;
+
+  @ApiProperty({
+    example: 'Royal Gold Banquet Chair',
+    nullable: true,
+  })
+  marketplaceTitle: string | null;
+
+  @ApiProperty({
+    example: 'Elegant stackable seating for weddings and formal banquets.',
+    nullable: true,
+  })
+  marketplaceDescription: string | null;
+
+  @ApiProperty({
+    example: 'A versatile chair suitable for weddings and conferences.',
+    nullable: true,
+  })
+  aiSummary: string | null;
+
+  @ApiProperty({ example: ['banquet', 'gold', 'stackable'] })
+  aiKeywords: string[];
+
+  @ApiProperty({ example: ['wedding', 'premium'] })
+  aiTags: string[];
+
+  @ApiProperty({ example: 0.87, nullable: true })
+  aiConfidence: number | null;
+
   @ApiProperty({ example: 'category-1' })
   categoryId: string;
+
+  @ApiProperty({ example: 'Seating', nullable: true })
+  subCategory: string | null;
+
+  @ApiProperty({ example: 'Acme Events', nullable: true })
+  brand: string | null;
 
   @ApiProperty({ example: 'Furniture' })
   categoryName: string;
@@ -104,6 +164,12 @@ export class InventoryItemResponseDto {
   preferredSupplierName: string | null;
 
   @ApiProperty({
+    enum: InventoryResourceStatus,
+    example: InventoryResourceStatus.Active,
+  })
+  resourceStatus: InventoryResourceStatus;
+
+  @ApiProperty({
     enum: InventoryItemType,
     example: InventoryItemType.Furniture,
   })
@@ -111,6 +177,73 @@ export class InventoryItemResponseDto {
 
   @ApiProperty({ enum: UnitOfMeasure, example: UnitOfMeasure.Each })
   unitOfMeasure: UnitOfMeasure;
+
+  @ApiProperty({ example: 'Rustic', nullable: true })
+  style: string | null;
+
+  @ApiProperty({ example: 'Royal Classic', nullable: true })
+  theme: string | null;
+
+  @ApiProperty({ example: 'Gold', nullable: true })
+  colour: string | null;
+
+  @ApiProperty({ example: 'Metal', nullable: true })
+  material: string | null;
+
+  @ApiProperty({ example: '50cm x 45cm x 90cm', nullable: true })
+  dimensions: string | null;
+
+  @ApiProperty({ example: '6kg', nullable: true })
+  weight: string | null;
+
+  @ApiProperty({ example: '1 person', nullable: true })
+  capacity: string | null;
+
+  @ApiProperty({
+    enum: InventoryIndoorOutdoor,
+    example: InventoryIndoorOutdoor.Both,
+  })
+  indoorOutdoor: InventoryIndoorOutdoor;
+
+  @ApiProperty({ example: ['Wedding', 'Corporate'] })
+  suitableEventTypes: string[];
+
+  @ApiProperty({ example: ['hero-item', 'best-seller'] })
+  manualTags: string[];
+
+  @ApiProperty({ example: ['stackable', 'banquet', 'formal'] })
+  keywords: string[];
+
+  @ApiProperty({ example: ['luxury', 'event-favorite'] })
+  aiGeneratedTags: string[];
+
+  @ApiProperty({
+    enum: InventoryMarketplaceVisibility,
+    example: InventoryMarketplaceVisibility.Private,
+  })
+  marketplaceVisibility: InventoryMarketplaceVisibility;
+
+  @ApiProperty({ example: ['https://cdn.example.com/resource-1.jpg'] })
+  photoUrls: string[];
+
+  @ApiProperty({
+    example: 'https://cdn.example.com/resource-1.jpg',
+    nullable: true,
+  })
+  primaryPhotoUrl: string | null;
+
+  @ApiProperty({
+    example: [
+      {
+        url: 'https://cdn.example.com/resource-1.jpg',
+        isPrimary: true,
+        aiAnalysisSummary: null,
+        backgroundEnhancementStatus: 'pending',
+      },
+    ],
+    nullable: true,
+  })
+  photoAssets: Record<string, unknown>[] | null;
 
   @ApiProperty({ example: 450, nullable: true })
   costPrice: number | null;
@@ -291,4 +424,96 @@ export class InventoryOverviewResponseDto {
 
   @ApiProperty({ type: [StockMovementResponseDto] })
   recentStockMovements: StockMovementResponseDto[];
+}
+
+export class ResourceWorkspaceRecentlyReturnedDto {
+  @ApiProperty({ example: 'resource-1' })
+  resourceId: string;
+
+  @ApiProperty({ example: 'Banquet Chair' })
+  resourceName: string;
+
+  @ApiProperty({ example: 20 })
+  quantityReturned: number;
+
+  @ApiProperty({ example: '2026-08-02T09:30:00.000Z' })
+  returnedAt: Date;
+}
+
+export class ResourceWorkspaceSummaryResponseDto {
+  @ApiProperty({ example: 135 })
+  totalResources: number;
+
+  @ApiProperty({ example: 120 })
+  availableToday: number;
+
+  @ApiProperty({ example: 42 })
+  reservedToday: number;
+
+  @ApiProperty({ example: 6 })
+  damaged: number;
+
+  @ApiProperty({ example: 3 })
+  missing: number;
+
+  @ApiProperty({ example: 18 })
+  returningToday: number;
+
+  @ApiProperty({ example: 4 })
+  maintenanceDue: number;
+
+  @ApiProperty({ type: [ResourceWorkspaceRecentlyReturnedDto] })
+  recentlyReturnedResources: ResourceWorkspaceRecentlyReturnedDto[];
+}
+
+export class ResourceWorkspaceCardDto {
+  @ApiProperty({ example: 'resource-1' })
+  id: string;
+
+  @ApiProperty({ example: 'Banquet Chair' })
+  name: string;
+
+  @ApiProperty({ example: 'Furniture' })
+  category: string;
+
+  @ApiProperty({ example: 200, nullable: true })
+  quantity: number | null;
+
+  @ApiProperty({ example: 160, nullable: true })
+  availableQuantity: number | null;
+
+  @ApiProperty({ example: 35, nullable: true })
+  reservedQuantity: number | null;
+
+  @ApiProperty({ example: 5 })
+  damagedQuantity: number;
+
+  @ApiProperty({ example: 2 })
+  missingQuantity: number;
+
+  @ApiProperty({ example: 'MARKETPLACE' })
+  marketplaceStatus: string;
+
+  @ApiProperty({ example: 'Main Warehouse', nullable: true })
+  currentLocation: string | null;
+
+  @ApiProperty({ example: '2026-08-20T12:00:00.000Z', nullable: true })
+  nextReservation: Date | null;
+
+  @ApiProperty({ example: null, nullable: true })
+  primaryImage: string | null;
+
+  @ApiProperty({ example: 'supplier-1', nullable: true })
+  supplierId: string | null;
+
+  @ApiProperty({ example: 'Sunrise Catering', nullable: true })
+  supplierName: string | null;
+}
+
+export class ResourceWorkspaceCardListResponseDto {
+  @ApiProperty({ type: [ResourceWorkspaceCardDto] })
+  data: ResourceWorkspaceCardDto[];
+
+  @ApiProperty({ type: InventoryListMetaDto })
+  meta: InventoryListMetaDto;
 }

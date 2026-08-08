@@ -18,6 +18,8 @@ import type {
   UpdateInventoryItemPayload,
   UpdateStorageLocationPayload,
   InventoryItemType,
+  ResourceWorkspaceCard,
+  ResourceWorkspaceSummary,
 } from './inventory-types';
 
 type RequestOptions = {
@@ -77,6 +79,96 @@ export async function getInventoryOverview(
 ) {
   return apiRequest<InventoryOverview>(
     `/inventory/overview?organizationId=${organizationId}`,
+    options,
+  );
+}
+
+export async function getResourceWorkspaceSummary(
+  options: RequestOptions,
+  organizationId: string,
+) {
+  return apiRequest<ResourceWorkspaceSummary>(
+    `/inventory/resource-workspace/summary?organizationId=${organizationId}`,
+    options,
+  );
+}
+
+export async function listResourceWorkspaceCards(
+  options: RequestOptions,
+  params: {
+    organizationId: string;
+    search?: string;
+    category?: string;
+    tags?: string;
+    keywords?: string;
+    supplierId?: string;
+    available?: boolean;
+    reserved?: boolean;
+    damaged?: boolean;
+    missing?: boolean;
+    maintenanceDue?: boolean;
+    marketplacePublished?: boolean;
+    page?: number;
+    limit?: number;
+  },
+) {
+  const query = new URLSearchParams();
+  query.set('organizationId', params.organizationId);
+
+  if (params.search) {
+    query.set('search', params.search);
+  }
+
+  if (params.category) {
+    query.set('category', params.category);
+  }
+
+  if (params.tags) {
+    query.set('tags', params.tags);
+  }
+
+  if (params.keywords) {
+    query.set('keywords', params.keywords);
+  }
+
+  if (params.supplierId && params.supplierId !== 'ALL') {
+    query.set('supplierId', params.supplierId);
+  }
+
+  if (params.available !== undefined) {
+    query.set('available', String(params.available));
+  }
+
+  if (params.reserved !== undefined) {
+    query.set('reserved', String(params.reserved));
+  }
+
+  if (params.damaged !== undefined) {
+    query.set('damaged', String(params.damaged));
+  }
+
+  if (params.missing !== undefined) {
+    query.set('missing', String(params.missing));
+  }
+
+  if (params.maintenanceDue !== undefined) {
+    query.set('maintenanceDue', String(params.maintenanceDue));
+  }
+
+  if (params.marketplacePublished !== undefined) {
+    query.set('marketplacePublished', String(params.marketplacePublished));
+  }
+
+  if (params.page) {
+    query.set('page', String(params.page));
+  }
+
+  if (params.limit) {
+    query.set('limit', String(params.limit));
+  }
+
+  return apiRequest<PagedResponse<ResourceWorkspaceCard>>(
+    `/inventory/resource-workspace/cards?${query.toString()}`,
     options,
   );
 }
@@ -214,8 +306,21 @@ export async function listInventoryItems(
   params: {
     organizationId: string;
     search?: string;
+    style?: string;
+    material?: string;
+    colour?: string;
+    dimensions?: string;
+    tags?: string;
+    keywords?: string;
     categoryId?: string;
     itemType?: InventoryItemType;
+    resourceStatus?:
+      | 'Active'
+      | 'Maintenance'
+      | 'Damaged'
+      | 'Retired'
+      | 'Archived';
+    marketplaceVisibility?: 'Private' | 'Public';
     active?: boolean;
     preferredSupplierId?: string;
     lowStockOnly?: boolean;
@@ -231,12 +336,44 @@ export async function listInventoryItems(
     query.set('search', params.search);
   }
 
+  if (params.style) {
+    query.set('style', params.style);
+  }
+
+  if (params.material) {
+    query.set('material', params.material);
+  }
+
+  if (params.colour) {
+    query.set('colour', params.colour);
+  }
+
+  if (params.dimensions) {
+    query.set('dimensions', params.dimensions);
+  }
+
+  if (params.tags) {
+    query.set('tags', params.tags);
+  }
+
+  if (params.keywords) {
+    query.set('keywords', params.keywords);
+  }
+
   if (params.categoryId && params.categoryId !== 'ALL') {
     query.set('categoryId', params.categoryId);
   }
 
   if (params.itemType) {
     query.set('itemType', params.itemType);
+  }
+
+  if (params.resourceStatus) {
+    query.set('resourceStatus', params.resourceStatus);
+  }
+
+  if (params.marketplaceVisibility) {
+    query.set('marketplaceVisibility', params.marketplaceVisibility);
   }
 
   if (params.active !== undefined) {

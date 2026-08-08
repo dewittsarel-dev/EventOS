@@ -15,7 +15,12 @@ import {
   buildBreadcrumbs,
   routeTitle,
 } from './route-meta';
-import { isProtectedAppPath, navigateToLogin, navigateToPath } from './protected-routes';
+import {
+  isDevelopmentAuthBypassEnabled,
+  isProtectedAppPath,
+  navigateToLogin,
+  navigateToPath,
+} from './protected-routes';
 import { Breadcrumbs } from './breadcrumbs';
 import {
   ChevronLeftIcon,
@@ -36,6 +41,7 @@ import {
   TasksIcon,
   UserIcon,
 } from './shell-icons';
+import { seedDevelopmentWorkspace } from '../../lib/auth-api';
 import { useAppSession } from './session-context';
 
 type AppShellProps = {
@@ -110,6 +116,7 @@ export function AppShell({ children }: AppShellProps) {
     loadingMeta,
     metaError,
     isAuthenticated,
+    isSessionHydrated,
     logout,
     setOrganizationId,
   } = useAppSession();
@@ -121,6 +128,8 @@ export function AppShell({ children }: AppShellProps) {
   const [tokenInput, setTokenInput] = useState(session.token);
   const [organizationInput, setOrganizationInput] = useState(session.organizationId);
   const [savedHint, setSavedHint] = useState('');
+  const [demoSignInBusy, setDemoSignInBusy] = useState(false);
+  const [demoSignInError, setDemoSignInError] = useState('');
 
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
@@ -173,6 +182,14 @@ export function AppShell({ children }: AppShellProps) {
 
   const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname), [pathname]);
   const protectedRoute = useMemo(() => isProtectedAppPath(pathname), [pathname]);
+  const developmentAuthBypassEnabled = useMemo(
+    () => isDevelopmentAuthBypassEnabled(),
+    [],
+  );
+  const enforceAuth = useMemo(
+    () => protectedRoute && !developmentAuthBypassEnabled,
+    [developmentAuthBypassEnabled, protectedRoute],
+  );
 
   function isActiveRoute(href: string) {
     if (href === '/') {
@@ -216,13 +233,34 @@ export function AppShell({ children }: AppShellProps) {
   }
 
   useEffect(() => {
-    if (!protectedRoute || isAuthenticated) {
+    if (!isSessionHydrated || !enforceAuth || isAuthenticated) {
       return;
     }
 
     const search = typeof window === 'undefined' ? '' : window.location.search;
     navigateToLogin(pathname, search);
-  }, [isAuthenticated, pathname, protectedRoute]);
+  }, [enforceAuth, isAuthenticated, isSessionHydrated, pathname]);
+
+  async function onDemoSignInFromShell() {
+    setDemoSignInError('');
+    setDemoSignInBusy(true);
+
+    try {
+      const response = await seedDevelopmentWorkspace(session.baseUrl);
+
+      setSession({
+        baseUrl: session.baseUrl,
+        token: response.accessToken,
+        organizationId: response.organizationId,
+      });
+    } catch (error) {
+      setDemoSignInError(
+        error instanceof Error ? error.message : 'Demo sign in failed.',
+      );
+    } finally {
+      setDemoSignInBusy(false);
+    }
+  }
 
   const nav = (
     <nav aria-label="Main navigation" className="mt-6 space-y-1">
@@ -522,17 +560,42 @@ export function AppShell({ children }: AppShellProps) {
               {metaError ? (
                 <p className="mt-1 text-xs text-amber-700">{metaError}</p>
               ) : null}
-              {!isAuthenticated ? (
+              {!isAuthenticated && !developmentAuthBypassEnabled ? (
                 <p className="mt-1 text-xs text-zinc-500">
                   Set a bearer token in the profile menu to access protected routes.
                 </p>
+              ) : null}
+
+              {!isAuthenticated && developmentAuthBypassEnabled ? (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={demoSignInBusy}
+                    onClick={() => void onDemoSignInFromShell()}
+                    className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-100 disabled:opacity-60"
+                  >
+                    {demoSignInBusy
+                      ? 'Signing in as Demo Administrator...'
+                      : 'Sign in as Demo Administrator'}
+                  </button>
+                  <Link
+                    href="/login"
+                    className="text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-900"
+                  >
+                    Open sign-in page
+                  </Link>
+                </div>
+              ) : null}
+
+              {demoSignInError ? (
+                <p className="mt-1 text-xs text-red-700">{demoSignInError}</p>
               ) : null}
             </div>
           </header>
 
           <main className="min-w-0 flex-1 overflow-x-clip px-3 py-4 md:px-6 md:py-6">
             <div className="mx-auto w-full max-w-7xl">
-              {protectedRoute && !isAuthenticated ? (
+              {isSessionHydrated && enforceAuth && !isAuthenticated ? (
                 <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
                   Redirecting to sign in...
                 </div>

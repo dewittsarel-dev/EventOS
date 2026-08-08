@@ -56,4 +56,59 @@ export class CreateContactDto {
   @IsString()
   @MaxLength(50)
   phone?: string;
+
+  @ApiProperty({
+    example: '+27 82 111 2222',
+    description: 'Contact mobile number',
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  mobile?: string;
+
+  @ApiProperty({
+    example: 'Acme Corporation',
+    description: 'Company or organization name',
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  companyName?: string;
+
+  @ApiProperty({
+    example: 'Client',
+    description: 'Contact category or type',
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  contactType?: string;
+
+  @ApiProperty({
+    example: '123 Main Street, Cape Town',
+    description: 'Contact address',
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  address?: string;
+
+  @ApiProperty({
+    example: 'Prefers WhatsApp contact during business hours.',
+    description: 'Operational notes for this contact',
+    required: false,
+    nullable: true,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(4000)
+  notes?: string;
 }

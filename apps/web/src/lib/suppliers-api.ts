@@ -134,3 +134,9 @@ export async function deleteSupplier(options: RequestOptions, id: string) {
     method: 'DELETE',
   });
 }
+
+export async function archiveSupplier(options: RequestOptions, id: string) {
+  return apiRequest<SupplierRecord>(`/suppliers/${id}/archive`, options, {
+    method: 'PATCH',
+  });
+}

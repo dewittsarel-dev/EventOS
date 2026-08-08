@@ -1,14 +1,26 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
   Injectable,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import {
+  EventResourceAllocationStatus,
   Prisma,
+  ResourceCondition,
+  ResourceQuantityMode,
+  ResourceReservationStatus,
+  ResourceStatus,
+  ResourceVisibility,
   StockMovementType as PrismaStockMovementType,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  RESOURCE_ENGINE_PORT,
+  type ResourceEnginePort,
+} from '../resources/resource-engine.port';
 import { CreateInventoryCategoryDto } from './dto/create-inventory-category.dto';
 import { CreateInventoryItemDto } from './dto/create-inventory-item.dto';
 import { CreateOpeningBalanceDto } from './dto/create-opening-balance.dto';
@@ -18,6 +30,7 @@ import {
 } from './dto/create-stock-adjustment.dto';
 import { CreateStockTransferDto } from './dto/create-stock-transfer.dto';
 import { CreateStorageLocationDto } from './dto/create-storage-location.dto';
+import { FindResourceWorkspaceCardsQueryDto } from './dto/find-resource-workspace-cards-query.dto';
 import { FindInventoryCategoriesQueryDto } from './dto/find-inventory-categories-query.dto';
 import { FindInventoryItemsQueryDto } from './dto/find-inventory-items-query.dto';
 import { FindStockLevelsQueryDto } from './dto/find-stock-levels-query.dto';
@@ -33,9 +46,21 @@ type PermissionAction = 'View' | 'Create' | 'Edit' | 'Delete';
 
 type RolePermissionMap = Record<string, Record<string, boolean>>;
 
+const CAPACITY_CONSUMING_RESERVATION_STATUSES: ResourceReservationStatus[] = [
+  ResourceReservationStatus.PENDING,
+  ResourceReservationStatus.RESERVED,
+  ResourceReservationStatus.CONFIRMED,
+  ResourceReservationStatus.DISPATCHED,
+];
+
 @Injectable()
 export class InventoryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional()
+    @Inject(RESOURCE_ENGINE_PORT)
+    private readonly resourceEngine?: ResourceEnginePort,
+  ) {}
 
   async getOverview(userId: string, organizationId: string) {
     await this.ensureOrganizationPermission(userId, organizationId, 'View');
@@ -115,6 +140,512 @@ export class InventoryService {
       outOfStockItems,
       activeLocations,
       recentStockMovements: recentMovements.map((row) => this.mapMovement(row)),
+    };
+  }
+
+  async getResourceWorkspaceSummary(userId: string, organizationId: string) {
+    await this.ensureOrganizationPermission(userId, organizationId, 'View');
+
+    const now = new Date();
+    const startOfDay = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+    );
+    const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
+    const returnedSince = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const [resources, reservationsToday, allocations, recentlyReturned] =
+      await Promise.all([
+        this.prisma.resource.findMany({
+          where: {
+            organizationId,
+            archivedAt: null,
+          },
+          select: {
+            id: true,
+            totalQuantity: true,
+            quantityMode: true,
+            status: true,
+            condition: true,
+            name: true,
+          },
+        }),
+        this.prisma.resourceReservation.findMany({
+          where: {
+            organizationId,
+            status: {
+              in: CAPACITY_CONSUMING_RESERVATION_STATUSES,
+            },
+            startDateTime: { lt: endOfDay },
+            endDateTime: { gt: startOfDay },
+          },
+          select: {
+            resourceId: true,
+            quantity: true,
+            endDateTime: true,
+          },
+        }),
+        this.prisma.eventResourceAllocation.findMany({
+          where: {
+            organizationId,
+          },
+          select: {
+            resourceId: true,
+            quantityDamaged: true,
+            quantityLost: true,
+          },
+        }),
+        this.prisma.eventResourceAllocation.findMany({
+          where: {
+            organizationId,
+            status: EventResourceAllocationStatus.Returned,
+            actualReturnDate: {
+              gte: returnedSince,
+            },
+          },
+          select: {
+            resourceId: true,
+            quantityReturned: true,
+            actualReturnDate: true,
+            resource: {
+              select: {
+                name: true,
+              },
+            },
+          },
+          orderBy: {
+            actualReturnDate: 'desc',
+          },
+          take: 8,
+        }),
+      ]);
+
+    const reservedByResource = new Map<string, number>();
+    let returningToday = 0;
+
+    for (const reservation of reservationsToday) {
+      reservedByResource.set(
+        reservation.resourceId,
+        (reservedByResource.get(reservation.resourceId) ?? 0) +
+          reservation.quantity,
+      );
+
+      if (
+        reservation.endDateTime >= startOfDay &&
+        reservation.endDateTime < endOfDay
+      ) {
+        returningToday += 1;
+      }
+    }
+
+    const damagedByResource = new Map<string, number>();
+    const lostByResource = new Map<string, number>();
+
+    for (const allocation of allocations) {
+      damagedByResource.set(
+        allocation.resourceId,
+        (damagedByResource.get(allocation.resourceId) ?? 0) +
+          allocation.quantityDamaged,
+      );
+      lostByResource.set(
+        allocation.resourceId,
+        (lostByResource.get(allocation.resourceId) ?? 0) +
+          allocation.quantityLost,
+      );
+    }
+
+    let availableToday = 0;
+    let damaged = 0;
+    let missing = 0;
+    let maintenanceDue = 0;
+
+    for (const resource of resources) {
+      const reserved = reservedByResource.get(resource.id) ?? 0;
+      const lost = lostByResource.get(resource.id) ?? 0;
+      const damagedQuantity = damagedByResource.get(resource.id) ?? 0;
+      const hasMaintenanceAlert =
+        resource.status === ResourceStatus.MAINTENANCE ||
+        resource.condition === ResourceCondition.DAMAGED ||
+        resource.condition === ResourceCondition.RETIRED;
+
+      const resourceAvailable =
+        resource.quantityMode === ResourceQuantityMode.UNLIMITED
+          ? true
+          : Math.max((resource.totalQuantity ?? 0) - reserved - lost, 0) > 0;
+
+      if (resourceAvailable) {
+        availableToday += 1;
+      }
+
+      if (
+        damagedQuantity > 0 ||
+        resource.condition === ResourceCondition.DAMAGED
+      ) {
+        damaged += 1;
+      }
+
+      if (lost > 0 || resource.status === ResourceStatus.RETIRED) {
+        missing += 1;
+      }
+
+      if (hasMaintenanceAlert) {
+        maintenanceDue += 1;
+      }
+    }
+
+    return {
+      totalResources: resources.length,
+      availableToday,
+      reservedToday: reservedByResource.size,
+      damaged,
+      missing,
+      returningToday,
+      maintenanceDue,
+      recentlyReturnedResources: recentlyReturned.map((row) => ({
+        resourceId: row.resourceId,
+        resourceName: row.resource.name,
+        quantityReturned: row.quantityReturned,
+        returnedAt: row.actualReturnDate ?? now,
+      })),
+    };
+  }
+
+  async findResourceWorkspaceCards(
+    userId: string,
+    query: FindResourceWorkspaceCardsQueryDto,
+  ) {
+    await this.ensureOrganizationPermission(
+      userId,
+      query.organizationId,
+      'View',
+    );
+
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 12;
+
+    const supplierSkuSet = await this.resolveSupplierSkuSet(
+      query.organizationId,
+      query.supplierId,
+    );
+
+    const searchTokens = [query.search, query.tags, query.keywords]
+      .filter((value): value is string => Boolean(value && value.trim()))
+      .flatMap((value) =>
+        value
+          .split(/[\s,]+/)
+          .map((entry) => entry.trim())
+          .filter(Boolean),
+      );
+
+    const baseWhere: Prisma.ResourceWhereInput = {
+      organizationId: query.organizationId,
+      archivedAt: null,
+      ...(query.category
+        ? {
+            category: {
+              contains: query.category,
+              mode: 'insensitive',
+            },
+          }
+        : {}),
+      ...(supplierSkuSet
+        ? {
+            sku: {
+              in: [...supplierSkuSet],
+            },
+          }
+        : {}),
+      ...(searchTokens.length
+        ? {
+            AND: searchTokens.map((token) => ({
+              OR: [
+                {
+                  name: {
+                    contains: token,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  description: {
+                    contains: token,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  category: {
+                    contains: token,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  sku: {
+                    contains: token,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  barcode: {
+                    contains: token,
+                    mode: 'insensitive',
+                  },
+                },
+                {
+                  notes: {
+                    contains: token,
+                    mode: 'insensitive',
+                  },
+                },
+              ],
+            })),
+          }
+        : {}),
+    };
+
+    const resources = await this.prisma.resource.findMany({
+      where: baseWhere,
+      include: {
+        location: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    const resourceIds = resources.map((resource) => resource.id);
+
+    const [reservations, allocations, supplierLinks] = await Promise.all([
+      resourceIds.length
+        ? this.prisma.resourceReservation.findMany({
+            where: {
+              organizationId: query.organizationId,
+              resourceId: {
+                in: resourceIds,
+              },
+              status: {
+                in: CAPACITY_CONSUMING_RESERVATION_STATUSES,
+              },
+            },
+            select: {
+              resourceId: true,
+              quantity: true,
+              startDateTime: true,
+            },
+            orderBy: {
+              startDateTime: 'asc',
+            },
+          })
+        : Promise.resolve([]),
+      resourceIds.length
+        ? this.prisma.eventResourceAllocation.findMany({
+            where: {
+              organizationId: query.organizationId,
+              resourceId: {
+                in: resourceIds,
+              },
+            },
+            select: {
+              resourceId: true,
+              quantityDamaged: true,
+              quantityLost: true,
+            },
+          })
+        : Promise.resolve([]),
+      this.prisma.inventoryItem.findMany({
+        where: {
+          organizationId: query.organizationId,
+          ...(resourceIds.length
+            ? {
+                sku: {
+                  in: resources
+                    .map((resource) => resource.sku)
+                    .filter((sku): sku is string => Boolean(sku)),
+                },
+              }
+            : {}),
+        },
+        select: {
+          sku: true,
+          preferredSupplierId: true,
+          preferredSupplier: {
+            select: {
+              companyName: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const reservedByResource = new Map<string, number>();
+    const nextReservationByResource = new Map<string, Date>();
+    const now = new Date();
+
+    for (const reservation of reservations) {
+      reservedByResource.set(
+        reservation.resourceId,
+        (reservedByResource.get(reservation.resourceId) ?? 0) +
+          reservation.quantity,
+      );
+
+      if (reservation.startDateTime >= now) {
+        const current = nextReservationByResource.get(reservation.resourceId);
+        if (!current || reservation.startDateTime < current) {
+          nextReservationByResource.set(
+            reservation.resourceId,
+            reservation.startDateTime,
+          );
+        }
+      }
+    }
+
+    const damagedByResource = new Map<string, number>();
+    const lostByResource = new Map<string, number>();
+
+    for (const allocation of allocations) {
+      damagedByResource.set(
+        allocation.resourceId,
+        (damagedByResource.get(allocation.resourceId) ?? 0) +
+          allocation.quantityDamaged,
+      );
+      lostByResource.set(
+        allocation.resourceId,
+        (lostByResource.get(allocation.resourceId) ?? 0) +
+          allocation.quantityLost,
+      );
+    }
+
+    const supplierBySku = new Map<
+      string,
+      { supplierId: string | null; supplierName: string | null }
+    >();
+
+    for (const row of supplierLinks) {
+      if (!row.sku || supplierBySku.has(row.sku)) {
+        continue;
+      }
+
+      supplierBySku.set(row.sku, {
+        supplierId: row.preferredSupplierId,
+        supplierName: row.preferredSupplier?.companyName ?? null,
+      });
+    }
+
+    const filteredCards = resources
+      .map((resource) => {
+        const reservedQuantity = reservedByResource.get(resource.id) ?? 0;
+        const damagedQuantity = damagedByResource.get(resource.id) ?? 0;
+        const missingQuantity = lostByResource.get(resource.id) ?? 0;
+        const availableQuantity =
+          resource.quantityMode === ResourceQuantityMode.UNLIMITED
+            ? null
+            : Math.max(
+                (resource.totalQuantity ?? 0) -
+                  reservedQuantity -
+                  missingQuantity,
+                0,
+              );
+        const supplier = resource.sku
+          ? supplierBySku.get(resource.sku)
+          : undefined;
+
+        return {
+          id: resource.id,
+          name: resource.name,
+          category: resource.category,
+          quantity:
+            resource.quantityMode === ResourceQuantityMode.UNLIMITED
+              ? null
+              : resource.totalQuantity,
+          availableQuantity,
+          reservedQuantity:
+            resource.quantityMode === ResourceQuantityMode.UNLIMITED
+              ? null
+              : reservedQuantity,
+          damagedQuantity,
+          missingQuantity,
+          marketplaceStatus:
+            resource.visibility === ResourceVisibility.MARKETPLACE
+              ? 'MARKETPLACE'
+              : 'PRIVATE',
+          currentLocation: resource.location?.name ?? null,
+          nextReservation: nextReservationByResource.get(resource.id) ?? null,
+          primaryImage: null,
+          supplierId: supplier?.supplierId ?? null,
+          supplierName: supplier?.supplierName ?? null,
+          status: resource.status,
+          condition: resource.condition,
+          visibility: resource.visibility,
+        };
+      })
+      .filter((card) => {
+        if (
+          query.available &&
+          card.availableQuantity !== null &&
+          card.availableQuantity <= 0
+        ) {
+          return false;
+        }
+
+        if (query.reserved && (card.reservedQuantity ?? 0) <= 0) {
+          return false;
+        }
+
+        if (query.damaged && card.damagedQuantity <= 0) {
+          return false;
+        }
+
+        if (query.missing && card.missingQuantity <= 0) {
+          return false;
+        }
+
+        if (
+          query.maintenanceDue &&
+          card.status !== ResourceStatus.MAINTENANCE &&
+          card.condition !== ResourceCondition.DAMAGED &&
+          card.condition !== ResourceCondition.RETIRED
+        ) {
+          return false;
+        }
+
+        if (
+          query.marketplacePublished &&
+          card.visibility !== ResourceVisibility.MARKETPLACE
+        ) {
+          return false;
+        }
+
+        return true;
+      });
+
+    const total = filteredCards.length;
+    const data = filteredCards
+      .slice((page - 1) * limit, (page - 1) * limit + limit)
+      .map((card) => ({
+        id: card.id,
+        name: card.name,
+        category: card.category,
+        quantity: card.quantity,
+        availableQuantity: card.availableQuantity,
+        reservedQuantity: card.reservedQuantity,
+        damagedQuantity: card.damagedQuantity,
+        missingQuantity: card.missingQuantity,
+        marketplaceStatus: card.marketplaceStatus,
+        currentLocation: card.currentLocation,
+        nextReservation: card.nextReservation,
+        primaryImage: card.primaryImage,
+        supplierId: card.supplierId,
+        supplierName: card.supplierName,
+      }));
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+      },
     };
   }
 
@@ -455,14 +986,50 @@ export class InventoryService {
       const created = await this.prisma.inventoryItem.create({
         data: {
           organizationId: dto.organizationId,
+          publicName: this.normalizeNullable(dto.publicName),
+          internalName: this.normalizeNullable(dto.internalName),
           sku: dto.sku.trim(),
           barcode: this.normalizeNullable(dto.barcode),
+          qrCode: this.normalizeNullable(dto.qrCode),
           name: dto.name.trim(),
           description: this.normalizeNullable(dto.description),
+          shortDescription: this.normalizeNullable(dto.shortDescription),
+          longDescription: this.normalizeNullable(dto.longDescription),
+          internalNotes: this.normalizeNullable(dto.internalNotes),
+          marketplaceTitle: this.normalizeNullable(dto.marketplaceTitle),
+          marketplaceDescription: this.normalizeNullable(
+            dto.marketplaceDescription,
+          ),
+          aiSummary: this.normalizeNullable(dto.aiSummary),
+          aiKeywords: this.normalizeStringArray(dto.aiKeywords),
+          aiTags: this.normalizeStringArray(dto.aiTags),
+          aiConfidence: dto.aiConfidence ?? null,
           categoryId: dto.categoryId,
+          subCategory: this.normalizeNullable(dto.subCategory),
+          brand: this.normalizeNullable(dto.brand),
           preferredSupplierId: dto.preferredSupplierId,
+          resourceStatus: dto.resourceStatus,
           itemType: dto.itemType,
           unitOfMeasure: dto.unitOfMeasure,
+          style: this.normalizeNullable(dto.style),
+          theme: this.normalizeNullable(dto.theme),
+          colour: this.normalizeNullable(dto.colour),
+          material: this.normalizeNullable(dto.material),
+          dimensions: this.normalizeNullable(dto.dimensions),
+          weight: this.normalizeNullable(dto.weight),
+          capacity: this.normalizeNullable(dto.capacity),
+          indoorOutdoor: dto.indoorOutdoor,
+          suitableEventTypes: this.normalizeStringArray(dto.suitableEventTypes),
+          manualTags: this.normalizeStringArray(dto.manualTags),
+          keywords: this.normalizeStringArray(dto.keywords),
+          aiGeneratedTags: this.normalizeStringArray(dto.aiGeneratedTags),
+          marketplaceVisibility: dto.marketplaceVisibility,
+          photoUrls: this.normalizeStringArray(dto.photoUrls),
+          primaryPhotoUrl: this.normalizeNullable(dto.primaryPhotoUrl),
+          photoAssets:
+            dto.photoAssets === undefined
+              ? undefined
+              : (dto.photoAssets as Prisma.InputJsonValue),
           costPrice: dto.costPrice,
           replacementValue: dto.replacementValue,
           rentalPrice: dto.rentalPrice,
@@ -647,24 +1214,133 @@ export class InventoryService {
       const updated = await this.prisma.inventoryItem.update({
         where: { id: item.id },
         data: {
+          ...(dto.publicName === undefined
+            ? {}
+            : { publicName: this.normalizeNullable(dto.publicName) }),
+          ...(dto.internalName === undefined
+            ? {}
+            : { internalName: this.normalizeNullable(dto.internalName) }),
           ...(dto.sku === undefined ? {} : { sku: dto.sku.trim() }),
           ...(dto.barcode === undefined
             ? {}
             : { barcode: this.normalizeNullable(dto.barcode) }),
+          ...(dto.qrCode === undefined
+            ? {}
+            : { qrCode: this.normalizeNullable(dto.qrCode) }),
           ...(dto.name === undefined ? {} : { name: dto.name.trim() }),
           ...(dto.description === undefined
             ? {}
             : { description: this.normalizeNullable(dto.description) }),
+          ...(dto.shortDescription === undefined
+            ? {}
+            : {
+                shortDescription: this.normalizeNullable(dto.shortDescription),
+              }),
+          ...(dto.longDescription === undefined
+            ? {}
+            : { longDescription: this.normalizeNullable(dto.longDescription) }),
+          ...(dto.internalNotes === undefined
+            ? {}
+            : { internalNotes: this.normalizeNullable(dto.internalNotes) }),
+          ...(dto.marketplaceTitle === undefined
+            ? {}
+            : {
+                marketplaceTitle: this.normalizeNullable(dto.marketplaceTitle),
+              }),
+          ...(dto.marketplaceDescription === undefined
+            ? {}
+            : {
+                marketplaceDescription: this.normalizeNullable(
+                  dto.marketplaceDescription,
+                ),
+              }),
+          ...(dto.aiSummary === undefined
+            ? {}
+            : { aiSummary: this.normalizeNullable(dto.aiSummary) }),
+          ...(dto.aiKeywords === undefined
+            ? {}
+            : { aiKeywords: this.normalizeStringArray(dto.aiKeywords) }),
+          ...(dto.aiTags === undefined
+            ? {}
+            : { aiTags: this.normalizeStringArray(dto.aiTags) }),
+          ...(dto.aiConfidence === undefined
+            ? {}
+            : { aiConfidence: dto.aiConfidence }),
           ...(dto.categoryId === undefined
             ? {}
             : { categoryId: dto.categoryId }),
+          ...(dto.subCategory === undefined
+            ? {}
+            : { subCategory: this.normalizeNullable(dto.subCategory) }),
+          ...(dto.brand === undefined
+            ? {}
+            : { brand: this.normalizeNullable(dto.brand) }),
           ...(dto.preferredSupplierId === undefined
             ? {}
             : { preferredSupplierId: dto.preferredSupplierId }),
+          ...(dto.resourceStatus === undefined
+            ? {}
+            : { resourceStatus: dto.resourceStatus }),
           ...(dto.itemType === undefined ? {} : { itemType: dto.itemType }),
           ...(dto.unitOfMeasure === undefined
             ? {}
             : { unitOfMeasure: dto.unitOfMeasure }),
+          ...(dto.style === undefined
+            ? {}
+            : { style: this.normalizeNullable(dto.style) }),
+          ...(dto.theme === undefined
+            ? {}
+            : { theme: this.normalizeNullable(dto.theme) }),
+          ...(dto.colour === undefined
+            ? {}
+            : { colour: this.normalizeNullable(dto.colour) }),
+          ...(dto.material === undefined
+            ? {}
+            : { material: this.normalizeNullable(dto.material) }),
+          ...(dto.dimensions === undefined
+            ? {}
+            : { dimensions: this.normalizeNullable(dto.dimensions) }),
+          ...(dto.weight === undefined
+            ? {}
+            : { weight: this.normalizeNullable(dto.weight) }),
+          ...(dto.capacity === undefined
+            ? {}
+            : { capacity: this.normalizeNullable(dto.capacity) }),
+          ...(dto.indoorOutdoor === undefined
+            ? {}
+            : { indoorOutdoor: dto.indoorOutdoor }),
+          ...(dto.suitableEventTypes === undefined
+            ? {}
+            : {
+                suitableEventTypes: this.normalizeStringArray(
+                  dto.suitableEventTypes,
+                ),
+              }),
+          ...(dto.manualTags === undefined
+            ? {}
+            : { manualTags: this.normalizeStringArray(dto.manualTags) }),
+          ...(dto.keywords === undefined
+            ? {}
+            : { keywords: this.normalizeStringArray(dto.keywords) }),
+          ...(dto.aiGeneratedTags === undefined
+            ? {}
+            : {
+                aiGeneratedTags: this.normalizeStringArray(dto.aiGeneratedTags),
+              }),
+          ...(dto.marketplaceVisibility === undefined
+            ? {}
+            : { marketplaceVisibility: dto.marketplaceVisibility }),
+          ...(dto.photoUrls === undefined
+            ? {}
+            : { photoUrls: this.normalizeStringArray(dto.photoUrls) }),
+          ...(dto.primaryPhotoUrl === undefined
+            ? {}
+            : {
+                primaryPhotoUrl: this.normalizeNullable(dto.primaryPhotoUrl),
+              }),
+          ...(dto.photoAssets === undefined
+            ? {}
+            : { photoAssets: dto.photoAssets as Prisma.InputJsonValue }),
           ...(dto.costPrice === undefined ? {} : { costPrice: dto.costPrice }),
           ...(dto.replacementValue === undefined
             ? {}
@@ -1324,40 +2000,211 @@ export class InventoryService {
   }
 
   private buildItemWhere(query: FindInventoryItemsQueryDto) {
+    const tagTokens = this.parseSearchTokens(query.tags);
+    const keywordTokens = this.parseSearchTokens(query.keywords);
+    const andClauses: Prisma.InventoryItemWhereInput[] = [];
+
+    if (query.search) {
+      andClauses.push({
+        OR: [
+          {
+            name: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            sku: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            barcode: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            description: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            shortDescription: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            marketplaceTitle: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            marketplaceDescription: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            longDescription: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            aiSummary: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            style: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            theme: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            material: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            colour: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            dimensions: {
+              contains: query.search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            manualTags: {
+              has: query.search,
+            },
+          },
+          {
+            keywords: {
+              has: query.search,
+            },
+          },
+          {
+            aiGeneratedTags: {
+              has: query.search,
+            },
+          },
+          {
+            aiTags: {
+              has: query.search,
+            },
+          },
+          {
+            aiKeywords: {
+              has: query.search,
+            },
+          },
+        ],
+      });
+    }
+
+    if (tagTokens.length > 0) {
+      andClauses.push({
+        OR: [
+          {
+            manualTags: {
+              hasSome: tagTokens,
+            },
+          },
+          {
+            aiGeneratedTags: {
+              hasSome: tagTokens,
+            },
+          },
+          {
+            aiTags: {
+              hasSome: tagTokens,
+            },
+          },
+          {
+            keywords: {
+              hasSome: tagTokens,
+            },
+          },
+        ],
+      });
+    }
+
+    if (keywordTokens.length > 0) {
+      andClauses.push({
+        OR: [
+          {
+            aiKeywords: {
+              hasSome: keywordTokens,
+            },
+          },
+          {
+            keywords: {
+              hasSome: keywordTokens,
+            },
+          },
+        ],
+      });
+    }
+
     const where: Prisma.InventoryItemWhereInput = {
       organizationId: query.organizationId,
-      ...(query.search
+      ...(andClauses.length > 0 ? { AND: andClauses } : {}),
+      ...(query.style
         ? {
-            OR: [
-              {
-                name: {
-                  contains: query.search,
-                  mode: 'insensitive',
-                },
-              },
-              {
-                sku: {
-                  contains: query.search,
-                  mode: 'insensitive',
-                },
-              },
-              {
-                barcode: {
-                  contains: query.search,
-                  mode: 'insensitive',
-                },
-              },
-              {
-                description: {
-                  contains: query.search,
-                  mode: 'insensitive',
-                },
-              },
-            ],
+            style: {
+              contains: query.style,
+              mode: 'insensitive',
+            },
+          }
+        : {}),
+      ...(query.material
+        ? {
+            material: {
+              contains: query.material,
+              mode: 'insensitive',
+            },
+          }
+        : {}),
+      ...(query.colour
+        ? {
+            colour: {
+              contains: query.colour,
+              mode: 'insensitive',
+            },
+          }
+        : {}),
+      ...(query.dimensions
+        ? {
+            dimensions: {
+              contains: query.dimensions,
+              mode: 'insensitive',
+            },
           }
         : {}),
       ...(query.categoryId ? { categoryId: query.categoryId } : {}),
       ...(query.itemType ? { itemType: query.itemType } : {}),
+      ...(query.resourceStatus ? { resourceStatus: query.resourceStatus } : {}),
+      ...(query.marketplaceVisibility
+        ? { marketplaceVisibility: query.marketplaceVisibility }
+        : {}),
       ...(query.active === undefined ? {} : { active: query.active }),
       ...(query.preferredSupplierId
         ? { preferredSupplierId: query.preferredSupplierId }
@@ -1408,13 +2255,44 @@ export class InventoryService {
       id: string;
       organizationId: string;
       sku: string;
+      publicName: string | null;
+      internalName: string | null;
       barcode: string | null;
+      qrCode: string | null;
       name: string;
       description: string | null;
+      shortDescription: string | null;
+      longDescription: string | null;
+      internalNotes: string | null;
+      marketplaceTitle: string | null;
+      marketplaceDescription: string | null;
+      aiSummary: string | null;
+      aiKeywords: string[];
+      aiTags: string[];
+      aiConfidence: number | null;
       categoryId: string;
+      subCategory: string | null;
+      brand: string | null;
       preferredSupplierId: string | null;
+      resourceStatus: string;
       itemType: string;
       unitOfMeasure: string;
+      style: string | null;
+      theme: string | null;
+      colour: string | null;
+      material: string | null;
+      dimensions: string | null;
+      weight: string | null;
+      capacity: string | null;
+      indoorOutdoor: string;
+      suitableEventTypes: string[];
+      manualTags: string[];
+      keywords: string[];
+      aiGeneratedTags: string[];
+      marketplaceVisibility: string;
+      photoUrls: string[];
+      primaryPhotoUrl: string | null;
+      photoAssets: Prisma.JsonValue | null;
       costPrice: number | null;
       replacementValue: number | null;
       rentalPrice: number | null;
@@ -1440,15 +2318,46 @@ export class InventoryService {
       id: item.id,
       organizationId: item.organizationId,
       sku: item.sku,
+      publicName: item.publicName,
+      internalName: item.internalName,
       barcode: item.barcode,
+      qrCode: item.qrCode,
       name: item.name,
       description: item.description,
+      shortDescription: item.shortDescription,
+      longDescription: item.longDescription,
+      internalNotes: item.internalNotes,
+      marketplaceTitle: item.marketplaceTitle,
+      marketplaceDescription: item.marketplaceDescription,
+      aiSummary: item.aiSummary,
+      aiKeywords: item.aiKeywords,
+      aiTags: item.aiTags,
+      aiConfidence: item.aiConfidence,
       categoryId: item.categoryId,
+      subCategory: item.subCategory,
+      brand: item.brand,
       categoryName: item.category.name,
       preferredSupplierId: item.preferredSupplierId,
       preferredSupplierName: item.preferredSupplier?.companyName ?? null,
+      resourceStatus: item.resourceStatus,
       itemType: item.itemType,
       unitOfMeasure: item.unitOfMeasure,
+      style: item.style,
+      theme: item.theme,
+      colour: item.colour,
+      material: item.material,
+      dimensions: item.dimensions,
+      weight: item.weight,
+      capacity: item.capacity,
+      indoorOutdoor: item.indoorOutdoor,
+      suitableEventTypes: item.suitableEventTypes,
+      manualTags: item.manualTags,
+      keywords: item.keywords,
+      aiGeneratedTags: item.aiGeneratedTags,
+      marketplaceVisibility: item.marketplaceVisibility,
+      photoUrls: item.photoUrls,
+      primaryPhotoUrl: item.primaryPhotoUrl,
+      photoAssets: Array.isArray(item.photoAssets) ? item.photoAssets : null,
       costPrice: item.costPrice,
       replacementValue: item.replacementValue,
       rentalPrice: item.rentalPrice,
@@ -1516,6 +2425,29 @@ export class InventoryService {
 
     const trimmed = value.trim();
     return trimmed.length === 0 ? null : trimmed;
+  }
+
+  private normalizeStringArray(values: string[] | undefined | null) {
+    if (!values || values.length === 0) {
+      return [];
+    }
+
+    const normalized = values
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0);
+
+    return Array.from(new Set(normalized));
+  }
+
+  private parseSearchTokens(value?: string) {
+    if (!value) {
+      return [];
+    }
+
+    return value
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0);
   }
 
   private async ensureCategoryOwnership(
@@ -1655,6 +2587,35 @@ export class InventoryService {
     if (!allowed) {
       throw new ForbiddenException(`Missing Inventory ${action} permission`);
     }
+  }
+
+  private async resolveSupplierSkuSet(
+    organizationId: string,
+    supplierId?: string,
+  ) {
+    if (!supplierId) {
+      return null;
+    }
+
+    const supplierItems = await this.prisma.inventoryItem.findMany({
+      where: {
+        organizationId,
+        preferredSupplierId: supplierId,
+      },
+      select: {
+        sku: true,
+      },
+    });
+
+    const skus = supplierItems
+      .map((item) => item.sku.trim())
+      .filter((sku) => sku.length > 0);
+
+    if (!skus.length) {
+      return new Set<string>(['__no-sku-match__']);
+    }
+
+    return new Set(skus);
   }
 
   private handleUniqueError(error: unknown, messages: Record<string, string>) {

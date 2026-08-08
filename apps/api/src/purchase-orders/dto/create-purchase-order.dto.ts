@@ -14,29 +14,25 @@ import {
 
 export class CreatePurchaseOrderLineItemDto {
   @IsUUID()
-  inventoryItemId: string;
-
-  @IsString()
-  @MaxLength(400)
-  description: string;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(120)
-  supplierSku?: string;
+  supplierProductId: string;
 
   @IsNumber({ maxDecimalPlaces: 3 })
   @Min(0.0001)
-  quantityOrdered: number;
+  quantity: number;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  unitPrice: number;
+  unitCost: number;
 
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
-  taxRate?: number;
+  vatPercent?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  discountPercent?: number;
 
   @IsOptional()
   @IsString()
@@ -60,6 +56,14 @@ export class CreatePurchaseOrderDto {
 
   @IsOptional()
   @IsDateString()
+  quotationDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  validUntilDate?: string;
+
+  @IsOptional()
+  @IsDateString()
   expectedDeliveryDate?: string;
 
   @IsUUID()
@@ -79,6 +83,26 @@ export class CreatePurchaseOrderDto {
   @IsString()
   @MaxLength(120)
   internalReference?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(250)
+  paymentTerms?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(400)
+  deliveryAddress?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  eventReference?: string;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  deliveryFee?: number;
 
   @IsOptional()
   @IsString()

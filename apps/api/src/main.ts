@@ -4,12 +4,15 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
 import { AppModule } from './app.module';
+import { buildCorsOptions } from './config/cors.config';
 
 async function bootstrap() {
   dotenv.config({ path: 'apps/api/.env' });
 
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
+
+  app.enableCors(buildCorsOptions());
 
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
 

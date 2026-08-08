@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 import { PageHeader } from '../../../../components/app-shell/page-header';
 import { useAppSession } from '../../../../components/app-shell/session-context';
@@ -27,6 +27,7 @@ function toDateOnly(value: string) {
 
 export default function EditEventPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const eventId = String(params.id);
 
   const { session } = useAppSession();
@@ -61,32 +62,31 @@ export default function EditEventPage() {
       setError('');
 
       try {
-        const [eventResponse, contactsResponse, usersResponse] = await Promise.all([
-          getEvent(
+        const eventResponse = await getEvent(
+          {
+            token: session.token,
+            baseUrl: session.baseUrl,
+          },
+          eventId,
+        );
+
+        const organizationId = eventResponse.organizationId;
+
+        const [contactsResponse, usersResponse] = await Promise.all([
+          listContacts(
             {
               token: session.token,
               baseUrl: session.baseUrl,
             },
-            eventId,
-          ),
-          session.organizationId
-            ? listContacts(
-                {
-                  token: session.token,
-                  baseUrl: session.baseUrl,
-                },
-                session.organizationId,
-              )
-            : Promise.resolve({ data: [] as ContactRecord[] }),
-          session.organizationId
-            ? listOrganizationUsers(
-                {
-                  token: session.token,
-                  baseUrl: session.baseUrl,
-                },
-                session.organizationId,
-              )
-            : Promise.resolve({ data: [] as OrganizationUserRecord[] }),
+            organizationId,
+          ).catch(() => ({ data: [] as ContactRecord[] })),
+          listOrganizationUsers(
+            {
+              token: session.token,
+              baseUrl: session.baseUrl,
+            },
+            organizationId,
+          ).catch(() => ({ data: [] as OrganizationUserRecord[] })),
         ]);
 
         setEventRecord(eventResponse);
@@ -120,7 +120,7 @@ export default function EditEventPage() {
     }
 
     void loadData();
-  }, [eventId, session.baseUrl, session.organizationId, session.token]);
+  }, [eventId, session.baseUrl, session.token]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -158,7 +158,8 @@ export default function EditEventPage() {
         },
       );
 
-      setSuccess('Event updated successfully.');
+      setSuccess('Event updated successfully. Redirecting to details...');
+      router.push(`/events/${eventId}`);
     } catch (requestError) {
       setError(
         requestError instanceof Error
@@ -187,6 +188,10 @@ export default function EditEventPage() {
       {loading ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-600">
           Loading event...
+        </div>
+      ) : error ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+          {error}
         </div>
       ) : eventRecord ? (
         <EventForm

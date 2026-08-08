@@ -35,6 +35,17 @@ export type StockMovementType =
 
 export type InventorySortBy = 'name' | 'sku' | 'newest' | 'oldest' | 'stockLevel';
 
+export type InventoryResourceStatus =
+  | 'Active'
+  | 'Maintenance'
+  | 'Damaged'
+  | 'Retired'
+  | 'Archived';
+
+export type InventoryIndoorOutdoor = 'Indoor' | 'Outdoor' | 'Both';
+
+export type InventoryMarketplaceVisibility = 'Private' | 'Public';
+
 export type InventoryCategoryRecord = {
   id: string;
   organizationId: string;
@@ -63,15 +74,46 @@ export type InventoryItemRecord = {
   id: string;
   organizationId: string;
   sku: string;
+  publicName: string | null;
+  internalName: string | null;
   barcode: string | null;
+  qrCode: string | null;
   name: string;
   description: string | null;
+  shortDescription: string | null;
+  longDescription: string | null;
+  internalNotes: string | null;
+  marketplaceTitle: string | null;
+  marketplaceDescription: string | null;
+  aiSummary: string | null;
+  aiKeywords: string[];
+  aiTags: string[];
+  aiConfidence: number | null;
   categoryId: string;
   categoryName: string;
+  subCategory: string | null;
+  brand: string | null;
   preferredSupplierId: string | null;
   preferredSupplierName: string | null;
+  resourceStatus: InventoryResourceStatus;
   itemType: InventoryItemType;
   unitOfMeasure: UnitOfMeasure;
+  style: string | null;
+  theme: string | null;
+  colour: string | null;
+  material: string | null;
+  dimensions: string | null;
+  weight: string | null;
+  capacity: string | null;
+  indoorOutdoor: InventoryIndoorOutdoor;
+  suitableEventTypes: string[];
+  manualTags: string[];
+  keywords: string[];
+  aiGeneratedTags: string[];
+  marketplaceVisibility: InventoryMarketplaceVisibility;
+  photoUrls: string[];
+  primaryPhotoUrl: string | null;
+  photoAssets: Record<string, unknown>[] | null;
   costPrice: number | null;
   replacementValue: number | null;
   rentalPrice: number | null;
@@ -137,6 +179,41 @@ export type InventoryOverview = {
   recentStockMovements: StockMovementRecord[];
 };
 
+export type ResourceWorkspaceRecentlyReturned = {
+  resourceId: string;
+  resourceName: string;
+  quantityReturned: number;
+  returnedAt: string;
+};
+
+export type ResourceWorkspaceSummary = {
+  totalResources: number;
+  availableToday: number;
+  reservedToday: number;
+  damaged: number;
+  missing: number;
+  returningToday: number;
+  maintenanceDue: number;
+  recentlyReturnedResources: ResourceWorkspaceRecentlyReturned[];
+};
+
+export type ResourceWorkspaceCard = {
+  id: string;
+  name: string;
+  category: string;
+  quantity: number | null;
+  availableQuantity: number | null;
+  reservedQuantity: number | null;
+  damagedQuantity: number;
+  missingQuantity: number;
+  marketplaceStatus: string;
+  currentLocation: string | null;
+  nextReservation: string | null;
+  primaryImage: string | null;
+  supplierId: string | null;
+  supplierName: string | null;
+};
+
 export type CreateInventoryCategoryPayload = {
   organizationId: string;
   name: string;
@@ -166,13 +243,44 @@ export type UpdateStorageLocationPayload = Partial<
 export type CreateInventoryItemPayload = {
   organizationId: string;
   sku: string;
+  publicName?: string;
+  internalName?: string;
   barcode?: string;
+  qrCode?: string;
   name: string;
   description?: string;
+  shortDescription?: string;
+  longDescription?: string;
+  internalNotes?: string;
+  marketplaceTitle?: string;
+  marketplaceDescription?: string;
+  aiSummary?: string;
+  aiKeywords?: string[];
+  aiTags?: string[];
+  aiConfidence?: number;
   categoryId: string;
+  subCategory?: string;
+  brand?: string;
   preferredSupplierId?: string;
+  resourceStatus?: InventoryResourceStatus;
   itemType: InventoryItemType;
   unitOfMeasure: UnitOfMeasure;
+  style?: string;
+  theme?: string;
+  colour?: string;
+  material?: string;
+  dimensions?: string;
+  weight?: string;
+  capacity?: string;
+  indoorOutdoor?: InventoryIndoorOutdoor;
+  suitableEventTypes?: string[];
+  manualTags?: string[];
+  keywords?: string[];
+  aiGeneratedTags?: string[];
+  marketplaceVisibility?: InventoryMarketplaceVisibility;
+  photoUrls?: string[];
+  primaryPhotoUrl?: string;
+  photoAssets?: Record<string, unknown>[];
   costPrice?: number;
   replacementValue?: number;
   rentalPrice?: number;
@@ -253,6 +361,25 @@ export const INVENTORY_SORT_OPTIONS: Array<{ label: string; value: InventorySort
   { label: 'Newest', value: 'newest' },
   { label: 'Oldest', value: 'oldest' },
   { label: 'Stock Level', value: 'stockLevel' },
+];
+
+export const INVENTORY_RESOURCE_STATUSES: InventoryResourceStatus[] = [
+  'Active',
+  'Maintenance',
+  'Damaged',
+  'Retired',
+  'Archived',
+];
+
+export const INVENTORY_INDOOR_OUTDOOR_OPTIONS: InventoryIndoorOutdoor[] = [
+  'Indoor',
+  'Outdoor',
+  'Both',
+];
+
+export const INVENTORY_MARKETPLACE_VISIBILITY_OPTIONS: InventoryMarketplaceVisibility[] = [
+  'Private',
+  'Public',
 ];
 
 export const STOCK_MOVEMENT_TYPE_OPTIONS: Array<{ label: string; value: StockMovementType }> = [

@@ -22,6 +22,7 @@ import {
 import { CurrentUser } from './decorators/current-user.decorator';
 import {
   AuthResponseDto,
+  DevelopmentSeedResponseDto,
   RegisterResponseDto,
   UserResponseDto,
   WorkspaceContextResponseDto,
@@ -89,5 +90,19 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: 'Missing or invalid bearer token' })
   getWorkspace(@CurrentUser() user: UserResponseDto) {
     return this.authService.getWorkspaceContext(user.id);
+  }
+
+  @Post('development-seed')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary:
+      'Create or update deterministic development auth seed data (development mode only)',
+  })
+  @ApiOkResponse({
+    description: 'Development user and organization seed result',
+    type: DevelopmentSeedResponseDto,
+  })
+  seedDevelopmentWorkspace() {
+    return this.authService.seedDevelopmentWorkspace();
   }
 }

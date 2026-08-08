@@ -9,21 +9,20 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { getWorkspaceContext, type AuthUser, type WorkspaceOrganization } from '../../lib/auth-api';
+import {
+  ApiRequestError,
+  getWorkspaceContext,
+  type AuthUser,
+  type WorkspaceOrganization,
+} from '../../lib/auth-api';
+import {
+  clearSessionSnapshot,
+  readSessionSnapshot,
+  type SessionValues,
+  writeSessionSnapshot,
+} from '../../lib/session-storage';
 
-type SessionValues = {
-  baseUrl: string;
-  token: string;
-  organizationId: string;
-};
-
-type UserProfile = {
-  id: string;
-  email: string;
-  name: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-};
+type UserProfile = AuthUser;
 
 type OrganizationRecord = WorkspaceOrganization;
 
@@ -36,11 +35,10 @@ type SessionContextValue = {
   loadingMeta: boolean;
   metaError: string;
   isAuthenticated: boolean;
+  isSessionHydrated: boolean;
   logout: () => void;
   setOrganizationId: (organizationId: string) => void;
 };
-
-const STORAGE_KEY = 'eventos.events.session';
 
 const defaultSession: SessionValues = {
   baseUrl: 'http://localhost:3001',
@@ -54,36 +52,95 @@ function normalizeBaseUrl(baseUrl: string) {
   return baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
 }
 
-function readStoredSession() {
-  if (typeof window === 'undefined') {
-    return defaultSession;
+function decodeBase64Url(value: string) {
+  if (typeof globalThis.atob !== 'function') {
+    return null;
   }
 
-  const stored = window.localStorage.getItem(STORAGE_KEY);
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = normalized.padEnd(
+    normalized.length + ((4 - (normalized.length % 4)) % 4),
+    '=',
+  );
 
-  if (!stored) {
-    return defaultSession;
+  return globalThis.atob(padded);
+}
+
+function isTokenExpired(token: string) {
+  if (!token) {
+    return false;
+  }
+
+  const parts = token.split('.');
+
+  if (parts.length < 2) {
+    return false;
   }
 
   try {
-    const parsed = JSON.parse(stored) as SessionValues;
+    const payload = decodeBase64Url(parts[1]);
 
-    return {
-      baseUrl: parsed.baseUrl || defaultSession.baseUrl,
-      token: parsed.token || '',
-      organizationId: parsed.organizationId || '',
-    };
+    if (!payload) {
+      return false;
+    }
+
+    const parsed = JSON.parse(payload) as { exp?: number };
+
+    if (typeof parsed.exp !== 'number') {
+      return false;
+    }
+
+    return parsed.exp <= Math.floor(Date.now() / 1000);
   } catch {
-    return defaultSession;
+    return false;
   }
 }
 
 export function AppSessionProvider({ children }: { children: ReactNode }) {
-  const [session, setSessionState] = useState<SessionValues>(() => readStoredSession());
+  const [session, setSessionState] = useState<SessionValues>(defaultSession);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [organizations, setOrganizations] = useState<OrganizationRecord[]>([]);
+  const [isSessionHydrated, setIsSessionHydrated] = useState(false);
   const [loadingMeta, setLoadingMeta] = useState(false);
   const [metaError, setMetaError] = useState('');
+  const [reloadAttempt, setReloadAttempt] = useState(0);
+
+  useEffect(() => {
+    const hydrateTimer = window.setTimeout(() => {
+      const initialSnapshot = readSessionSnapshot();
+      const initialTokenExpired = isTokenExpired(initialSnapshot.token);
+
+      setSessionState({
+        baseUrl: initialSnapshot.baseUrl || defaultSession.baseUrl,
+        token: initialTokenExpired ? '' : initialSnapshot.token,
+        organizationId: initialTokenExpired ? '' : initialSnapshot.organizationId,
+      });
+      setUser(initialTokenExpired ? null : initialSnapshot.user);
+      setOrganizations(initialTokenExpired ? [] : initialSnapshot.organizations);
+      setIsSessionHydrated(true);
+    }, 0);
+
+    return () => {
+      window.clearTimeout(hydrateTimer);
+    };
+  }, []);
+
+  const persistSessionSnapshot = useCallback(
+    (
+      nextSession: SessionValues,
+      nextUser: UserProfile | null,
+      nextOrganizations: OrganizationRecord[],
+    ) => {
+      writeSessionSnapshot({
+        baseUrl: nextSession.baseUrl,
+        token: nextSession.token,
+        organizationId: nextSession.organizationId,
+        user: nextUser,
+        organizations: nextOrganizations,
+      });
+    },
+    [],
+  );
 
   const setSession = useCallback((next: SessionValues) => {
     const normalizedNext = {
@@ -92,23 +149,31 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     };
 
     setSessionState(normalizedNext);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedNext));
-  }, []);
+    persistSessionSnapshot(normalizedNext, user, organizations);
+  }, [organizations, persistSessionSnapshot, user]);
 
   const logout = useCallback(() => {
-    setSessionState((prev) => {
-      const next = {
-        ...prev,
-        token: '',
-        organizationId: '',
-      };
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      return next;
-    });
+    setSessionState((prev) => ({
+      ...prev,
+      token: '',
+      organizationId: '',
+    }));
     setUser(null);
     setOrganizations([]);
     setMetaError('');
-  }, []);
+    clearSessionSnapshot(session.baseUrl || defaultSession.baseUrl);
+  }, [session.baseUrl]);
+
+  const clearSessionForInvalidAuth = useCallback(() => {
+    setSessionState((prev) => ({
+      ...prev,
+      token: '',
+      organizationId: '',
+    }));
+    setUser(null);
+    setOrganizations([]);
+    clearSessionSnapshot(session.baseUrl || defaultSession.baseUrl);
+  }, [session.baseUrl]);
 
   const setOrganizationId = useCallback((organizationId: string) => {
     setSessionState((prev) => {
@@ -116,19 +181,32 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
         ...prev,
         organizationId,
       };
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      persistSessionSnapshot(next, user, organizations);
       return next;
     });
-  }, []);
+  }, [organizations, persistSessionSnapshot, user]);
 
   useEffect(() => {
     let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
 
     async function loadMeta() {
+      if (!isSessionHydrated) {
+        return;
+      }
+
       if (!session.token) {
         setUser(null);
         setOrganizations([]);
         setMetaError('');
+        return;
+      }
+
+      if (isTokenExpired(session.token)) {
+        setUser(null);
+        setOrganizations([]);
+        setMetaError('Session expired. Please sign in again.');
+        clearSessionForInvalidAuth();
         return;
       }
 
@@ -159,10 +237,11 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
                 ...prev,
                 organizationId: nextOrganizationId,
               };
-
-              window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+              persistSessionSnapshot(next, meBody, organizationItems);
               return next;
             });
+          } else {
+            persistSessionSnapshot(session, meBody, organizationItems);
           }
         }
       } catch (error) {
@@ -172,21 +251,15 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
               ? error.message
               : 'Failed to load workspace metadata.',
           );
-          setUser(null);
-          setOrganizations([]);
 
-          const message = error instanceof Error ? error.message : '';
-          if (message.toLowerCase().includes('401')) {
-            setSessionState((prev) => {
-              const next = {
-                ...prev,
-                token: '',
-                organizationId: '',
-              };
-              window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-              return next;
-            });
+          if (error instanceof ApiRequestError && error.status === 401) {
+            clearSessionForInvalidAuth();
+            return;
           }
+
+          retryTimer = setTimeout(() => {
+            setReloadAttempt((attempt) => attempt + 1);
+          }, 1500);
         }
       } finally {
         if (!cancelled) {
@@ -199,8 +272,20 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+      }
     };
-  }, [session.baseUrl, session.organizationId, session.token]);
+  }, [
+    clearSessionForInvalidAuth,
+    isSessionHydrated,
+    persistSessionSnapshot,
+    reloadAttempt,
+    session,
+    session.baseUrl,
+    session.organizationId,
+    session.token,
+  ]);
 
   const activeOrganization = useMemo(() => {
     if (!session.organizationId) {
@@ -214,6 +299,9 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
     );
   }, [organizations, session.organizationId]);
 
+  const isAuthenticated =
+    Boolean(session.token) && !isTokenExpired(session.token);
+
   const value = useMemo<SessionContextValue>(
     () => ({
       session,
@@ -223,12 +311,15 @@ export function AppSessionProvider({ children }: { children: ReactNode }) {
       activeOrganization,
       loadingMeta,
       metaError,
-      isAuthenticated: Boolean(session.token),
+      isAuthenticated,
+      isSessionHydrated,
       logout,
       setOrganizationId,
     }),
     [
       activeOrganization,
+      isAuthenticated,
+      isSessionHydrated,
       loadingMeta,
       metaError,
       organizations,

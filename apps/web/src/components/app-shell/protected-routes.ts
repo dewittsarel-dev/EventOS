@@ -13,6 +13,14 @@ const PROTECTED_ROUTE_PREFIXES = [
 
 const PUBLIC_ROUTE_PREFIXES = ['/login', '/marketplace'] as const;
 
+export function isDevelopmentAuthBypassEnabled() {
+  if (process.env.NEXT_PUBLIC_DEV_AUTH_BYPASS === 'true') {
+    return true;
+  }
+
+  return process.env.NODE_ENV === 'development';
+}
+
 export function isProtectedAppPath(pathname: string) {
   if (PUBLIC_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
     return false;
