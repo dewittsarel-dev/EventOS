@@ -16,7 +16,11 @@ export function PageHeader({ title, description, actions }: PageHeaderProps) {
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-950 md:text-3xl">{title}</h1>
         {description ? <p className="mt-1 max-w-2xl text-sm leading-6 text-zinc-600">{description}</p> : null}
       </div>
-      {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
+      {actions ? (
+        <div className="-mx-1 flex w-[calc(100%+0.5rem)] flex-nowrap gap-2 overflow-x-auto px-1 pb-1 [&>*]:shrink-0 md:mx-0 md:w-auto md:max-w-[60%] md:flex-wrap md:justify-end md:overflow-visible md:px-0 md:pb-0">
+          {actions}
+        </div>
+      ) : null}
     </header>
   );
 }

@@ -80,12 +80,12 @@ export default function MarketplacePage() {
               EO<span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-amber-400" />
             </span>
             <span>
-              <span className="block text-base font-semibold tracking-tight">EventOS Marketplace</span>
+              <span className="block text-sm font-semibold tracking-tight sm:text-base">EventOS Marketplace</span>
               <span className="hidden text-[11px] text-stone-500 sm:block">Find the right partners for your event</span>
             </span>
           </a>
-          <a href="/login" className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-medium hover:border-stone-950 hover:bg-stone-950 hover:text-white">
-            ClientOS sign in
+          <a href="/login" className="shrink-0 rounded-full border border-stone-300 bg-white px-3 py-2 text-xs font-medium hover:border-stone-950 hover:bg-stone-950 hover:text-white sm:px-4 sm:text-sm">
+            <span className="sm:hidden">Sign in</span><span className="hidden sm:inline">ClientOS sign in</span>
           </a>
         </div>
       </header>

@@ -122,6 +122,7 @@ The repository now contains the verified backend architecture from M004 through 
 
 - Automated package verification and public Marketplace integration coverage are active.
 - The Marketplace enquiry migration has been applied to the local approved development database.
+- Responsive foundation refinement is complete for the shared shell, action-heavy page headers, ClientOS search, public Marketplace header and key event operations; key desktop routes were rechecked for horizontal overflow.
 - Production hosting, managed PostgreSQL, secrets, observability and deployment verification require the chosen production environment and credentials.
 
 ## Future package guidance

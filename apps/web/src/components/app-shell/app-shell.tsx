@@ -380,7 +380,7 @@ export function AppShell({ children }: AppShellProps) {
               role="dialog"
               aria-modal="true"
               aria-label="Mobile navigation"
-              className="h-full w-72 bg-white p-4 shadow-xl"
+              className="h-full w-[min(18rem,calc(100vw-2rem))] overflow-y-auto bg-white p-4 shadow-xl"
               onClick={(event) => event.stopPropagation()}
             >
               <div className="flex items-center justify-between">
@@ -493,7 +493,7 @@ export function AppShell({ children }: AppShellProps) {
                 {isProfileOpen ? (
                   <div
                     role="menu"
-                    className="absolute right-0 z-50 mt-2 w-[20rem] rounded-xl border border-zinc-200 bg-white p-3 shadow-2xl"
+                    className="absolute right-0 z-50 mt-2 w-[min(20rem,calc(100vw-1.5rem))] rounded-xl border border-zinc-200 bg-white p-3 shadow-2xl"
                   >
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                       Workspace Session

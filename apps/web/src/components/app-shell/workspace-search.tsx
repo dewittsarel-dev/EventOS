@@ -48,14 +48,14 @@ export function WorkspaceSearch({ open, onClose, onNavigate }: Props) {
   const close = () => { setQuery(''); onClose(); };
   const choose = (href: string) => { setQuery(''); onClose(); onNavigate(href); };
 
-  return <div className="fixed inset-0 z-[70] flex items-start justify-center bg-zinc-950/55 px-3 pt-[10vh] backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Search ClientOS" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}>
+  return <div className="fixed inset-0 z-[70] flex items-start justify-center bg-zinc-950/55 px-2 pt-3 backdrop-blur-sm sm:px-3 sm:pt-[10vh]" role="dialog" aria-modal="true" aria-label="Search ClientOS" onMouseDown={(event) => { if (event.target === event.currentTarget) close(); }}>
     <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-white/20 bg-white shadow-2xl">
       <div className="flex items-center gap-3 border-b border-zinc-200 px-4"><span aria-hidden="true" className="text-zinc-400">⌕</span><input ref={inputRef} value={query} onChange={(event) => setQuery(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && results[0]) choose(results[0].href); }} aria-label="Find a workspace or action" placeholder="Find a workspace or action…" className="h-14 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-zinc-400" /><button type="button" onClick={close} className="rounded-md border border-zinc-200 px-2 py-1 text-xs text-zinc-500 hover:bg-zinc-100">Esc</button></div>
-      <div className="max-h-[60vh] overflow-y-auto p-2">
+      <div className="max-h-[calc(100vh-9rem)] overflow-y-auto p-2 sm:max-h-[60vh]">
         {results.map((item) => <button key={item.href} type="button" onClick={() => choose(item.href)} className="flex w-full items-center justify-between gap-4 rounded-xl px-3 py-3 text-left hover:bg-zinc-100"><span className="min-w-0"><span className="block text-sm font-medium text-zinc-950">{item.label}</span><span className="block truncate text-xs text-zinc-500">{item.description}</span></span><span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">{item.group}</span></button>)}
         {!results.length ? <div className="px-4 py-10 text-center"><p className="text-sm font-medium text-zinc-800">No matching workspace or action</p><p className="mt-1 text-xs text-zinc-500">Try “events”, “supplier”, “create” or “settings”.</p></div> : null}
       </div>
-      <div className="flex items-center justify-between border-t border-zinc-100 bg-zinc-50 px-4 py-2 text-[11px] text-zinc-500"><span>Searches navigation and actions</span><span>Enter to open · Esc to close</span></div>
+      <div className="flex items-center justify-between border-t border-zinc-100 bg-zinc-50 px-4 py-2 text-[11px] text-zinc-500"><span>Navigation and actions</span><span className="hidden sm:inline">Enter to open · Esc to close</span></div>
     </div>
   </div>;
 }

@@ -13,6 +13,15 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — ClientOS and Marketplace Responsive Foundation
+
+- Made action-heavy page headers horizontally accessible on phones while preserving wrapped desktop actions.
+- Constrained the mobile navigation drawer, profile menu and ClientOS search overlay to the available viewport.
+- Improved small-screen Marketplace sign-in branding and event Asset/Execution form layouts.
+- Added shared form-control overflow safeguards without changing workflow or data behavior.
+- Verified no horizontal document overflow on the live Home, Events, Marketplace and Marketplace Management routes at the available desktop viewport.
+- Verification status: all 47 web test files and 106 tests passed; web build and lint passed; all 30 API suites and 161 tests passed; API build and lint passed.
+
 ### 2026-08-08 — ClientOS Workspace Search
 
 - Replaced the persistent non-functional search placeholder with a command-style workspace and action finder.
