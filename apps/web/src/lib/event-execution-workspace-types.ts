@@ -1,0 +1,9 @@
+export type ExecutionControlStatus = 'Pending' | 'Ready' | 'Blocked' | 'InProgress' | 'Completed' | 'Waived' | 'Cancelled';
+export type ExecutionTask = { id: string; title: string; description: string | null; completionCriteria: string; status: ExecutionControlStatus; plannedStart: string | null; plannedEnd: string | null; blockedReason: string | null; actualStart: string | null; actualEnd: string | null };
+export type ExecutionGate = { id: string; key: string; name: string; category: string; decision: 'Pending' | 'Passed' | 'Failed' | 'Waived'; blockerSummary: string | null; waiverReason: string | null; assessedAt: string | null };
+export type ExecutionRunItem = { id: string; sequence: number; title: string; scheduledAt: string; durationMinutes: number | null; cueType: string | null };
+export type ExecutionIncident = { id: string; incidentType: string; severity: 'Low' | 'Medium' | 'High' | 'Critical' | 'Emergency'; title: string; description: string; location: string | null; status: 'Open' | 'Responding' | 'Contained' | 'Resolved' | 'Closed'; reportedAt: string };
+export type ExecutionCommandLog = { id: string; logType: string; severity: string; message: string; occurredAt: string };
+export type ExecutionCloseoutItem = { id: string; closeoutType: string; criteria: string; status: ExecutionControlStatus };
+export type EventExecutionWorkspace = { id: string; status: string; summary: string | null; tasks: ExecutionTask[]; gates: ExecutionGate[]; runOfShowItems: ExecutionRunItem[]; commandLogs: ExecutionCommandLog[]; incidents: ExecutionIncident[]; closeoutItems: ExecutionCloseoutItem[]; workstreams: Array<{ id: string; name: string; status: string }>; milestones: Array<{ id: string; name: string; status: string }>; siteControls: unknown[]; commissioningChecks: unknown[]; acceptances: unknown[] };
+

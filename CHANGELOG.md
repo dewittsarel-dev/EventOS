@@ -13,6 +13,14 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — ClientOS Event Execution
+
+- Added an event-context operational command workspace over the recovered M010 API and linked it from the Event workspace.
+- Added execution-plan generation, evidence-based task control, explicit readiness gates, run-of-show cues and separate authorised go-live control.
+- Added immutable command logging, operational incidents, dispatch, collection, breakdown controls and evidence-backed closeout.
+- Preserved plan-versus-actual separation and the rule that AI may advise but cannot approve gates, override safety, accept handover or close the event.
+- Verification status: all 40 web test files and 95 tests passed; web lint and production build passed; all 29 API suites and 157 tests passed; API build and lint passed.
+
 ### 2026-08-08 — ClientOS Event Asset Management
 
 - Added an event-context Asset Management workspace over the recovered M009 API and linked it from the Event workspace.
