@@ -11,6 +11,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { EventExecutionModule } from './event-execution/event-execution.module';
 import { EventDesignModule } from './event-design/event-design.module';
 import { EventsModule } from './events/events.module';
+import { FinanceControlModule } from './finance-control/finance-control.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { MeetingNotesModule } from './meeting-notes/meeting-notes.module';
@@ -46,6 +47,7 @@ import { PrismaModule } from './prisma/prisma.module';
     EventDesignModule,
     EventExecutionModule,
     EventsModule,
+    FinanceControlModule,
     InventoryModule,
     ResourcesModule,
     PurchaseOrdersModule,

@@ -344,6 +344,99 @@ enum ExecutionIncidentStatus {
   Closed
 }
 
+enum FinanceWorkspaceStatus {
+  Draft
+  Active
+  Reconciliation
+  ClosePending
+  Closed
+  Archived
+}
+
+enum FinanceLineType {
+  Revenue
+  DirectCost
+  IndirectCost
+  LabourCost
+  AssetCost
+  LogisticsCost
+  Recovery
+  Tax
+}
+
+enum FinanceValueStage {
+  Estimate
+  Budget
+  Baseline
+  Forecast
+  Commitment
+  Actual
+  Accrual
+  Billing
+  Cash
+}
+
+enum FinanceVersionStatus {
+  Draft
+  Submitted
+  Approved
+  Superseded
+  Locked
+  Rejected
+}
+
+enum FinanceCommitmentStatus {
+  Draft
+  Approved
+  Ordered
+  PartiallyInvoiced
+  FullyInvoiced
+  Settled
+  Cancelled
+}
+
+enum FinanceInvoiceStatus {
+  Draft
+  Approved
+  Issued
+  PartiallyPaid
+  Paid
+  Overdue
+  Disputed
+  Credited
+  Cancelled
+}
+
+enum FinancePaymentDirection {
+  Receipt
+  Disbursement
+  Refund
+}
+
+enum FinancePaymentStatus {
+  Planned
+  PendingApproval
+  Approved
+  Submitted
+  Cleared
+  Failed
+  Reversed
+}
+
+enum FinanceReconciliationStatus {
+  Open
+  Investigating
+  Resolved
+  Approved
+}
+
+enum FinanceCloseStatus {
+  Open
+  ReadyForReview
+  Approved
+  Reopened
+}
+
 enum QuotationStatus {
   Draft
   Sent
@@ -661,6 +754,7 @@ model User {
   assetDefinitionsCreated          AssetDefinition[]          @relation("AssetDefinitionCreatedBy")
   assetInstancesCreated            AssetInstance[]            @relation("AssetInstanceCreatedBy")
   eventExecutionsCreated           EventExecution[]           @relation("EventExecutionCreatedBy")
+  financeWorkspacesCreated         EventFinanceWorkspace[]    @relation("EventFinanceWorkspaceCreatedBy")
 
   @@index([email])
 }
@@ -714,6 +808,7 @@ model Organization {
   assetBatches              AssetBatch[]
   assetKits                 AssetKit[]
   eventExecutions           EventExecution[]
+  financeWorkspaces         EventFinanceWorkspace[]
 
   @@index([slug])
 }
@@ -811,6 +906,7 @@ model Event {
   procurementPackages      ProcurementPackage[]
   commercialWorkspaces     CommercialWorkspace[]
   eventExecution           EventExecution?
+  financeWorkspace         EventFinanceWorkspace?
 
   @@index([organizationId])
   @@index([contactId])
@@ -2180,6 +2276,348 @@ model ExecutionCloseoutItem {
 
   @@index([eventExecutionId, status])
   @@index([closeoutType])
+}
+
+model EventFinanceWorkspace {
+  id                  String                       @id @default(uuid())
+  systemNumber        Int                          @unique @default(autoincrement())
+  organizationId      String
+  eventId             String                       @unique
+  currency            String                       @default("ZAR")
+  status              FinanceWorkspaceStatus       @default(Draft)
+  profitabilityPolicy Json?
+  statutorySystemName String?
+  statutoryExternalId String?
+  createdByUserId     String
+  createdAt           DateTime                     @default(now())
+  updatedAt           DateTime                     @updatedAt
+  closedAt            DateTime?
+  archivedAt          DateTime?
+  organization        Organization                 @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  event               Event                        @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  createdBy           User                         @relation("EventFinanceWorkspaceCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  owners              EventFinanceOwner[]
+  wbsNodes            FinanceWbsNode[]
+  lines               EventFinancialLine[]
+  budgetVersions      EventBudgetVersion[]
+  changes             EventFinancialChange[]
+  commitments         EventFinanceCommitment[]
+  invoices            EventClientInvoice[]
+  payments            EventFinancePayment[]
+  reconciliations     EventFinanceReconciliation[]
+  closeItems          EventFinanceCloseItem[]
+  auditEntries        EventFinanceAudit[]
+
+  @@index([organizationId, status])
+  @@index([createdByUserId])
+}
+
+model EventFinanceOwner {
+  id                 String                @id @default(uuid())
+  financeWorkspaceId String
+  role               String
+  ownerUserId        String
+  effectiveFrom      DateTime              @default(now())
+  effectiveTo        DateTime?
+  assignedByUserId   String
+  financeWorkspace   EventFinanceWorkspace @relation(fields: [financeWorkspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([financeWorkspaceId, role, effectiveFrom])
+  @@index([financeWorkspaceId, effectiveTo])
+  @@index([ownerUserId])
+}
+
+model FinanceWbsNode {
+  id                 String                @id @default(uuid())
+  financeWorkspaceId String
+  parentId           String?
+  code               String
+  name               String
+  costCentre         String?
+  profitCentre       String?
+  active             Boolean               @default(true)
+  sequence           Int                   @default(0)
+  financeWorkspace   EventFinanceWorkspace @relation(fields: [financeWorkspaceId], references: [id], onDelete: Cascade)
+  parent             FinanceWbsNode?       @relation("FinanceWbsHierarchy", fields: [parentId], references: [id], onDelete: Restrict)
+  children           FinanceWbsNode[]      @relation("FinanceWbsHierarchy")
+  lines              EventFinancialLine[]
+  budgetLines        EventBudgetLine[]
+
+  @@unique([financeWorkspaceId, code])
+  @@index([financeWorkspaceId, sequence])
+  @@index([parentId])
+}
+
+model EventFinancialLine {
+  id                   String                @id @default(uuid())
+  financeWorkspaceId   String
+  wbsNodeId            String
+  requirementItemId    String?
+  lineType             FinanceLineType
+  stage                FinanceValueStage
+  description          String
+  quantity             Float                 @default(1)
+  unitAmount           Float
+  amountExcludingTax   Float
+  taxAmount            Float                 @default(0)
+  totalAmount          Float
+  currency             String
+  sourceModule         String
+  sourceType           String
+  sourceId             String
+  externalAccountingId String?
+  occurredAt           DateTime?
+  approvedByUserId     String?
+  approvedAt           DateTime?
+  reversedByLineId     String?
+  createdByUserId      String
+  createdAt            DateTime              @default(now())
+  financeWorkspace     EventFinanceWorkspace @relation(fields: [financeWorkspaceId], references: [id], onDelete: Cascade)
+  wbsNode              FinanceWbsNode        @relation(fields: [wbsNodeId], references: [id], onDelete: Restrict)
+
+  @@index([financeWorkspaceId, stage, lineType])
+  @@index([wbsNodeId])
+  @@index([requirementItemId])
+  @@index([sourceModule, sourceType, sourceId])
+  @@index([externalAccountingId])
+}
+
+model EventBudgetVersion {
+  id                 String                @id @default(uuid())
+  financeWorkspaceId String
+  version            Int
+  versionType        String
+  status             FinanceVersionStatus  @default(Draft)
+  description        String?
+  effectiveAt        DateTime?
+  submittedByUserId  String?
+  submittedAt        DateTime?
+  approvedByUserId   String?
+  approvedAt         DateTime?
+  lockedByUserId     String?
+  lockedAt           DateTime?
+  createdByUserId    String
+  createdAt          DateTime              @default(now())
+  financeWorkspace   EventFinanceWorkspace @relation(fields: [financeWorkspaceId], references: [id], onDelete: Cascade)
+  lines              EventBudgetLine[]
+
+  @@unique([financeWorkspaceId, versionType, version])
+  @@index([financeWorkspaceId, status])
+}
+
+model EventBudgetLine {
+  id                String             @id @default(uuid())
+  budgetVersionId   String
+  wbsNodeId         String
+  requirementItemId String?
+  lineType          FinanceLineType
+  description       String
+  amount            Float
+  currency          String
+  sourceType        String?
+  sourceId          String?
+  changeReason      String?
+  budgetVersion     EventBudgetVersion @relation(fields: [budgetVersionId], references: [id], onDelete: Cascade)
+  wbsNode           FinanceWbsNode     @relation(fields: [wbsNodeId], references: [id], onDelete: Restrict)
+
+  @@index([budgetVersionId, lineType])
+  @@index([wbsNodeId])
+  @@index([requirementItemId])
+}
+
+model EventFinancialChange {
+  id                 String                @id @default(uuid())
+  financeWorkspaceId String
+  changeType         String
+  sourceModule       String
+  sourceType         String
+  sourceId           String
+  description        String
+  revenueImpact      Float                 @default(0)
+  costImpact         Float                 @default(0)
+  marginImpact       Float                 @default(0)
+  forecastImpact     Float                 @default(0)
+  status             FinanceVersionStatus  @default(Draft)
+  requestedByUserId  String
+  requestedAt        DateTime              @default(now())
+  approvedByUserId   String?
+  approvedAt         DateTime?
+  rejectionReason    String?
+  financeWorkspace   EventFinanceWorkspace @relation(fields: [financeWorkspaceId], references: [id], onDelete: Cascade)
+
+  @@index([financeWorkspaceId, status])
+  @@index([sourceModule, sourceType, sourceId])
+}
+
+model EventFinanceCommitment {
+  id                   String                  @id @default(uuid())
+  financeWorkspaceId   String
+  requirementItemId    String?
+  supplierId           String
+  commercialAwardId    String?
+  purchaseOrderId      String?
+  description          String
+  amountExcludingTax   Float
+  taxAmount            Float                   @default(0)
+  totalAmount          Float
+  currency             String
+  status               FinanceCommitmentStatus @default(Draft)
+  budgetLineId         String?
+  approvedByUserId     String?
+  approvedAt           DateTime?
+  committedAt          DateTime?
+  cancelledAt          DateTime?
+  cancellationReason   String?
+  externalAccountingId String?
+  createdByUserId      String
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  financeWorkspace     EventFinanceWorkspace   @relation(fields: [financeWorkspaceId], references: [id], onDelete: Cascade)
+
+  @@index([financeWorkspaceId, status])
+  @@index([supplierId])
+  @@index([requirementItemId])
+  @@index([purchaseOrderId])
+}
+
+model EventClientInvoice {
+  id                   String                   @id @default(uuid())
+  systemNumber         Int                      @unique @default(autoincrement())
+  financeWorkspaceId   String
+  contactId            String
+  invoiceNumber        String
+  status               FinanceInvoiceStatus     @default(Draft)
+  issueDate            DateTime?
+  dueDate              DateTime?
+  currency             String
+  subtotal             Float
+  taxAmount            Float                    @default(0)
+  totalAmount          Float
+  paidAmount           Float                    @default(0)
+  balanceAmount        Float
+  contractReference    String?
+  externalAccountingId String?
+  approvedByUserId     String?
+  approvedAt           DateTime?
+  issuedAt             DateTime?
+  createdByUserId      String
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+  financeWorkspace     EventFinanceWorkspace    @relation(fields: [financeWorkspaceId], references: [id], onDelete: Cascade)
+  lines                EventClientInvoiceLine[]
+  payments             EventFinancePayment[]
+
+  @@unique([financeWorkspaceId, invoiceNumber])
+  @@index([financeWorkspaceId, status, dueDate])
+  @@index([contactId])
+}
+
+model EventClientInvoiceLine {
+  id                String             @id @default(uuid())
+  invoiceId         String
+  requirementItemId String?
+  description       String
+  quantity          Float
+  unitPrice         Float
+  taxAmount         Float              @default(0)
+  totalAmount       Float
+  sourceType        String
+  sourceId          String
+  invoice           EventClientInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([requirementItemId])
+  @@index([sourceType, sourceId])
+}
+
+model EventFinancePayment {
+  id                   String                  @id @default(uuid())
+  financeWorkspaceId   String
+  invoiceId            String?
+  commitmentId         String?
+  direction            FinancePaymentDirection
+  status               FinancePaymentStatus    @default(Planned)
+  amount               Float
+  currency             String
+  plannedDate          DateTime?
+  submittedAt          DateTime?
+  clearedAt            DateTime?
+  bankReference        String?
+  externalAccountingId String?
+  approvedByUserId     String?
+  approvedAt           DateTime?
+  createdByUserId      String
+  createdAt            DateTime                @default(now())
+  financeWorkspace     EventFinanceWorkspace   @relation(fields: [financeWorkspaceId], references: [id], onDelete: Cascade)
+  invoice              EventClientInvoice?     @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+
+  @@index([financeWorkspaceId, status, plannedDate])
+  @@index([invoiceId])
+  @@index([commitmentId])
+}
+
+model EventFinanceReconciliation {
+  id                 String                      @id @default(uuid())
+  financeWorkspaceId String
+  reconciliationType String
+  sourceModule       String
+  sourceType         String
+  sourceId           String
+  expectedAmount     Float
+  recordedAmount     Float
+  varianceAmount     Float
+  status             FinanceReconciliationStatus @default(Open)
+  explanation        String?
+  evidence           Json?
+  resolvedByUserId   String?
+  resolvedAt         DateTime?
+  approvedByUserId   String?
+  approvedAt         DateTime?
+  createdAt          DateTime                    @default(now())
+  financeWorkspace   EventFinanceWorkspace       @relation(fields: [financeWorkspaceId], references: [id], onDelete: Cascade)
+
+  @@index([financeWorkspaceId, status])
+  @@index([sourceModule, sourceType, sourceId])
+}
+
+model EventFinanceCloseItem {
+  id                 String                @id @default(uuid())
+  financeWorkspaceId String
+  closeType          String
+  criteria           String
+  status             FinanceCloseStatus    @default(Open)
+  evidence           Json?
+  completedByUserId  String?
+  completedAt        DateTime?
+  approvedByUserId   String?
+  approvedAt         DateTime?
+  reopenedByUserId   String?
+  reopenedAt         DateTime?
+  reopenReason       String?
+  financeWorkspace   EventFinanceWorkspace @relation(fields: [financeWorkspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([financeWorkspaceId, closeType])
+  @@index([financeWorkspaceId, status])
+}
+
+model EventFinanceAudit {
+  id                 String                @id @default(uuid())
+  financeWorkspaceId String
+  entityType         String
+  entityId           String
+  action             String
+  previousValue      Json?
+  newValue           Json?
+  reason             String?
+  sourceModule       String
+  sourceReference    String?
+  userId             String
+  createdAt          DateTime              @default(now())
+  financeWorkspace   EventFinanceWorkspace @relation(fields: [financeWorkspaceId], references: [id], onDelete: Cascade)
+
+  @@index([financeWorkspaceId, createdAt])
+  @@index([entityType, entityId, createdAt])
+  @@index([userId])
 }
 
 model Quotation {
