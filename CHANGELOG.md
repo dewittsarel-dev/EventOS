@@ -13,6 +13,16 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — Governed Marketplace Opportunity Conversion
+
+- Added a distinct, auditable sales-opportunity record between Marketplace enquiries and authoritative Events.
+- Added ClientOS qualification controls for event details, estimated value, notes and explicit `Qualifying`, `Qualified` or `Lost` decisions.
+- Added evidence-backed `Convert to Event`, which creates or reuses the customer Contact and creates the Event strictly as `Draft`.
+- Blocked direct legacy `Converted` status updates so only the qualified conversion transaction can produce that outcome.
+- Recorded opportunity creation, qualification and conversion in the immutable audit log, including operator and confirmation evidence.
+- Applied the reversible migration to the approved local development database.
+- Verification status: all 50 web test files and 111 tests passed; web build and lint passed; all 30 API suites and 165 tests passed; all 14 API end-to-end suites and 48 HTTP tests passed; API build and lint passed.
+
 ### 2026-08-08 — Marketplace Discovery Refinement
 
 - Added public category, resource-type and supplier filters over explicitly published Resource Engine records.

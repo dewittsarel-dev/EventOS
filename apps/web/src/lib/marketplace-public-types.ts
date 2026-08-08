@@ -30,4 +30,21 @@ export type MarketplaceEnquiry = {
   message: string;
   createdAt: string;
   listing: { id: string; name: string };
+  opportunity: MarketplaceOpportunity | null;
+};
+
+export type MarketplaceOpportunity = {
+  id: string;
+  status: 'New' | 'Qualifying' | 'Qualified' | 'Won' | 'Lost';
+  title: string;
+  eventType: string | null;
+  eventDate: string | null;
+  venue: string | null;
+  estimatedValueCents: number | null;
+  qualificationNotes: string | null;
+  confirmationEvidenceType: string | null;
+  confirmationReference: string | null;
+  eventId: string | null;
+  createdAt: string;
+  updatedAt: string;
 };

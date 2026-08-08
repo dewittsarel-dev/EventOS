@@ -1,4 +1,4 @@
-import type { MarketplaceEnquiry, MarketplaceListing, MarketplaceListingPage } from './marketplace-public-types';
+import type { MarketplaceEnquiry, MarketplaceListing, MarketplaceListingPage, MarketplaceOpportunity } from './marketplace-public-types';
 
 const apiBaseUrl = () => (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001').replace(/\/$/, '');
 
@@ -67,4 +67,30 @@ export async function updateMarketplaceEnquiryStatus(options: {
     status: MarketplaceEnquiry['status'];
     updatedAt: string;
   }>;
+}
+
+type PrivateMarketplaceOptions = { baseUrl: string; token: string; organizationId: string };
+
+async function privateMarketplaceRequest<T>(options: PrivateMarketplaceOptions, path: string, init: RequestInit) {
+  const response = await fetch(`${options.baseUrl.replace(/\/$/, '')}${path}`, {
+    ...init,
+    headers: { Authorization: `Bearer ${options.token}`, 'Content-Type': 'application/json', ...(init.headers || {}) },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({})) as { message?: string | string[] };
+    throw new Error(Array.isArray(body.message) ? body.message.join(', ') : body.message || `Request failed (${response.status})`);
+  }
+  return response.json() as Promise<T>;
+}
+
+export function createMarketplaceOpportunity(options: PrivateMarketplaceOptions, enquiryId: string) {
+  return privateMarketplaceRequest<MarketplaceOpportunity>(options, `/marketplace/enquiries/${enquiryId}/opportunity`, { method: 'POST', body: JSON.stringify({ organizationId: options.organizationId }) });
+}
+
+export function updateMarketplaceOpportunity(options: PrivateMarketplaceOptions, opportunityId: string, input: { status?: MarketplaceOpportunity['status']; title?: string; eventType?: string; eventDate?: string; venue?: string; estimatedValueCents?: number; qualificationNotes?: string }) {
+  return privateMarketplaceRequest<MarketplaceOpportunity>(options, `/marketplace/opportunities/${opportunityId}`, { method: 'PATCH', body: JSON.stringify({ organizationId: options.organizationId, ...input }) });
+}
+
+export function convertMarketplaceOpportunity(options: PrivateMarketplaceOptions, opportunityId: string, input: { confirmationEvidenceType: string; confirmationReference: string; title: string; eventType: string; eventDate: string; startTime: string; endTime: string; venue: string; budgetCents?: number }) {
+  return privateMarketplaceRequest<{ opportunity: MarketplaceOpportunity; event: { id: string; title: string; status: string }; contact: { id: string; name: string } }>(options, `/marketplace/opportunities/${opportunityId}/convert-to-event`, { method: 'POST', body: JSON.stringify({ organizationId: options.organizationId, ...input }) });
 }

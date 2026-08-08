@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   MarketplaceEnquiryStatus,
   Prisma,
@@ -6,10 +10,15 @@ import {
   ResourceStatus,
   ResourceType,
   ResourceVisibility,
+  SalesOpportunityStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMarketplaceEnquiryDto } from './dto/create-marketplace-enquiry.dto';
 import { FindMarketplaceListingsQueryDto } from './dto/find-marketplace-listings-query.dto';
+import {
+  ConvertSalesOpportunityDto,
+  UpdateSalesOpportunityDto,
+} from './dto/sales-opportunity.dto';
 
 const publicListingSelect = {
   id: true,
@@ -149,6 +158,23 @@ export class MarketplacePublicService {
           select: { id: true, marketplaceTitle: true, publicName: true },
         },
         resource: { select: { id: true, name: true } },
+        salesOpportunity: {
+          select: {
+            id: true,
+            status: true,
+            title: true,
+            eventType: true,
+            eventDate: true,
+            venue: true,
+            estimatedValueCents: true,
+            qualificationNotes: true,
+            confirmationEvidenceType: true,
+            confirmationReference: true,
+            eventId: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -171,7 +197,225 @@ export class MarketplacePublicService {
           entry.inventoryItem?.publicName ??
           'Legacy Marketplace listing',
       },
+      opportunity: entry.salesOpportunity,
     }));
+  }
+
+  async createSalesOpportunity(
+    userId: string,
+    organizationId: string,
+    enquiryId: string,
+  ) {
+    await this.ensureOrganizationMembership(userId, organizationId);
+    const enquiry = await this.prisma.marketplaceEnquiry.findFirst({
+      where: { id: enquiryId, organizationId },
+      include: { resource: { select: { name: true } }, salesOpportunity: true },
+    });
+    if (!enquiry) throw new NotFoundException('Marketplace enquiry not found');
+    if (enquiry.salesOpportunity) return enquiry.salesOpportunity;
+
+    return this.prisma.$transaction(async (tx) => {
+      const opportunity = await tx.salesOpportunity.create({
+        data: {
+          organizationId,
+          marketplaceEnquiryId: enquiry.id,
+          title: `${enquiry.customerName} — ${enquiry.resource?.name ?? 'Marketplace enquiry'}`,
+          eventDate: enquiry.eventDate,
+          venue: enquiry.eventLocation,
+          qualificationNotes: enquiry.message,
+          createdByUserId: userId,
+        },
+      });
+      await tx.marketplaceEnquiry.update({
+        where: { id: enquiry.id },
+        data: { status: 'Acknowledged' },
+      });
+      await tx.auditLog.create({
+        data: {
+          action: 'marketplace.opportunity_created',
+          details: JSON.stringify({ enquiryId, opportunityId: opportunity.id }),
+          userId,
+          organizationId,
+        },
+      });
+      return opportunity;
+    });
+  }
+
+  async updateSalesOpportunity(
+    userId: string,
+    opportunityId: string,
+    dto: UpdateSalesOpportunityDto,
+  ) {
+    await this.ensureOrganizationMembership(userId, dto.organizationId);
+    const opportunity = await this.prisma.salesOpportunity.findFirst({
+      where: { id: opportunityId, organizationId: dto.organizationId },
+    });
+    if (!opportunity)
+      throw new NotFoundException('Sales opportunity not found');
+    if (opportunity.eventId)
+      throw new BadRequestException(
+        'Converted opportunities cannot be changed',
+      );
+    if (dto.status === SalesOpportunityStatus.Won)
+      throw new BadRequestException(
+        'Use the controlled Event conversion action to mark an opportunity Won',
+      );
+
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.salesOpportunity.update({
+        where: { id: opportunityId },
+        data: {
+          status: dto.status,
+          title: dto.title,
+          eventType: dto.eventType,
+          eventDate: dto.eventDate ? new Date(dto.eventDate) : undefined,
+          venue: dto.venue,
+          estimatedValueCents: dto.estimatedValueCents,
+          qualificationNotes: dto.qualificationNotes,
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          action: 'marketplace.opportunity_updated',
+          details: JSON.stringify({ opportunityId, status: updated.status }),
+          userId,
+          organizationId: dto.organizationId,
+        },
+      });
+      return updated;
+    });
+  }
+
+  async convertSalesOpportunity(
+    userId: string,
+    opportunityId: string,
+    dto: ConvertSalesOpportunityDto,
+  ) {
+    await this.ensureOrganizationMembership(userId, dto.organizationId);
+    const opportunity = await this.prisma.salesOpportunity.findFirst({
+      where: { id: opportunityId, organizationId: dto.organizationId },
+      include: { marketplaceEnquiry: true },
+    });
+    if (!opportunity)
+      throw new NotFoundException('Sales opportunity not found');
+    if (opportunity.eventId)
+      throw new BadRequestException(
+        'This opportunity has already been converted',
+      );
+    if (opportunity.status !== SalesOpportunityStatus.Qualified)
+      throw new BadRequestException(
+        'Opportunity must be Qualified before Event conversion',
+      );
+    if (dto.assignedUserId) {
+      const assignee = await this.prisma.membership.findFirst({
+        where: {
+          userId: dto.assignedUserId,
+          organizationId: dto.organizationId,
+          isDisabled: false,
+        },
+        select: { id: true },
+      });
+      if (!assignee)
+        throw new BadRequestException(
+          'Assigned user is not an active organization member',
+        );
+    }
+    const startDateTime = new Date(
+      `${dto.eventDate.slice(0, 10)}T${dto.startTime}:00.000Z`,
+    );
+    const endDateTime = new Date(
+      `${dto.eventDate.slice(0, 10)}T${dto.endTime}:00.000Z`,
+    );
+    if (endDateTime < startDateTime)
+      throw new BadRequestException(
+        'endTime must be greater than or equal to startTime',
+      );
+
+    return this.prisma.$transaction(async (tx) => {
+      let contact = await tx.contact.findFirst({
+        where: {
+          organizationId: dto.organizationId,
+          email: {
+            equals: opportunity.marketplaceEnquiry.customerEmail,
+            mode: 'insensitive',
+          },
+          archivedAt: null,
+        },
+      });
+      if (!contact) {
+        const [firstName, ...lastNameParts] =
+          opportunity.marketplaceEnquiry.customerName.trim().split(/\s+/);
+        contact = await tx.contact.create({
+          data: {
+            organizationId: dto.organizationId,
+            firstName: firstName || opportunity.marketplaceEnquiry.customerName,
+            lastName: lastNameParts.join(' ') || undefined,
+            email: opportunity.marketplaceEnquiry.customerEmail,
+            phone: opportunity.marketplaceEnquiry.customerPhone,
+            contactType: 'Marketplace Lead',
+            notes: `Created from Marketplace enquiry ${opportunity.marketplaceEnquiryId}`,
+          },
+        });
+      }
+      const event = await tx.event.create({
+        data: {
+          organizationId: dto.organizationId,
+          contactId: contact.id,
+          assignedUserId: dto.assignedUserId,
+          title: dto.title,
+          eventType: dto.eventType,
+          eventDate: new Date(dto.eventDate),
+          startTime: dto.startTime,
+          endTime: dto.endTime,
+          venue: dto.venue,
+          budgetCents: dto.budgetCents,
+          notes: `Converted from Marketplace opportunity ${opportunity.id}. Confirmation: ${dto.confirmationEvidenceType} — ${dto.confirmationReference}`,
+          description: opportunity.qualificationNotes,
+          startDateTime,
+          endDateTime,
+          location: dto.venue,
+          status: 'Draft',
+        },
+      });
+      const updated = await tx.salesOpportunity.update({
+        where: { id: opportunity.id },
+        data: {
+          contactId: contact.id,
+          eventId: event.id,
+          status: 'Won',
+          confirmationEvidenceType: dto.confirmationEvidenceType,
+          confirmationReference: dto.confirmationReference,
+          confirmationRecordedAt: new Date(),
+          convertedByUserId: userId,
+          convertedAt: new Date(),
+        },
+      });
+      await tx.marketplaceEnquiry.update({
+        where: { id: opportunity.marketplaceEnquiryId },
+        data: { status: 'Converted' },
+      });
+      await tx.auditLog.create({
+        data: {
+          action: 'marketplace.opportunity_converted_to_event',
+          details: JSON.stringify({
+            opportunityId,
+            eventId: event.id,
+            evidenceType: dto.confirmationEvidenceType,
+          }),
+          userId,
+          organizationId: dto.organizationId,
+        },
+      });
+      return {
+        opportunity: updated,
+        event: { id: event.id, title: event.title, status: event.status },
+        contact: {
+          id: contact.id,
+          name: [contact.firstName, contact.lastName].filter(Boolean).join(' '),
+        },
+      };
+    });
   }
 
   async updateEnquiryStatus(
@@ -181,6 +425,11 @@ export class MarketplacePublicService {
     status: MarketplaceEnquiryStatus,
   ) {
     await this.ensureOrganizationMembership(userId, organizationId);
+    if (status === MarketplaceEnquiryStatus.Converted) {
+      throw new BadRequestException(
+        'Use the qualified sales opportunity conversion workflow to convert an enquiry',
+      );
+    }
     const current = await this.prisma.marketplaceEnquiry.findFirst({
       where: { id: enquiryId, organizationId },
       select: { id: true, status: true },

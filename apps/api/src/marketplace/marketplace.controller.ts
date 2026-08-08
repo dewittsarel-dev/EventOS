@@ -34,6 +34,11 @@ import { MarketplaceCapabilityService } from './marketplace-capability.service';
 import { FindMarketplaceEnquiriesQueryDto } from './dto/find-marketplace-enquiries-query.dto';
 import { MarketplacePublicService } from './marketplace-public.service';
 import { UpdateMarketplaceEnquiryStatusDto } from './dto/update-marketplace-enquiry-status.dto';
+import {
+  ConvertSalesOpportunityDto,
+  CreateSalesOpportunityDto,
+  UpdateSalesOpportunityDto,
+} from './dto/sales-opportunity.dto';
 
 @ApiTags('marketplace')
 @ApiBearerAuth('access-token')
@@ -78,6 +83,48 @@ export class MarketplaceController {
       dto.organizationId,
       enquiryId,
       dto.status,
+    );
+  }
+
+  @Post('enquiries/:id/opportunity')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  createOpportunity(
+    @CurrentUser() user: UserResponseDto,
+    @Param('id', ParseUUIDPipe) enquiryId: string,
+    @Body() dto: CreateSalesOpportunityDto,
+  ) {
+    return this.marketplacePublicService.createSalesOpportunity(
+      user.id,
+      dto.organizationId,
+      enquiryId,
+    );
+  }
+
+  @Patch('opportunities/:id')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  updateOpportunity(
+    @CurrentUser() user: UserResponseDto,
+    @Param('id', ParseUUIDPipe) opportunityId: string,
+    @Body() dto: UpdateSalesOpportunityDto,
+  ) {
+    return this.marketplacePublicService.updateSalesOpportunity(
+      user.id,
+      opportunityId,
+      dto,
+    );
+  }
+
+  @Post('opportunities/:id/convert-to-event')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  convertOpportunity(
+    @CurrentUser() user: UserResponseDto,
+    @Param('id', ParseUUIDPipe) opportunityId: string,
+    @Body() dto: ConvertSalesOpportunityDto,
+  ) {
+    return this.marketplacePublicService.convertSalesOpportunity(
+      user.id,
+      opportunityId,
+      dto,
     );
   }
 

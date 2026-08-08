@@ -604,6 +604,14 @@ enum MarketplaceEnquiryStatus {
   Closed
 }
 
+enum SalesOpportunityStatus {
+  New
+  Qualifying
+  Qualified
+  Won
+  Lost
+}
+
 enum PurchaseOrderStatus {
   Draft
   PendingApproval
@@ -817,6 +825,7 @@ model Organization {
   eventExecutions           EventExecution[]
   financeWorkspaces         EventFinanceWorkspace[]
   marketplaceEnquiries      MarketplaceEnquiry[]
+  salesOpportunities        SalesOpportunity[]
 
   @@index([slug])
 }
@@ -871,6 +880,7 @@ model Contact {
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   events         Event[]
   quotations     Quotation[]
+  salesOpportunities SalesOpportunity[]
 
   @@index([organizationId])
   @@index([email])
@@ -915,6 +925,7 @@ model Event {
   commercialWorkspaces     CommercialWorkspace[]
   eventExecution           EventExecution?
   financeWorkspace         EventFinanceWorkspace?
+  salesOpportunity         SalesOpportunity?
 
   @@index([organizationId])
   @@index([contactId])
@@ -3114,11 +3125,44 @@ model MarketplaceEnquiry {
   organization    Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   inventoryItem   InventoryItem?           @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
   resource        Resource?                @relation(fields: [resourceId], references: [id], onDelete: Restrict)
+  salesOpportunity SalesOpportunity?
 
   @@index([organizationId])
   @@index([inventoryItemId])
   @@index([resourceId])
   @@index([status])
+  @@index([createdAt])
+}
+
+model SalesOpportunity {
+  id                       String                 @id @default(uuid())
+  organizationId           String
+  marketplaceEnquiryId     String                 @unique
+  contactId                String?
+  eventId                  String?                @unique
+  status                   SalesOpportunityStatus @default(New)
+  title                    String
+  eventType                String?
+  eventDate                DateTime?
+  venue                    String?
+  estimatedValueCents      Int?
+  qualificationNotes       String?
+  confirmationEvidenceType String?
+  confirmationReference    String?
+  confirmationRecordedAt   DateTime?
+  createdByUserId          String
+  convertedByUserId        String?
+  convertedAt              DateTime?
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+  organization             Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  marketplaceEnquiry       MarketplaceEnquiry     @relation(fields: [marketplaceEnquiryId], references: [id], onDelete: Restrict)
+  contact                  Contact?               @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  event                    Event?                 @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([contactId])
   @@index([createdAt])
 }
 
