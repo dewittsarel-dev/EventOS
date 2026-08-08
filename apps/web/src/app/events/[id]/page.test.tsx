@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import EventDetailsPage from './page';
 
 const getEvent = vi.fn();
+const getEventLifecycle = vi.fn();
 
 vi.mock('next/navigation', () => ({
   useParams: () => ({ id: 'event-1' }),
@@ -22,9 +23,32 @@ vi.mock('../../../lib/events-api', () => ({
   getEvent: (...args: unknown[]) => getEvent(...args),
 }));
 
+vi.mock('../../../lib/event-lifecycle-api', () => ({
+  getEventLifecycle: (...args: unknown[]) => getEventLifecycle(...args),
+  synchronizeEventLifecycle: vi.fn(),
+}));
+
 describe('EventDetailsPage', () => {
   beforeEach(() => {
     getEvent.mockReset();
+    getEventLifecycle.mockReset();
+    getEventLifecycle.mockResolvedValue({
+      eventId: 'event-1',
+      chain: {
+        brief: { id: 'brief-1', version: 1 },
+        design: { id: 'design-1', version: 1, status: 'Approved' },
+        requirementSet: null,
+        moodBoard: null,
+        procurementPackages: [],
+        commercialWorkspaces: [],
+        assetReservations: 0,
+        execution: null,
+        finance: null,
+      },
+      blockers: ['Approved Requirement Set missing'],
+      executionReady: false,
+      sourceOwnership: {},
+    });
     getEvent.mockResolvedValue({
       id: 'event-1',
       organizationId: '11111111-1111-4111-8111-111111111111',
@@ -58,5 +82,7 @@ describe('EventDetailsPage', () => {
     expect(screen.getByText('Expo')).toBeInTheDocument();
     expect(screen.getByText('Durban ICC')).toBeInTheDocument();
     expect(screen.getByText('Important')).toBeInTheDocument();
+    expect(await screen.findByText('Event lifecycle')).toBeInTheDocument();
+    expect(screen.getByText('Approved Requirement Set missing')).toBeInTheDocument();
   });
 });

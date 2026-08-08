@@ -90,10 +90,12 @@ The repository now contains the verified backend architecture from M004 through 
 - Event Lifecycle continuity reporting and controlled downstream synchronization.
 - Human approval boundaries, immutable audit evidence and source-of-truth ownership preserved.
 
-### ClientOS Product Interface — NEXT
+### ClientOS Product Interface — IN PROGRESS
 
 - Build the private operational experience over the verified M004–M011 APIs.
 - Prioritise focused vertical slices and role-appropriate workflows.
+- Event Lifecycle workspace — COMPLETE: event details now show M004–M011 continuity, blockers and controlled synchronization without automating approvals.
+- Event Design and Requirements workspace — NEXT.
 
 ### Marketplace Product Interface — PLANNED
 

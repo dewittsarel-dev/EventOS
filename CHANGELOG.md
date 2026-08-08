@@ -13,6 +13,13 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — ClientOS Event Lifecycle Workspace
+
+- Added the first ClientOS vertical slice to the event details workspace.
+- Exposed M004–M011 lifecycle progress, readiness blockers and controlled downstream synchronization through the existing authenticated API.
+- Kept all readiness and approval decisions in the API; the interface does not duplicate business rules or perform automatic approvals.
+- Verification status: all 27 web test files and 80 tests passed; web lint passed; production web build passed.
+
 ### 2026-08-08 — EventOS M004–M011 Backend Architecture
 
 - Implemented the approved backend chain from Event Design and Requirements through Mood Board, Procurement, Commercial Workspace, Asset Management, Event Execution and Event Financial Control.

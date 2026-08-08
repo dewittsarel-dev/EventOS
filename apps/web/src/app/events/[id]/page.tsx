@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { PageHeader } from '../../../components/app-shell/page-header';
 import { useAppSession } from '../../../components/app-shell/session-context';
+import { EventLifecyclePanel } from '../../../components/events/event-lifecycle-panel';
 import { getEvent } from '../../../lib/events-api';
 import type { EventRecord } from '../../../lib/events-types';
 
@@ -87,7 +88,8 @@ export default function EventDetailsPage() {
           {error}
         </div>
       ) : eventRecord ? (
-        <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+        <>
+          <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
           <h2 className="text-xl font-semibold text-zinc-900">{eventRecord.title}</h2>
           <p className="mt-1 text-sm text-zinc-600">Status: {eventRecord.status}</p>
 
@@ -143,7 +145,14 @@ export default function EventDetailsPage() {
               {eventRecord.notes || 'No notes provided.'}
             </p>
           </div>
-        </div>
+          </div>
+          <EventLifecyclePanel
+            eventId={eventId}
+            token={session.token}
+            baseUrl={session.baseUrl}
+            organizationId={eventRecord.organizationId}
+          />
+        </>
       ) : (
         <div className="rounded-xl border border-zinc-200 bg-white p-4 text-sm text-zinc-600">
           Event not found.
