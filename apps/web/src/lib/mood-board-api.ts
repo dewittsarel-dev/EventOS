@@ -40,6 +40,7 @@ export const createMoodBoard = (options: Options, eventId: string, input: {
       marketplaceListingId?: string;
       imageUrl: string;
       locked?: boolean;
+      presentation?: Record<string, unknown>;
     }>;
   }>;
 }) => request<MoodBoard>(options, `/events/${eventId}/mood-boards`, { method: 'POST', body: JSON.stringify(input) });

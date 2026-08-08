@@ -22,6 +22,7 @@ export type MoodBoard = {
       marketplaceListingId: string | null;
       imageUrl: string;
       locked: boolean;
+      presentation: { placementInstructions?: string } | null;
       requirementItem: { requirementCode: string };
     }>;
   }>;

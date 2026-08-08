@@ -13,6 +13,15 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — Mood Board Structured Composition
+
+- Replaced the technical one-object Mood Board form with a multi-object scene composer over approved Requirement Sets.
+- Added direct selection of published Marketplace supplier images while preserving listing, supplier and requirement traceability.
+- Added scene-level layout instructions and object-level placement/styling instructions as provider-independent inputs for later AI rendering.
+- Added per-object locking and support for traceable planner-library, client-upload, external-design and AI-concept references.
+- Kept visual approval separate from procurement and made no AI provider or automated commercial decision.
+- Verification status: all 51 web test files and 112 tests passed; web lint and production build passed; all 30 API suites and 165 tests passed; API build and lint passed.
+
 ### 2026-08-08 — Governed Marketplace Opportunity Conversion
 
 - Added a distinct, auditable sales-opportunity record between Marketplace enquiries and authoritative Events.
