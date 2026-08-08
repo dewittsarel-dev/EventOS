@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { CapabilityModule } from './capabilities/capability.module';
+import { CommercialWorkspacesModule } from './commercial-workspaces/commercial-workspaces.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { EventExecutionModule } from './event-execution/event-execution.module';
@@ -33,6 +34,7 @@ import { PrismaModule } from './prisma/prisma.module';
       load: [appConfig],
     }),
     CapabilityModule,
+    CommercialWorkspacesModule,
     PrismaModule,
     OrganizationModule,
     AuthModule,
