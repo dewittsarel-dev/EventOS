@@ -11,7 +11,7 @@ describe('Public Marketplace (e2e)', () => {
   const prisma = {
     $connect: jest.fn(),
     $disconnect: jest.fn(),
-    inventoryItem: {
+    resource: {
       findMany: jest.fn().mockResolvedValue([]),
       count: jest.fn().mockResolvedValue(0),
       findFirst: jest
@@ -49,7 +49,7 @@ describe('Public Marketplace (e2e)', () => {
     const response = await request(app.getHttpServer())
       .post('/public/marketplace/enquiries')
       .send({
-        inventoryItemId: itemId,
+        resourceId: itemId,
         customerName: 'Sam Customer',
         customerEmail: 'sam@example.com',
         quantity: 100,

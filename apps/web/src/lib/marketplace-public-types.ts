@@ -4,19 +4,14 @@ export type MarketplaceListing = {
   description: string | null;
   supplierName: string;
   categoryName: string;
-  brand: string | null;
-  style: string | null;
-  theme: string | null;
-  colour: string | null;
-  material: string | null;
-  dimensions: string | null;
-  capacity: string | null;
-  suitableEventTypes: string[];
+  supplierLogoUrl: string | null;
+  tags: string[];
   photoUrls: string[];
   primaryPhotoUrl: string | null;
   rentalPrice: number | null;
-  sellingPrice: number | null;
   unitOfMeasure: string;
+  resourceType: string;
+  availabilityStatus: 'Available' | 'Fully booked' | 'Unavailable';
 };
 
 export type MarketplaceListingPage = { items: MarketplaceListing[]; total: number; page: number; limit: number };
@@ -32,5 +27,5 @@ export type MarketplaceEnquiry = {
   quantity: number | null;
   message: string;
   createdAt: string;
-  inventoryItem: { id: string; marketplaceTitle: string | null; publicName: string | null };
+  listing: { id: string; name: string };
 };

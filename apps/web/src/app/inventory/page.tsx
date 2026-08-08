@@ -8,6 +8,7 @@ import {
   getResourceWorkspaceSummary,
   listInventoryCategories,
   listResourceWorkspaceCards,
+  updateResourceMarketplaceVisibility,
 } from '../../lib/inventory-api';
 import type {
   InventoryCategoryRecord,
@@ -207,6 +208,24 @@ export default function InventoryOverviewPage() {
     void loadWorkspace();
   }
 
+  async function toggleMarketplace(resourceId: string, published: boolean) {
+    setError('');
+    try {
+      await updateResourceMarketplaceVisibility(
+        requestOptions,
+        resourceId,
+        published ? 'PRIVATE' : 'MARKETPLACE',
+      );
+      await loadWorkspace();
+    } catch (requestError) {
+      setError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Marketplace publication could not be updated.',
+      );
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
@@ -228,10 +247,10 @@ export default function InventoryOverviewPage() {
               Preview Marketplace
             </Link>
             <Link
-              href="/resources"
+              href="/resources/new"
               className="rounded-md bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-700"
             >
-              Open Resources API View
+              Create Resource
             </Link>
             <Link
               href="/inventory/items/new"
@@ -462,6 +481,21 @@ export default function InventoryOverviewPage() {
                     <div className="mt-3 rounded-md bg-zinc-100 px-3 py-2 text-xs text-zinc-500">
                       Primary image placeholder
                     </div>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void toggleMarketplace(
+                          card.id,
+                          card.marketplaceStatus === 'MARKETPLACE',
+                        )
+                      }
+                      className="mt-3 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-50"
+                    >
+                      {card.marketplaceStatus === 'MARKETPLACE'
+                        ? 'Remove from Marketplace'
+                        : 'Publish to Marketplace'}
+                    </button>
+                    <Link href={`/resources/${card.id}/edit`} className="mt-2 block text-center text-xs text-zinc-600 underline">Edit resource details</Link>
                   </article>
                 ))}
               </div>

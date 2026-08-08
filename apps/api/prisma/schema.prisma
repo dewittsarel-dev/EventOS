@@ -2917,6 +2917,7 @@ model Resource {
   reservations        ResourceReservation[]
   allocations         EventResourceAllocation[]
   outstandings        EventResourceOutstanding[]
+  marketplaceEnquiries MarketplaceEnquiry[]
 
   @@unique([organizationId, sku])
   @@unique([organizationId, barcode])
@@ -3098,7 +3099,8 @@ model InventoryItem {
 model MarketplaceEnquiry {
   id              String                   @id @default(uuid())
   organizationId  String
-  inventoryItemId String
+  inventoryItemId String?
+  resourceId      String?
   status          MarketplaceEnquiryStatus @default(New)
   customerName    String
   customerEmail   String
@@ -3110,10 +3112,12 @@ model MarketplaceEnquiry {
   createdAt       DateTime                 @default(now())
   updatedAt       DateTime                 @updatedAt
   organization    Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  inventoryItem   InventoryItem            @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  inventoryItem   InventoryItem?           @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  resource        Resource?                @relation(fields: [resourceId], references: [id], onDelete: Restrict)
 
   @@index([organizationId])
   @@index([inventoryItemId])
+  @@index([resourceId])
   @@index([status])
   @@index([createdAt])
 }

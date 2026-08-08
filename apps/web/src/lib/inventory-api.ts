@@ -173,6 +173,21 @@ export async function listResourceWorkspaceCards(
   );
 }
 
+export async function updateResourceMarketplaceVisibility(
+  options: RequestOptions,
+  resourceId: string,
+  visibility: 'PRIVATE' | 'MARKETPLACE',
+) {
+  return apiRequest<{ id: string; visibility: string }>(
+    `/resources/${resourceId}`,
+    options,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ visibility }),
+    },
+  );
+}
+
 export async function listInventoryCategories(
   options: RequestOptions,
   params: {

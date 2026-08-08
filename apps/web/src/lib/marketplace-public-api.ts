@@ -19,7 +19,7 @@ export function listMarketplaceListings(params: { search?: string; page?: number
   return request<MarketplaceListingPage>(`/public/marketplace/listings?${query}`);
 }
 
-export function createMarketplaceEnquiry(payload: { inventoryItemId: string; customerName: string; customerEmail: string; customerPhone?: string; eventDate?: string; eventLocation?: string; quantity?: number; message: string }) {
+export function createMarketplaceEnquiry(payload: { resourceId: string; customerName: string; customerEmail: string; customerPhone?: string; eventDate?: string; eventLocation?: string; quantity?: number; message: string }) {
   return request<{ id: string; status: string; createdAt: string; message: string }>('/public/marketplace/enquiries', { method: 'POST', body: JSON.stringify(payload) });
 }
 
@@ -31,4 +31,33 @@ export async function listMarketplaceEnquiries(options: { baseUrl: string; token
   });
   if (!response.ok) throw new Error(`Marketplace inbox could not be loaded (${response.status})`);
   return response.json() as Promise<MarketplaceEnquiry[]>;
+}
+
+export async function updateMarketplaceEnquiryStatus(options: {
+  baseUrl: string;
+  token: string;
+  organizationId: string;
+  enquiryId: string;
+  status: MarketplaceEnquiry['status'];
+}) {
+  const response = await fetch(
+    `${options.baseUrl.replace(/\/$/, '')}/marketplace/enquiries/${options.enquiryId}/status`,
+    {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${options.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        organizationId: options.organizationId,
+        status: options.status,
+      }),
+    },
+  );
+  if (!response.ok) throw new Error(`Marketplace enquiry could not be updated (${response.status})`);
+  return response.json() as Promise<{
+    id: string;
+    status: MarketplaceEnquiry['status'];
+    updatedAt: string;
+  }>;
 }

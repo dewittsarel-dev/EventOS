@@ -109,12 +109,12 @@ The repository now contains the verified backend architecture from M004 through 
 - Event Execution interface — COMPLETE: events now have an operational command workspace for evidence-based tasks, explicit readiness gates, run of show, go-live authority, command logging, incidents, dispatch, collection and controlled closeout.
 - Finance interface — COMPLETE: EventOS now exposes operational event financial truth, immutable budget versions, governed changes, commitments, client billing, cash controls, reconciliation and authorised financial close while preserving the external statutory ledger.
 - Shared ClientOS capabilities — COMPLETE for the first draft: Documents now indexes source-owned evidence by relationship, Activity consolidates server-owned priorities, assigned work and recent changes, the notification bell opens that actionable stream, and full task management remains available.
-- Marketplace Product Interface — COMPLETE for the first draft: the public surface browses explicitly published supplier inventory, accepts customer enquiries into dedicated intake records, and returns those enquiries to a private ClientOS management inbox. Private costs, stock counts, notes and operating records remain outside the public contract.
+- Marketplace Product Interface — COMPLETE for the first draft: the public surface browses explicitly published Resource Engine records with availability state, accepts customer enquiries into dedicated intake records, and returns those enquiries to a private ClientOS management inbox. Private costs, exact stock counts, notes and operating records remain outside the public contract.
 
 ### Marketplace Product Interface — COMPLETE FOR FIRST DRAFT
 
 - Public catalogue and enquiry intake are implemented over explicitly published data.
-- ClientOS suppliers can manage publication from the Resource workspace, preview the public product and review incoming enquiries privately.
+- ClientOS suppliers can create and edit Resource Engine records, explicitly publish or unpublish them, preview the public product, reply to enquiries and record audited enquiry outcomes privately.
 - Booking conversion, customer accounts, payments and richer discovery remain refinement work after the first-draft checkpoint; no booking or payment is created silently from an enquiry.
 
 ### End-to-End and Deployment Readiness — IN PROGRESS

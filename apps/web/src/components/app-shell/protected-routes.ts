@@ -4,6 +4,7 @@ const PROTECTED_ROUTE_PREFIXES = [
   '/meeting-notes',
   '/suppliers',
   '/inventory',
+  '/resources',
   '/purchase-orders',
   '/goods-receipts',
   '/quotations',

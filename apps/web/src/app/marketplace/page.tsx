@@ -43,7 +43,7 @@ export default function MarketplacePage() {
     setError('');
     try {
       const response = await createMarketplaceEnquiry({
-        inventoryItemId: selected.id,
+        resourceId: selected.id,
         customerName: String(form.get('customerName')),
         customerEmail: String(form.get('customerEmail')),
         customerPhone: String(form.get('customerPhone')) || undefined,
@@ -88,7 +88,7 @@ export default function MarketplacePage() {
           {listings.map((item) => (
             <article key={item.id} className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
               <div className="aspect-[4/3] bg-stone-200">{item.primaryPhotoUrl || item.photoUrls[0] ? <img className="h-full w-full object-cover" src={item.primaryPhotoUrl || item.photoUrls[0]} alt={item.title || 'Marketplace item'} /> : <div className="flex h-full items-center justify-center text-sm text-stone-500">Supplier image coming soon</div>}</div>
-              <div className="p-5"><p className="text-xs font-medium uppercase tracking-wide text-stone-500">{item.categoryName}</p><h3 className="mt-1 text-lg font-semibold">{item.title || 'Untitled listing'}</h3><p className="mt-1 text-sm text-stone-500">by {item.supplierName}</p><p className="mt-3 line-clamp-2 text-sm text-stone-600">{item.description || 'Contact the supplier for details.'}</p><div className="mt-5 flex items-end justify-between"><div className="text-sm">{item.rentalPrice !== null ? <p><span className="font-semibold">{money(item.rentalPrice)}</span> rental</p> : null}{item.sellingPrice !== null ? <p><span className="font-semibold">{money(item.sellingPrice)}</span> sale</p> : null}</div><button onClick={() => { setSelected(item); setSentReference(''); }} className="rounded-full bg-stone-900 px-4 py-2 text-sm text-white hover:bg-stone-700">Enquire</button></div></div>
+              <div className="p-5"><div className="flex items-center justify-between gap-2"><p className="text-xs font-medium uppercase tracking-wide text-stone-500">{item.categoryName}</p><span className={`rounded-full px-2 py-1 text-xs ${item.availabilityStatus === 'Available' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>{item.availabilityStatus}</span></div><h3 className="mt-1 text-lg font-semibold">{item.title || 'Untitled listing'}</h3><p className="mt-1 text-sm text-stone-500">by {item.supplierName}</p><p className="mt-3 line-clamp-2 text-sm text-stone-600">{item.description || 'Contact the supplier for details.'}</p><div className="mt-5 flex items-end justify-between"><div className="text-sm">{item.rentalPrice !== null ? <p><span className="font-semibold">{money(item.rentalPrice)}</span> / {item.unitOfMeasure}</p> : <p>Price on request</p>}</div><button onClick={() => { setSelected(item); setSentReference(''); }} className="rounded-full bg-stone-900 px-4 py-2 text-sm text-white hover:bg-stone-700">Enquire</button></div></div>
             </article>
           ))}
         </div>

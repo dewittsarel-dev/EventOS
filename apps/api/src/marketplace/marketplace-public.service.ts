@@ -1,33 +1,41 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InventoryMarketplaceVisibility, Prisma } from '@prisma/client';
+import {
+  MarketplaceEnquiryStatus,
+  Prisma,
+  ResourceQuantityMode,
+  ResourceStatus,
+  ResourceVisibility,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMarketplaceEnquiryDto } from './dto/create-marketplace-enquiry.dto';
 import { FindMarketplaceListingsQueryDto } from './dto/find-marketplace-listings-query.dto';
 
 const publicListingSelect = {
   id: true,
-  marketplaceTitle: true,
-  publicName: true,
-  marketplaceDescription: true,
-  shortDescription: true,
-  brand: true,
-  style: true,
-  theme: true,
-  colour: true,
-  material: true,
-  dimensions: true,
-  capacity: true,
-  suitableEventTypes: true,
-  photoUrls: true,
-  primaryPhotoUrl: true,
+  name: true,
+  description: true,
+  category: true,
+  tags: true,
+  imageUrls: true,
+  resourceType: true,
+  quantityMode: true,
+  status: true,
+  condition: true,
+  totalQuantity: true,
+  damagedQuantity: true,
+  maintenanceQuantity: true,
   rentalPrice: true,
-  sellingPrice: true,
-  unitOfMeasure: true,
-  category: { select: { name: true } },
+  unit: true,
+  reservations: {
+    where: {
+      status: { in: ['PENDING', 'RESERVED', 'CONFIRMED', 'DISPATCHED'] },
+    },
+    select: { quantity: true, startDateTime: true, endDateTime: true },
+  },
   organization: {
     select: { tradingName: true, name: true, logoUrl: true },
   },
-} satisfies Prisma.InventoryItemSelect;
+} satisfies Prisma.ResourceSelect;
 
 @Injectable()
 export class MarketplacePublicService {
@@ -36,46 +44,32 @@ export class MarketplacePublicService {
   async findListings(query: FindMarketplaceListingsQueryDto) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 24;
-    const where: Prisma.InventoryItemWhereInput = {
-      active: true,
-      marketplaceVisibility: InventoryMarketplaceVisibility.Public,
+    const where: Prisma.ResourceWhereInput = {
+      archivedAt: null,
+      visibility: ResourceVisibility.MARKETPLACE,
+      status: { not: ResourceStatus.RETIRED },
       ...(query.search
         ? {
             OR: [
-              {
-                marketplaceTitle: {
-                  contains: query.search,
-                  mode: 'insensitive',
-                },
-              },
-              { publicName: { contains: query.search, mode: 'insensitive' } },
-              {
-                marketplaceDescription: {
-                  contains: query.search,
-                  mode: 'insensitive',
-                },
-              },
-              {
-                category: {
-                  name: { contains: query.search, mode: 'insensitive' },
-                },
-              },
-              { style: { contains: query.search, mode: 'insensitive' } },
-              { colour: { contains: query.search, mode: 'insensitive' } },
+              { name: { contains: query.search, mode: 'insensitive' } },
+              { description: { contains: query.search, mode: 'insensitive' } },
+              { category: { contains: query.search, mode: 'insensitive' } },
+              { tags: { has: query.search } },
+              { keywords: { has: query.search } },
             ],
           }
         : {}),
     };
 
     const [items, total] = await Promise.all([
-      this.prisma.inventoryItem.findMany({
+      this.prisma.resource.findMany({
         where,
         select: publicListingSelect,
         orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),
-      this.prisma.inventoryItem.count({ where }),
+      this.prisma.resource.count({ where }),
     ]);
 
     return {
@@ -87,36 +81,35 @@ export class MarketplacePublicService {
   }
 
   async findListing(id: string) {
-    const item = await this.prisma.inventoryItem.findFirst({
+    const item = await this.prisma.resource.findFirst({
       where: {
         id,
-        active: true,
-        marketplaceVisibility: InventoryMarketplaceVisibility.Public,
+        archivedAt: null,
+        visibility: ResourceVisibility.MARKETPLACE,
+        status: { not: ResourceStatus.RETIRED },
       },
       select: publicListingSelect,
     });
-
     if (!item) throw new NotFoundException('Marketplace listing not found');
     return this.toPublicListing(item);
   }
 
   async createEnquiry(dto: CreateMarketplaceEnquiryDto) {
-    const item = await this.prisma.inventoryItem.findFirst({
+    const resource = await this.prisma.resource.findFirst({
       where: {
-        id: dto.inventoryItemId,
-        active: true,
-        marketplaceVisibility: InventoryMarketplaceVisibility.Public,
+        id: dto.resourceId,
+        archivedAt: null,
+        visibility: ResourceVisibility.MARKETPLACE,
+        status: { not: ResourceStatus.RETIRED },
       },
       select: { id: true, organizationId: true },
     });
-
-    if (!item) throw new NotFoundException('Marketplace listing not found');
+    if (!resource) throw new NotFoundException('Marketplace listing not found');
 
     const enquiry = await this.prisma.marketplaceEnquiry.create({
-      data: { ...dto, organizationId: item.organizationId },
+      data: { ...dto, organizationId: resource.organizationId },
       select: { id: true, status: true, createdAt: true },
     });
-
     return {
       ...enquiry,
       message: 'Your enquiry has been sent to the supplier.',
@@ -124,13 +117,8 @@ export class MarketplacePublicService {
   }
 
   async findOrganizationEnquiries(userId: string, organizationId: string) {
-    const membership = await this.prisma.membership.findFirst({
-      where: { userId, organizationId, isDisabled: false },
-      select: { id: true },
-    });
-    if (!membership) throw new NotFoundException('Organization not found');
-
-    return this.prisma.marketplaceEnquiry.findMany({
+    await this.ensureOrganizationMembership(userId, organizationId);
+    const enquiries = await this.prisma.marketplaceEnquiry.findMany({
       where: { organizationId },
       select: {
         id: true,
@@ -146,24 +134,120 @@ export class MarketplacePublicService {
         inventoryItem: {
           select: { id: true, marketplaceTitle: true, publicName: true },
         },
+        resource: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    return enquiries.map((entry) => ({
+      id: entry.id,
+      status: entry.status,
+      customerName: entry.customerName,
+      customerEmail: entry.customerEmail,
+      customerPhone: entry.customerPhone,
+      eventDate: entry.eventDate,
+      eventLocation: entry.eventLocation,
+      quantity: entry.quantity,
+      message: entry.message,
+      createdAt: entry.createdAt,
+      listing: entry.resource ?? {
+        id: entry.inventoryItem?.id ?? '',
+        name:
+          entry.inventoryItem?.marketplaceTitle ??
+          entry.inventoryItem?.publicName ??
+          'Legacy Marketplace listing',
+      },
+    }));
+  }
+
+  async updateEnquiryStatus(
+    userId: string,
+    organizationId: string,
+    enquiryId: string,
+    status: MarketplaceEnquiryStatus,
+  ) {
+    await this.ensureOrganizationMembership(userId, organizationId);
+    const current = await this.prisma.marketplaceEnquiry.findFirst({
+      where: { id: enquiryId, organizationId },
+      select: { id: true, status: true },
+    });
+    if (!current) throw new NotFoundException('Marketplace enquiry not found');
+
+    return this.prisma.$transaction(async (tx) => {
+      const updated = await tx.marketplaceEnquiry.update({
+        where: { id: enquiryId },
+        data: { status },
+        select: { id: true, status: true, updatedAt: true },
+      });
+      await tx.auditLog.create({
+        data: {
+          action: 'marketplace.enquiry_status_changed',
+          details: JSON.stringify({
+            enquiryId,
+            fromStatus: current.status,
+            toStatus: status,
+          }),
+          userId,
+          organizationId,
+        },
+      });
+      return updated;
+    });
+  }
+
+  private async ensureOrganizationMembership(
+    userId: string,
+    organizationId: string,
+  ) {
+    const membership = await this.prisma.membership.findFirst({
+      where: { userId, organizationId, isDisabled: false },
+      select: { id: true },
+    });
+    if (!membership) throw new NotFoundException('Organization not found');
   }
 
   private toPublicListing(
-    item: Prisma.InventoryItemGetPayload<{
-      select: typeof publicListingSelect;
-    }>,
+    item: Prisma.ResourceGetPayload<{ select: typeof publicListingSelect }>,
   ) {
+    const now = new Date();
+    const reservedNow = item.reservations
+      .filter(
+        (reservation) =>
+          reservation.startDateTime <= now && reservation.endDateTime >= now,
+      )
+      .reduce((total, reservation) => total + reservation.quantity, 0);
+    const availableQuantity =
+      item.quantityMode === ResourceQuantityMode.UNLIMITED
+        ? null
+        : Math.max(
+            (item.totalQuantity ?? 0) -
+              reservedNow -
+              item.damagedQuantity -
+              item.maintenanceQuantity,
+            0,
+          );
+    const availabilityStatus =
+      item.status === ResourceStatus.MAINTENANCE ||
+      item.status === ResourceStatus.DAMAGED
+        ? 'Unavailable'
+        : availableQuantity === null || availableQuantity > 0
+          ? 'Available'
+          : 'Fully booked';
+
     return {
-      ...item,
-      title: item.marketplaceTitle || item.publicName,
-      description: item.marketplaceDescription || item.shortDescription,
+      id: item.id,
+      title: item.name,
+      description: item.description,
       supplierName: item.organization.tradingName || item.organization.name,
-      categoryName: item.category.name,
-      organization: undefined,
-      category: undefined,
+      supplierLogoUrl: item.organization.logoUrl,
+      categoryName: item.category,
+      tags: item.tags,
+      photoUrls: item.imageUrls,
+      primaryPhotoUrl: item.imageUrls[0] ?? null,
+      rentalPrice: item.rentalPrice,
+      unitOfMeasure: item.unit,
+      resourceType: item.resourceType,
+      availabilityStatus,
     };
   }
 }

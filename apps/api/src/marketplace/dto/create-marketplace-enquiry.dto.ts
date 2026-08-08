@@ -15,7 +15,7 @@ const trim = ({ value }: { value: unknown }) =>
 
 export class CreateMarketplaceEnquiryDto {
   @IsUUID()
-  inventoryItemId!: string;
+  resourceId!: string;
 
   @Transform(trim)
   @IsString()

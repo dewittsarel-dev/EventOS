@@ -2,6 +2,9 @@ import {
   Body,
   Controller,
   Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -30,6 +33,7 @@ import {
 import { MarketplaceCapabilityService } from './marketplace-capability.service';
 import { FindMarketplaceEnquiriesQueryDto } from './dto/find-marketplace-enquiries-query.dto';
 import { MarketplacePublicService } from './marketplace-public.service';
+import { UpdateMarketplaceEnquiryStatusDto } from './dto/update-marketplace-enquiry-status.dto';
 
 @ApiTags('marketplace')
 @ApiBearerAuth('access-token')
@@ -55,6 +59,25 @@ export class MarketplaceController {
     return this.marketplacePublicService.findOrganizationEnquiries(
       user.id,
       query.organizationId,
+    );
+  }
+
+  @Patch('enquiries/:id/status')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  @ApiOperation({
+    summary: 'Record the operator-controlled status of a Marketplace enquiry.',
+  })
+  @ApiOkResponse({ description: 'Enquiry status updated and audited.' })
+  updateEnquiryStatus(
+    @CurrentUser() user: UserResponseDto,
+    @Param('id', ParseUUIDPipe) enquiryId: string,
+    @Body() dto: UpdateMarketplaceEnquiryStatusDto,
+  ) {
+    return this.marketplacePublicService.updateEnquiryStatus(
+      user.id,
+      dto.organizationId,
+      enquiryId,
+      dto.status,
     );
   }
 

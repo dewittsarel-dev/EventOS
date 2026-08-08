@@ -13,6 +13,14 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — Marketplace Resource Engine Alignment
+
+- Corrected the Marketplace publication source from legacy Inventory Item flags to `Resource.visibility = MARKETPLACE`, preserving the Resource Engine as the live availability and reservation authority.
+- Added safe legacy-enquiry migration support while all new enquiries link directly to their Resource Engine listing.
+- Added ClientOS Resource create/edit screens, explicit publish/unpublish controls, public preview, availability labels and a private enquiry workflow with email reply and audited status decisions.
+- Verified a real local PostgreSQL journey from Resource creation through public discovery, enquiry intake, private supplier inbox and `Acknowledged` outcome.
+- Verification status: all 30 API suites and 161 tests passed; all 14 API end-to-end suites and 48 HTTP journey tests passed; all 46 web test files and 103 tests passed; API/web build and lint passed; Resource editing, Marketplace management and public Marketplace passed phone-width overflow checks.
+
 ### 2026-08-08 — Public Marketplace and ClientOS Bridge
 
 - Replaced the authenticated technical Marketplace prototype route with a separate responsive customer-facing catalogue over explicitly published inventory data.
