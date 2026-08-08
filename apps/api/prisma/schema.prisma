@@ -22,6 +22,52 @@ enum EventDesignStatus {
   Approved
 }
 
+enum RequirementSetStatus {
+  Draft
+  Reviewed
+  Approved
+}
+
+enum RequirementStatus {
+  Draft
+  Reviewed
+  Approved
+  InProcurement
+  PartiallyFulfilled
+  SupplierSelected
+  Ordered
+  Delivered
+  Fulfilled
+  Completed
+  Cancelled
+}
+
+enum RequirementType {
+  Product
+  Service
+  Resource
+}
+
+enum RequirementQuantitySource {
+  AiCalculated
+  PlannerOverride
+  Manual
+}
+
+enum RequirementFulfilmentStrategy {
+  OwnInventory
+  Marketplace
+  ExternalSupplier
+  Hybrid
+  Undecided
+}
+
+enum RequirementDependencyLevel {
+  Direct
+  Calculated
+  Design
+}
+
 enum QuotationStatus {
   Draft
   Sent
@@ -323,6 +369,9 @@ model User {
   clientBriefVersionsCreated       ClientBriefVersion[]       @relation("ClientBriefVersionCreatedBy")
   eventDesignVersionsCreated       EventDesignVersion[]       @relation("EventDesignVersionCreatedBy")
   eventDesignVersionsApproved      EventDesignVersion[]       @relation("EventDesignVersionApprovedBy")
+  requirementSetsCreated           RequirementSet[]           @relation("RequirementSetCreatedBy")
+  requirementSetsApproved          RequirementSet[]           @relation("RequirementSetApprovedBy")
+  requirementItemChanges           RequirementItemChange[]
 
   @@index([email])
 }
@@ -366,6 +415,7 @@ model Organization {
   outboxEvents              OutboxEvent[]
   clientBriefVersions       ClientBriefVersion[]
   eventDesignVersions       EventDesignVersion[]
+  requirementSets           RequirementSet[]
 
   @@index([slug])
 }
@@ -457,6 +507,7 @@ model Event {
   resourceOutstandings EventResourceOutstanding[]
   clientBriefVersions  ClientBriefVersion[]
   eventDesignVersions  EventDesignVersion[]
+  requirementSets      RequirementSet[]
 
   @@index([organizationId])
   @@index([contactId])
@@ -521,6 +572,7 @@ model EventDesignVersion {
   clientBriefVersion   ClientBriefVersion @relation(fields: [clientBriefVersionId], references: [id], onDelete: Restrict)
   createdBy            User               @relation("EventDesignVersionCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
   approvedBy           User?              @relation("EventDesignVersionApprovedBy", fields: [approvedByUserId], references: [id], onDelete: Restrict)
+  requirementSets      RequirementSet[]
 
   @@unique([eventId, version])
   @@index([organizationId])
@@ -528,6 +580,118 @@ model EventDesignVersion {
   @@index([createdByUserId])
   @@index([approvedByUserId])
   @@index([eventId, status])
+}
+
+model RequirementSet {
+  id                   String                  @id @default(uuid())
+  organizationId       String
+  eventId              String
+  eventDesignVersionId String
+  version              Int
+  status               RequirementSetStatus    @default(Draft)
+  createdByUserId      String
+  approvedByUserId     String?
+  approvedAt           DateTime?
+  createdAt            DateTime                @default(now())
+  organization         Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event                Event                   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventDesignVersion   EventDesignVersion      @relation(fields: [eventDesignVersionId], references: [id], onDelete: Restrict)
+  createdBy            User                    @relation("RequirementSetCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  approvedBy           User?                   @relation("RequirementSetApprovedBy", fields: [approvedByUserId], references: [id], onDelete: Restrict)
+  items                RequirementItem[]
+  dependencies         RequirementDependency[]
+  changes              RequirementItemChange[]
+
+  @@unique([eventId, version])
+  @@index([organizationId])
+  @@index([eventDesignVersionId])
+  @@index([createdByUserId])
+  @@index([approvedByUserId])
+  @@index([eventId, status])
+}
+
+model RequirementItem {
+  id                      String                        @id @default(uuid())
+  requirementSetId        String
+  requirementCode         String
+  requirementVersion      Int
+  category                String
+  requirementType         RequirementType
+  name                    String
+  description             String?
+  specification           Json?
+  images                  Json?
+  quantityRequired        Float
+  unit                    String
+  quantitySource          RequirementQuantitySource
+  plannerOverride         Boolean                       @default(false)
+  overrideReason          String?
+  deliveryDate            DateTime?
+  collectionDate          DateTime?
+  setupDate               DateTime?
+  removalDate             DateTime?
+  requiredTime            String?
+  venue                   String?
+  deliveryArea            String?
+  setupArea               String?
+  gps                     String?
+  status                  RequirementStatus             @default(Draft)
+  fulfilmentStrategy      RequirementFulfilmentStrategy @default(Undecided)
+  supplierAllocation      Json?
+  estimatedBudgetCents    Int?
+  quotedPriceCents        Int?
+  approvedPriceCents      Int?
+  actualCostCents         Int?
+  aiConfidence            Float?
+  aiRecommendation        String?
+  alternativeSuggestions  Json?
+  similarMarketplaceItems Json?
+  riskWarnings            Json?
+  createdAt               DateTime                      @default(now())
+  requirementSet          RequirementSet                @relation(fields: [requirementSetId], references: [id], onDelete: Cascade)
+  dependenciesFrom        RequirementDependency[]       @relation("RequirementDependencySource")
+  dependenciesTo          RequirementDependency[]       @relation("RequirementDependencyTarget")
+  changes                 RequirementItemChange[]
+
+  @@unique([requirementSetId, requirementCode])
+  @@index([requirementSetId, category])
+  @@index([requirementSetId, status])
+}
+
+model RequirementDependency {
+  id                      String                     @id @default(uuid())
+  requirementSetId        String
+  sourceRequirementItemId String
+  targetRequirementItemId String
+  level                   RequirementDependencyLevel
+  description             String?
+  createdAt               DateTime                   @default(now())
+  requirementSet          RequirementSet             @relation(fields: [requirementSetId], references: [id], onDelete: Cascade)
+  sourceRequirementItem   RequirementItem            @relation("RequirementDependencySource", fields: [sourceRequirementItemId], references: [id], onDelete: Cascade)
+  targetRequirementItem   RequirementItem            @relation("RequirementDependencyTarget", fields: [targetRequirementItemId], references: [id], onDelete: Cascade)
+
+  @@unique([requirementSetId, sourceRequirementItemId, targetRequirementItemId])
+  @@index([sourceRequirementItemId])
+  @@index([targetRequirementItemId])
+}
+
+model RequirementItemChange {
+  id                String          @id @default(uuid())
+  requirementSetId  String
+  requirementItemId String
+  changedByUserId   String
+  changeType        String
+  previousValue     Json?
+  nextValue         Json?
+  reason            String?
+  createdAt         DateTime        @default(now())
+  requirementSet    RequirementSet  @relation(fields: [requirementSetId], references: [id], onDelete: Cascade)
+  requirementItem   RequirementItem @relation(fields: [requirementItemId], references: [id], onDelete: Cascade)
+  changedBy         User            @relation(fields: [changedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([requirementSetId])
+  @@index([requirementItemId])
+  @@index([changedByUserId])
 }
 
 model Quotation {

@@ -14,6 +14,7 @@ import { MarketplaceModule } from './marketplace/marketplace.module';
 import { MeetingNotesModule } from './meeting-notes/meeting-notes.module';
 import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { QuotationsModule } from './quotations/quotations.module';
+import { RequirementsModule } from './requirements/requirements.module';
 import { ResourcesModule } from './resources/resources.module';
 import { SupplierProductsModule } from './supplier-products/supplier-products.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
@@ -46,6 +47,7 @@ import { PrismaModule } from './prisma/prisma.module';
     SuppliersModule,
     SupplierProductsModule,
     QuotationsModule,
+    RequirementsModule,
     TasksModule,
   ],
   controllers: [AppController],
