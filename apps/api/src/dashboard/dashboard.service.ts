@@ -252,6 +252,13 @@ export class DashboardService {
     ]);
 
     return {
+      attention: this.buildAttention({
+        now,
+        overdueTasks: myTasksOverdue,
+        dueTodayTasks: myTasksDueToday,
+        upcomingEvents,
+        openQuotations,
+      }),
       stats: {
         eventsThisMonth,
         upcomingEvents: upcomingEventsCount,
@@ -285,6 +292,82 @@ export class DashboardService {
         limit: activityLimit,
       }),
       calendarPreview: this.buildCalendarPreview(calendarEvents),
+    };
+  }
+
+  private buildAttention(input: {
+    now: Date;
+    overdueTasks: Prisma.TaskGetPayload<Record<string, never>>[];
+    dueTodayTasks: Prisma.TaskGetPayload<Record<string, never>>[];
+    upcomingEvents: Array<
+      Prisma.EventGetPayload<{
+        include: {
+          contact: { select: { firstName: true; lastName: true } };
+        };
+      }>
+    >;
+    openQuotations: number;
+  }) {
+    const items = [
+      ...input.overdueTasks.map((task) => ({
+        id: `task-overdue-${task.id}`,
+        severity: task.priority === 'Critical' ? 'Critical' : 'Attention',
+        title: task.title,
+        explanation: `This assigned task is overdue${task.dueDate ? ` since ${task.dueDate.toISOString().slice(0, 10)}` : ''}.`,
+        actionLabel: 'Open task',
+        actionHref: `/tasks/${task.id}`,
+        source: 'Work',
+      })),
+      ...input.dueTodayTasks.map((task) => ({
+        id: `task-today-${task.id}`,
+        severity: task.priority === 'Critical' ? 'Critical' : 'Today',
+        title: task.title,
+        explanation: 'This assigned task is due today.',
+        actionLabel: 'Open task',
+        actionHref: `/tasks/${task.id}`,
+        source: 'Work',
+      })),
+    ];
+
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    for (const event of input.upcomingEvents) {
+      const timeUntilEvent =
+        event.startDateTime.getTime() - input.now.getTime();
+      if (timeUntilEvent >= 0 && timeUntilEvent <= sevenDays) {
+        items.push({
+          id: `event-upcoming-${event.id}`,
+          severity: 'Upcoming',
+          title: event.title,
+          explanation: `This event starts within seven days on ${event.startDateTime.toISOString().slice(0, 10)}. Review its lifecycle readiness.`,
+          actionLabel: 'Review event',
+          actionHref: `/events/${event.id}`,
+          source: 'Event',
+        });
+      }
+    }
+
+    if (items.length === 0 && input.openQuotations > 0) {
+      items.push({
+        id: 'quotations-open',
+        severity: 'Review',
+        title: `${input.openQuotations} open quotation${input.openQuotations === 1 ? '' : 's'}`,
+        explanation: 'Open commercial work may require review or follow-up.',
+        actionLabel: 'Review quotations',
+        actionHref: '/quotations',
+        source: 'Commercial',
+      });
+    }
+
+    const prioritized = items.slice(0, 5);
+    return {
+      status: prioritized.length === 0 ? 'Clear' : 'NeedsAttention',
+      summary:
+        prioritized.length === 0
+          ? 'Nothing urgent needs your attention right now.'
+          : `${prioritized.length} item${prioritized.length === 1 ? '' : 's'} need your attention.`,
+      items: prioritized,
+      generatedAt: input.now,
+      automatedActionsPerformed: false,
     };
   }
 

@@ -45,6 +45,21 @@ export type DashboardCalendarDay = {
 };
 
 export type DashboardOverviewResponse = {
+  attention: {
+    status: 'Clear' | 'NeedsAttention';
+    summary: string;
+    items: Array<{
+      id: string;
+      severity: string;
+      title: string;
+      explanation: string;
+      actionLabel: string;
+      actionHref: string;
+      source: string;
+    }>;
+    generatedAt: string;
+    automatedActionsPerformed: false;
+  };
   stats: DashboardStatBlock;
   upcomingEvents: DashboardUpcomingEvent[];
   myTasks: {

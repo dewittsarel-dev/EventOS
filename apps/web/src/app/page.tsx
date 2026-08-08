@@ -163,8 +163,8 @@ export default function DashboardPage() {
   return (
     <div className="flex min-w-0 flex-col gap-5">
       <PageHeader
-        title="Dashboard"
-        description="Command center for live ClientOS operations."
+        title="Home"
+        description="What matters now, why it matters, and what to do next."
       />
 
       {!session.organizationId ? (
@@ -226,6 +226,58 @@ export default function DashboardPage() {
               </div>
             </div>
           </section>
+
+          {overview ? (
+            <section
+              className={`rounded-2xl border p-5 shadow-sm md:p-6 ${
+                overview.attention.status === 'Clear'
+                  ? 'border-emerald-200 bg-emerald-50'
+                  : 'border-amber-200 bg-amber-50'
+              }`}
+              aria-labelledby="attention-heading"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-500">
+                    Today
+                  </p>
+                  <h2 id="attention-heading" className="mt-1 text-xl font-semibold text-zinc-900">
+                    {overview.attention.summary}
+                  </h2>
+                  <p className="mt-1 text-sm text-zinc-600">
+                    EventOS has not taken any action or approval on your behalf.
+                  </p>
+                </div>
+                <span className={`rounded-full px-3 py-1 text-xs font-medium ${overview.attention.status === 'Clear' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                  {overview.attention.status === 'Clear' ? 'All clear' : 'Needs attention'}
+                </span>
+              </div>
+
+              {overview.attention.items.length ? (
+                <ol className="mt-5 grid gap-3">
+                  {overview.attention.items.map((item) => (
+                    <li key={item.id} className="rounded-xl border border-white/80 bg-white p-4 shadow-sm">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-700">
+                              {item.severity}
+                            </span>
+                            <span className="text-xs text-zinc-500">Source: {item.source}</span>
+                          </div>
+                          <h3 className="mt-2 font-semibold text-zinc-900">{item.title}</h3>
+                          <p className="mt-1 text-sm text-zinc-600">{item.explanation}</p>
+                        </div>
+                        <Link href={item.actionHref} className="shrink-0 rounded-md bg-zinc-900 px-3 py-2 text-center text-sm font-medium text-white hover:bg-zinc-700">
+                          {item.actionLabel}
+                        </Link>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              ) : null}
+            </section>
+          ) : null}
 
           <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <article className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">

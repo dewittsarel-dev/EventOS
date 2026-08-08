@@ -13,6 +13,13 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — Decision-First ClientOS Home
+
+- Added a server-owned attention contract that prioritises overdue work, work due today, imminent events and open commercial review.
+- Each attention item carries a source, plain-language explanation and direct action while explicitly confirming that no automated action or approval was performed.
+- Repositioned ClientOS Home around “what matters now, why it matters and what to do next,” with operational statistics retained as supporting context.
+- Verification status: all 29 API suites and 156 tests passed; API build and lint passed; all 28 web test files and 81 tests passed; web lint and production build passed.
+
 ### 2026-08-08 — ClientOS Navigation Alignment
 
 - Replaced the database-oriented flat navigation with five primary user destinations: Home, Events, Documents, Activity and Settings.

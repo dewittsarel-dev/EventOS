@@ -142,6 +142,12 @@ describe('DashboardService', () => {
       totalContacts: 22,
     });
 
+    expect(result.attention).toEqual(
+      expect.objectContaining({
+        status: 'NeedsAttention',
+      }),
+    );
+
     expect(result.upcomingEvents[0]).toEqual(
       expect.objectContaining({
         event: 'Launch Gala',

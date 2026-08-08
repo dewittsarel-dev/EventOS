@@ -27,6 +27,23 @@ describe('DashboardPage', () => {
   beforeEach(() => {
     vi.mocked(dashboardApi.getDashboardOverview).mockReset();
     vi.mocked(dashboardApi.getDashboardOverview).mockResolvedValue({
+      attention: {
+        status: 'NeedsAttention',
+        summary: '1 item needs your attention.',
+        items: [
+          {
+            id: 'task-overdue-task-1',
+            severity: 'Attention',
+            title: 'Confirm venue access',
+            explanation: 'This assigned task is overdue since 2026-08-01.',
+            actionLabel: 'Open task',
+            actionHref: '/tasks/task-1',
+            source: 'Work',
+          },
+        ],
+        generatedAt: '2026-08-08T08:00:00.000Z',
+        automatedActionsPerformed: false,
+      },
       stats: {
         eventsThisMonth: 4,
         upcomingEvents: 9,
@@ -99,6 +116,11 @@ describe('DashboardPage', () => {
     expect(screen.getAllByText('Launch Gala').length).toBeGreaterThan(0);
     expect(screen.getByText('Recent Activity')).toBeInTheDocument();
     expect(screen.getByText('Calendar Preview')).toBeInTheDocument();
+    expect(screen.getByText('1 item needs your attention.')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open task' })).toHaveAttribute(
+      'href',
+      '/tasks/task-1',
+    );
   });
 
   it('shows error state when overview request fails', async () => {
