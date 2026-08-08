@@ -13,12 +13,13 @@ import type { MarketplaceListing } from '../../../../lib/marketplace-public-type
 import {
   approveMoodBoard,
   commentOnMoodBoard,
+  compareMoodBoards,
   createMoodBoard,
   listMoodBoards,
   requestMoodBoardChanges,
   submitMoodBoardReview,
 } from '../../../../lib/mood-board-api';
-import type { MoodBoard } from '../../../../lib/mood-board-types';
+import type { MoodBoard, MoodBoardComparison } from '../../../../lib/mood-board-types';
 import { MoodBoardComposer, type MoodBoardComposition } from './mood-board-composer';
 
 export default function MoodBoardPage() {
@@ -29,6 +30,8 @@ export default function MoodBoardPage() {
   const [sets, setSets] = useState<RequirementSet[]>([]);
   const [boards, setBoards] = useState<MoodBoard[]>([]);
   const [marketplaceListings, setMarketplaceListings] = useState<MarketplaceListing[]>([]);
+  const [revisionBase, setRevisionBase] = useState<MoodBoard | undefined>();
+  const [comparison, setComparison] = useState<MoodBoardComparison | null>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
@@ -58,6 +61,7 @@ export default function MoodBoardPage() {
     setError('');
     try {
       await createMoodBoard(options, eventId, composition);
+      setRevisionBase(undefined);
       setMessage('Governed Mood Board composition saved from the approved Requirement Set.');
       await load();
     } catch (requestError) {
@@ -77,13 +81,25 @@ export default function MoodBoardPage() {
     }
   }
 
+  async function compareLatestVersions() {
+    if (boards.length < 2) return;
+    setError('');
+    try {
+      setComparison(await compareMoodBoards(options, eventId, boards[1].id, boards[0].id));
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Mood Board comparison failed.');
+    }
+  }
+
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title="Mood Board Studio" description="Compose requirement-linked scenes from real supplier assets. Visual approval does not start procurement." actions={<Link href={`/events/${eventId}`} className="rounded-md border border-zinc-300 px-3 py-2 text-sm">Back to Event</Link>} />
       {error ? <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
       {message ? <p className="rounded-md bg-emerald-50 p-3 text-sm text-emerald-700">{message}</p> : null}
 
-      <MoodBoardComposer sets={sets} marketplaceListings={marketplaceListings} onCreate={create} />
+      <MoodBoardComposer key={revisionBase?.id ?? 'new'} sets={sets} marketplaceListings={marketplaceListings} basedOn={revisionBase} onCancelRevision={() => setRevisionBase(undefined)} onCreate={create} />
+
+      {boards.length > 1 ? <section className="rounded-xl border border-zinc-200 bg-white p-5"><div className="flex flex-wrap items-center justify-between gap-3"><div><h2 className="font-semibold">Version comparison</h2><p className="text-sm text-zinc-600">Compare the latest revision with the version immediately before it.</p></div><button onClick={() => void compareLatestVersions()} className="rounded-md border border-zinc-300 px-3 py-2 text-sm">Compare V{boards[1].version} → V{boards[0].version}</button></div>{comparison ? <div className="mt-4"><p className={`rounded-md p-3 text-sm ${comparison.requiresRequirementImpactReview ? 'bg-amber-50 text-amber-900' : 'bg-emerald-50 text-emerald-800'}`}>{comparison.requiresRequirementImpactReview ? `${comparison.affectedRequirementItemIds.length} linked requirement(s) need planner impact review. Procurement has not been updated.` : 'No visual object changes affect requirements.'}</p><ul className="mt-3 space-y-2 text-sm">{comparison.changes.map((change) => <li key={change.objectKey} className="rounded border border-zinc-200 p-3"><strong>{change.change}</strong> · {change.before?.name ?? change.after?.name ?? change.objectKey}</li>)}</ul></div> : null}</section> : null}
 
       <section className="grid gap-4">
         {boards.map((board) => (
@@ -98,6 +114,7 @@ export default function MoodBoardPage() {
               ))}</div></section>)}
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
+              {board.status !== 'InClientReview' ? <button onClick={() => { setRevisionBase(board); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="rounded border border-zinc-300 px-3 py-2 text-sm">Create revision from V{board.version}</button> : null}
               {(board.status === 'Draft' || board.status === 'ChangesRequested') ? <button onClick={() => void action(() => submitMoodBoardReview(options, eventId, board.id), 'Mood Board submitted for client review.')} className="rounded border border-zinc-300 px-3 py-2 text-sm">Submit for review</button> : null}
               {board.status === 'InClientReview' ? <><ReviewForm label="Add comment" onSubmit={(comment) => action(() => commentOnMoodBoard(options, eventId, board.id, comment), 'Comment recorded.')} /><ReviewForm label="Request changes" onSubmit={(comment) => action(() => requestMoodBoardChanges(options, eventId, board.id, comment), 'Changes requested.')} /><button onClick={() => void action(() => approveMoodBoard(options, eventId, board.id), 'Visual design approved. Procurement was not started.')} className="rounded bg-emerald-700 px-3 py-2 text-sm text-white">Approve visual design</button></> : null}
             </div>

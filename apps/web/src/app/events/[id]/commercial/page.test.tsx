@@ -32,6 +32,6 @@ describe('CommercialWorkspacePage', () => {
     expect(screen.getByRole('button', { name: 'Approve RFQ' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Send approved RFQ' })).not.toBeInTheDocument();
     expect(screen.getByText('Humans approve')).toBeInTheDocument();
+    expect(screen.getByText('Review and approve RFQ drafts')).toBeInTheDocument();
   });
 });
-

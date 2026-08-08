@@ -76,5 +76,6 @@ describe('ProcurementStudioPage', () => {
     expect(screen.getByText('Shown because it matches the explicit buyer policy.')).toBeInTheDocument();
     expect(screen.getByText(/Local Supplier/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Select this strategy' })).toBeInTheDocument();
+    expect(screen.getByText('Compare and select a sourcing strategy')).toBeInTheDocument();
   });
 });

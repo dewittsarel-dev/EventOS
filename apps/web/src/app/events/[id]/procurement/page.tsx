@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '../../../../components/app-shell/page-header';
+import { WorkspaceNextAction } from '../../../../components/events/workspace-next-action';
 import { useAppSession } from '../../../../components/app-shell/session-context';
 import { listRequirementSets } from '../../../../lib/event-planning-api';
 import type { RequirementSet } from '../../../../lib/event-planning-types';
@@ -19,6 +20,7 @@ import type {
   ProcurementPolicy,
   ProcurementSolution,
 } from '../../../../lib/procurement-types';
+import { procurementGuidance } from '../../../../lib/event-workspace-guidance';
 
 const fieldClass = 'rounded-md border border-zinc-300 px-3 py-2 text-sm';
 
@@ -87,6 +89,7 @@ export default function ProcurementStudioPage() {
 
   const approvedSets = sets.filter((set) => set.status === 'Approved');
   const selectedSet = approvedSets.find((set) => set.id === selectedSetId);
+  const guidance = procurementGuidance(packages);
 
   function chooseSet(setId: string) {
     setSelectedSetId(setId);
@@ -188,6 +191,8 @@ export default function ProcurementStudioPage() {
           </Link>
         }
       />
+
+      <WorkspaceNextAction {...guidance} />
 
       <section className="grid gap-3 md:grid-cols-3">
         <Principle title="Visible choice" body="Show at least five credible solutions whenever five exist." />

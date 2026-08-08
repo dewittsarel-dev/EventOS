@@ -2,6 +2,7 @@ export type MoodBoardObjectSource = 'Marketplace' | 'PlannerLibrary' | 'ClientUp
 
 export type MoodBoard = {
   id: string;
+  basedOnMoodBoardId?: string | null;
   version: number;
   title: string;
   requirementSetId: string;
@@ -32,4 +33,18 @@ export type MoodBoard = {
     comment: string | null;
     createdAt: string;
   }>;
+};
+
+export type MoodBoardComparison = {
+  fromVersion: number;
+  toVersion: number;
+  changes: Array<{
+    objectKey: string;
+    change: 'Added' | 'Removed' | 'Changed';
+    before?: { name: string; requirementItemId: string };
+    after?: { name: string; requirementItemId: string };
+  }>;
+  affectedRequirementItemIds: string[];
+  requiresRequirementImpactReview: boolean;
+  procurementUpdated: false;
 };

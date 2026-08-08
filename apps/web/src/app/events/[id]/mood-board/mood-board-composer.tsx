@@ -4,11 +4,13 @@ import { useMemo, useState } from 'react';
 import type { RequirementSet } from '../../../../lib/event-planning-types';
 import type { MarketplaceListing } from '../../../../lib/marketplace-public-types';
 import type { MoodBoardObjectSource } from '../../../../lib/mood-board-types';
+import type { MoodBoard } from '../../../../lib/mood-board-types';
 
 const fieldClass = 'rounded-md border border-zinc-300 px-3 py-2 text-sm';
 
 type DraftObject = {
   key: number;
+  objectKey?: string;
   requirementItemId: string;
   name: string;
   source: MoodBoardObjectSource;
@@ -23,11 +25,13 @@ type DraftObject = {
 export type MoodBoardComposition = {
   requirementSetId: string;
   title: string;
+  basedOnMoodBoardId?: string;
   scenes: Array<{
     sceneKey: string;
     name: string;
     description?: string;
     objects: Array<{
+      objectKey?: string;
       requirementItemId: string;
       name: string;
       source: MoodBoardObjectSource;
@@ -36,7 +40,7 @@ export type MoodBoardComposition = {
       marketplaceListingId?: string;
       imageUrl: string;
       locked: boolean;
-      presentation: { placementInstructions: string };
+      presentation: { placementInstructions?: string };
     }>;
   }>;
 };
@@ -44,6 +48,8 @@ export type MoodBoardComposition = {
 type Props = {
   sets: RequirementSet[];
   marketplaceListings: MarketplaceListing[];
+  basedOn?: MoodBoard;
+  onCancelRevision?: () => void;
   onCreate: (composition: MoodBoardComposition) => Promise<void>;
 };
 
@@ -60,13 +66,26 @@ const blankObject = (key: number): DraftObject => ({
   locked: false,
 });
 
-export function MoodBoardComposer({ sets, marketplaceListings, onCreate }: Props) {
+export function MoodBoardComposer({ sets, marketplaceListings, basedOn, onCancelRevision, onCreate }: Props) {
   const approvedSets = sets.filter((set) => set.status === 'Approved');
-  const [selectedSetId, setSelectedSetId] = useState('');
-  const [title, setTitle] = useState('');
-  const [sceneName, setSceneName] = useState('Main Hall');
-  const [sceneInstructions, setSceneInstructions] = useState('');
-  const [objects, setObjects] = useState<DraftObject[]>([blankObject(1)]);
+  const revisionScene = basedOn?.scenes[0];
+  const [selectedSetId, setSelectedSetId] = useState(basedOn?.requirementSetId ?? '');
+  const [title, setTitle] = useState(basedOn ? `${basedOn.title} revision` : '');
+  const [sceneName, setSceneName] = useState(revisionScene?.name ?? 'Main Hall');
+  const [sceneInstructions, setSceneInstructions] = useState(revisionScene?.description ?? '');
+  const [objects, setObjects] = useState<DraftObject[]>(revisionScene?.objects.map((object, index) => ({
+    key: index + 1,
+    objectKey: object.objectKey,
+    requirementItemId: object.requirementItemId,
+    name: object.name,
+    source: object.source,
+    sourceReferenceId: object.sourceReferenceId,
+    supplierName: object.supplierName ?? '',
+    marketplaceListingId: object.marketplaceListingId ?? '',
+    imageUrl: object.imageUrl,
+    placementInstructions: object.presentation?.placementInstructions ?? '',
+    locked: object.locked,
+  })) ?? [blankObject(1)]);
   const [submitting, setSubmitting] = useState(false);
   const selectedSet = approvedSets.find((set) => set.id === selectedSetId);
   const nextKey = useMemo(() => Math.max(0, ...objects.map((object) => object.key)) + 1, [objects]);
@@ -94,11 +113,13 @@ export function MoodBoardComposer({ sets, marketplaceListings, onCreate }: Props
       await onCreate({
         requirementSetId: selectedSetId,
         title,
+        basedOnMoodBoardId: basedOn?.id,
         scenes: [{
           sceneKey: sceneName.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
           name: sceneName,
           description: sceneInstructions || undefined,
           objects: objects.map((object) => ({
+            objectKey: object.objectKey,
             requirementItemId: object.requirementItemId,
             name: object.name,
             source: object.source,
@@ -109,7 +130,23 @@ export function MoodBoardComposer({ sets, marketplaceListings, onCreate }: Props
             locked: object.locked,
             presentation: { placementInstructions: object.placementInstructions },
           })),
-        }],
+        }, ...(basedOn?.scenes.slice(1).map((scene) => ({
+          sceneKey: scene.sceneKey,
+          name: scene.name,
+          description: scene.description ?? undefined,
+          objects: scene.objects.map((object) => ({
+            objectKey: object.objectKey,
+            requirementItemId: object.requirementItemId,
+            name: object.name,
+            source: object.source,
+            sourceReferenceId: object.sourceReferenceId,
+            supplierName: object.supplierName ?? undefined,
+            marketplaceListingId: object.marketplaceListingId ?? undefined,
+            imageUrl: object.imageUrl,
+            locked: object.locked,
+            presentation: object.presentation ?? {},
+          })),
+        })) ?? [])],
       });
       setTitle('');
       setSceneInstructions('');
@@ -122,7 +159,7 @@ export function MoodBoardComposer({ sets, marketplaceListings, onCreate }: Props
   return (
     <form onSubmit={submit} className="space-y-5 rounded-xl border border-zinc-200 bg-white p-5">
       <div>
-        <h2 className="font-semibold">Compose a visual scene</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-semibold">{basedOn ? `Create revision from V${basedOn.version}` : 'Compose a visual scene'}</h2>{basedOn && onCancelRevision ? <button type="button" onClick={onCancelRevision} className="text-sm text-zinc-600 underline">Cancel revision</button> : null}</div>
         <p className="text-sm text-zinc-600">Select the real products and images first. The structured scene brief can later be rendered by AI without losing supplier or requirement traceability.</p>
       </div>
       <div className="grid gap-3 md:grid-cols-2">
@@ -143,29 +180,29 @@ export function MoodBoardComposer({ sets, marketplaceListings, onCreate }: Props
         {objects.map((object, index) => (
           <fieldset key={object.key} className="grid gap-3 rounded-lg border border-zinc-200 bg-zinc-50 p-4 md:grid-cols-2">
             <legend className="px-1 text-sm font-medium">Object {index + 1}</legend>
-            <select required aria-label={`Object ${index + 1} requirement`} value={object.requirementItemId} onChange={(event) => updateObject(object.key, { requirementItemId: event.target.value })} className={fieldClass}>
+            <select required disabled={object.locked} aria-label={`Object ${index + 1} requirement`} value={object.requirementItemId} onChange={(event) => updateObject(object.key, { requirementItemId: event.target.value })} className={fieldClass}>
               <option value="" disabled>Select linked requirement</option>
               {selectedSet?.items.map((item) => <option key={item.id} value={item.id}>{item.requirementCode} · {item.name} · {item.quantityRequired} {item.unit}</option>)}
             </select>
-            <select aria-label={`Object ${index + 1} source`} value={object.source} onChange={(event) => updateObject(object.key, { source: event.target.value as MoodBoardObjectSource, sourceReferenceId: '', supplierName: '', marketplaceListingId: '', imageUrl: '' })} className={fieldClass}>
+            <select disabled={object.locked} aria-label={`Object ${index + 1} source`} value={object.source} onChange={(event) => updateObject(object.key, { source: event.target.value as MoodBoardObjectSource, sourceReferenceId: '', supplierName: '', marketplaceListingId: '', imageUrl: '' })} className={fieldClass}>
               <option value="Marketplace">Marketplace supplier image</option>
               <option value="PlannerLibrary">Planner library</option>
               <option value="ClientUpload">Client or external design import</option>
               <option value="AiConcept">AI concept reference</option>
             </select>
             {object.source === 'Marketplace' ? (
-              <select required aria-label={`Object ${index + 1} Marketplace listing`} value={object.marketplaceListingId} onChange={(event) => selectMarketplaceObject(object.key, event.target.value)} className={`${fieldClass} md:col-span-2`}>
+              <select required disabled={object.locked} aria-label={`Object ${index + 1} Marketplace listing`} value={object.marketplaceListingId} onChange={(event) => selectMarketplaceObject(object.key, event.target.value)} className={`${fieldClass} md:col-span-2`}>
                 <option value="" disabled>Select a published Marketplace product</option>
                 {marketplaceListings.filter((listing) => listing.primaryPhotoUrl || listing.photoUrls.length).map((listing) => <option key={listing.id} value={listing.id}>{listing.title ?? 'Untitled'} · {listing.supplierName}</option>)}
               </select>
             ) : (
-              <input required aria-label={`Object ${index + 1} source reference`} value={object.sourceReferenceId} onChange={(event) => updateObject(object.key, { sourceReferenceId: event.target.value })} placeholder="Library asset ID or imported design reference" className={`${fieldClass} md:col-span-2`} />
+              <input required disabled={object.locked} aria-label={`Object ${index + 1} source reference`} value={object.sourceReferenceId} onChange={(event) => updateObject(object.key, { sourceReferenceId: event.target.value })} placeholder="Library asset ID or imported design reference" className={`${fieldClass} md:col-span-2`} />
             )}
-            <input required aria-label={`Object ${index + 1} name`} value={object.name} onChange={(event) => updateObject(object.key, { name: event.target.value })} placeholder="Object name" className={fieldClass} />
-            <input required type="url" aria-label={`Object ${index + 1} image URL`} value={object.imageUrl} onChange={(event) => updateObject(object.key, { imageUrl: event.target.value })} placeholder="Source image URL" className={fieldClass} />
-            <textarea aria-label={`Object ${index + 1} placement instructions`} value={object.placementInstructions} onChange={(event) => updateObject(object.key, { placementInstructions: event.target.value })} placeholder="Placement, quantity and styling, e.g. two arrangements per table" className={`${fieldClass} min-h-20 md:col-span-2`} />
-            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={object.locked} onChange={(event) => updateObject(object.key, { locked: event.target.checked })} />Lock this object in future revisions</label>
-            {objects.length > 1 ? <button type="button" onClick={() => setObjects((rows) => rows.filter((row) => row.key !== object.key))} className="justify-self-start text-sm text-red-700">Remove object</button> : null}
+            <input required disabled={object.locked} aria-label={`Object ${index + 1} name`} value={object.name} onChange={(event) => updateObject(object.key, { name: event.target.value })} placeholder="Object name" className={fieldClass} />
+            <input required disabled={object.locked} type="url" aria-label={`Object ${index + 1} image URL`} value={object.imageUrl} onChange={(event) => updateObject(object.key, { imageUrl: event.target.value })} placeholder="Source image URL" className={fieldClass} />
+            <textarea disabled={object.locked} aria-label={`Object ${index + 1} placement instructions`} value={object.placementInstructions} onChange={(event) => updateObject(object.key, { placementInstructions: event.target.value })} placeholder="Placement, quantity and styling, e.g. two arrangements per table" className={`${fieldClass} min-h-20 md:col-span-2`} />
+            <label className="flex items-center gap-2 text-sm"><input disabled={object.locked && Boolean(basedOn)} type="checkbox" checked={object.locked} onChange={(event) => updateObject(object.key, { locked: event.target.checked })} />{object.locked && basedOn ? 'Locked in the previous version' : 'Lock this object in future revisions'}</label>
+            {objects.length > 1 && !object.locked ? <button type="button" onClick={() => setObjects((rows) => rows.filter((row) => row.key !== object.key))} className="justify-self-start text-sm text-red-700">Remove object</button> : null}
           </fieldset>
         ))}
       </div>

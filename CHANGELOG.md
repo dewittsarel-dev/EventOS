@@ -13,6 +13,16 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — Event Workspace Decision Guidance and Mood Board Revisions
+
+- Added immutable Mood Board revision creation from an existing version while preserving locked objects and all untouched scenes.
+- Added adjacent Mood Board version comparison with explicit affected-requirement warnings; procurement remains unchanged until planner review.
+- Added a consistent decision-first summary to Procurement, Commercial, Asset Management, Event Execution and Finance workspaces.
+- Derived each workspace stage, attention count and next safe action from authoritative workspace records instead of duplicating workflow state.
+- Prioritised substitutions, governance exceptions, live incidents, readiness blockers, budget baselines, financial changes and reconciliation differences without automating operator decisions.
+- Added focused cross-workspace guidance tests and updated route-level interaction coverage.
+- Verification status: all 52 web test files and 116 tests passed; web lint and production build passed; all 30 API suites and 165 tests passed; all 14 API end-to-end suites and 48 HTTP tests passed; API build and lint passed.
+
 ### 2026-08-08 — Mood Board Structured Composition
 
 - Replaced the technical one-object Mood Board form with a multi-object scene composer over approved Requirement Sets.

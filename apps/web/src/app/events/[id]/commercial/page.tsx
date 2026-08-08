@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '../../../../components/app-shell/page-header';
+import { WorkspaceNextAction } from '../../../../components/events/workspace-next-action';
 import { useAppSession } from '../../../../components/app-shell/session-context';
 import {
   approveCommercialPurchaseOrderDraft,
@@ -24,6 +25,7 @@ import type {
 } from '../../../../lib/commercial-types';
 import { listProcurementPackages } from '../../../../lib/procurement-api';
 import type { ProcurementPackage } from '../../../../lib/procurement-types';
+import { commercialGuidance } from '../../../../lib/event-workspace-guidance';
 
 const fieldClass = 'rounded-md border border-zinc-300 px-3 py-2 text-sm';
 
@@ -89,6 +91,7 @@ export default function CommercialWorkspacePage() {
 
   const usedPackageIds = new Set(workspaces.map((workspace) => workspace.procurementPackageId));
   const readyPackages = packages.filter((row) => row.status === 'QuotationRequested' && !usedPackageIds.has(row.id));
+  const guidance = commercialGuidance(workspaces, readyPackages.length);
 
   return (
     <div className="flex flex-col gap-5">
@@ -97,6 +100,7 @@ export default function CommercialWorkspacePage() {
         description="Manage RFQs, supplier responses, comparison, award and purchase-order preparation in one governed conversation."
         actions={<Link href={`/events/${eventId}`} className="rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100">Back to Event</Link>}
       />
+      <WorkspaceNextAction {...guidance} />
       <section className="grid gap-3 md:grid-cols-3">
         <Guardrail title="AI prepares" body="Drafts, comparisons and recommendations remain reviewable." />
         <Guardrail title="Humans approve" body="Approval and sending are separate, explicit actions." />
@@ -182,4 +186,3 @@ function ComparisonPanel({ comparison, awards, onReview, onAward }: { comparison
 
 function money(value: number, currency: string) { return `${currency} ${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
 function splitLabel(value: string) { return value.replace(/([a-z])([A-Z])/g, '$1 $2'); }
-

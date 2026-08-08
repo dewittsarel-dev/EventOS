@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '../../../../components/app-shell/page-header';
+import { WorkspaceNextAction } from '../../../../components/events/workspace-next-action';
 import { useAppSession } from '../../../../components/app-shell/session-context';
 import { createAssetIncident, createAssetOperation, createAssetReservation, getAssetGovernanceSummary, recordAssetDeployment, recordAssetInspection, searchAssets } from '../../../../lib/asset-management-api';
 import type { AssetDefinition, AssetGovernanceSummary, AssetSearchResult } from '../../../../lib/asset-management-types';
@@ -11,6 +12,7 @@ import { listRequirementSets } from '../../../../lib/event-planning-api';
 import type { RequirementItem } from '../../../../lib/event-planning-types';
 import { getEvent } from '../../../../lib/events-api';
 import type { EventRecord } from '../../../../lib/events-types';
+import { assetGuidance } from '../../../../lib/event-workspace-guidance';
 
 const field = 'rounded-md border border-zinc-300 px-3 py-2 text-sm';
 
@@ -33,6 +35,7 @@ export default function EventAssetsPage() {
 
   return <div className="flex flex-col gap-5">
     <PageHeader title="Event Assets" description="Reserve, prepare, deploy and return physical assets with separate availability, condition, custody and lifecycle controls." actions={<Link href={`/events/${eventId}`} className="rounded-md border border-zinc-300 px-3 py-2 text-sm">Back to Event</Link>} />
+    <WorkspaceNextAction {...assetGuidance(summary, requirements.length)} />
     {error ? <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}{message ? <p className="rounded-md bg-emerald-50 p-3 text-sm text-emerald-700">{message}</p> : null}
     <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5"><Metric label="Asset definitions" value={summary?.definitions ?? 0} /><Metric label="Active reservations" value={count(summary?.reservations, ['Reserved', 'Confirmed'])} /><Metric label="Open incidents" value={count(summary?.incidents, ['Open', 'Investigating', 'RecoveryInProgress'])} /><Metric label="Maintenance work" value={count(summary?.maintenance, ['Approved', 'Scheduled', 'InProgress', 'AwaitingParts'])} /><Metric label="Governance exceptions" value={summary?.unresolvedGovernanceExceptions ?? 0} /></section>
     <form onSubmit={(event) => { event.preventDefault(); void load(search); }} className="flex flex-col gap-2 sm:flex-row"><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search asset code, name, serial or QR" className={`${field} min-w-0 flex-1`} /><button className="rounded-md bg-zinc-900 px-4 py-2 text-sm text-white">Search assets</button></form>

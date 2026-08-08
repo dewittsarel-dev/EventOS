@@ -1,15 +1,346 @@
 'use client';
-import Link from'next/link';import{useParams}from'next/navigation';import{useCallback,useEffect,useMemo,useState}from'react';import{PageHeader}from'../../../../components/app-shell/page-header';import{useAppSession}from'../../../../components/app-shell/session-context';import{getEvent}from'../../../../lib/events-api';import{approveFinancialChange,changeFinanceBudgetStatus,changeFinanceCloseItem,changeFinanceCommitmentStatus,changeFinancePaymentStatus,changeFinanceReconciliationStatus,changeInvoiceStatus,closeFinanceWorkspace,createClientInvoice,createFinanceBudget,createFinanceCloseItem,createFinanceCommitment,createFinancePayment,createFinanceReconciliation,createFinanceWbs,createFinanceWorkspace,createFinancialChange,getFinanceSummary,getFinanceWorkspace}from'../../../../lib/finance-control-api';import type{FinanceSummary,FinanceWorkspace}from'../../../../lib/finance-control-types';
-const f='rounded-md border border-zinc-300 px-3 py-2 text-sm';
-export default function FinancePage(){const{id}=useParams<{id:string}>();const eventId=String(id);const{session}=useAppSession();const o=useMemo(()=>({token:session.token,baseUrl:session.baseUrl}),[session]);const[org,setOrg]=useState('');const[contact,setContact]=useState('');const[w,setW]=useState<FinanceWorkspace|null>(null);const[s,setS]=useState<FinanceSummary|null>(null);const[missing,setMissing]=useState(false);const[error,setError]=useState('');const[msg,setMsg]=useState('');const[busy,setBusy]=useState(false);
-const load=useCallback(async()=>{if(!session.token)return;try{const e=await getEvent(o,eventId);setOrg(e.organizationId);setContact(e.contactId);try{const[workspace,summary]=await Promise.all([getFinanceWorkspace(o,e.organizationId,eventId),getFinanceSummary(o,e.organizationId,eventId)]);setW(workspace);setS(summary);setMissing(false)}catch(x){if(x instanceof Error&&x.message.includes('not found')){setMissing(true);setW(null);setS(null)}else throw x}}catch(x){setError(x instanceof Error?x.message:'Failed to load finance.')}},[eventId,o,session.token]);useEffect(()=>{// eslint-disable-next-line react-hooks/set-state-in-effect
-void load()},[load]);async function act(fn:()=>Promise<unknown>,text:string){setBusy(true);setError('');try{await fn();setMsg(text);await load()}catch(x){setError(x instanceof Error?x.message:'Finance action failed.')}finally{setBusy(false)}}
-return <div className="flex flex-col gap-5"><PageHeader title="Event Financial Control" description="Control event budget, commitments, billing, cash, reconciliation and close while external accounting remains the statutory ledger." actions={<Link href={`/events/${eventId}`} className="rounded border px-3 py-2 text-sm">Back to Event</Link>}/>{error?<p role="alert" className="rounded bg-red-50 p-3 text-sm text-red-700">{error}</p>:null}{msg?<p className="rounded bg-emerald-50 p-3 text-sm text-emerald-700">{msg}</p>:null}{missing?<section className="rounded-xl border bg-white p-5"><h2 className="font-semibold">Create event financial control</h2><button onClick={()=>void act(()=>createFinanceWorkspace(o,org,eventId,{currency:'ZAR'}),'Financial workspace created.')} className="mt-3 rounded bg-zinc-900 px-3 py-2 text-sm text-white">Create Finance Workspace</button></section>:null}{w&&s?<><div className="rounded bg-blue-50 p-3 text-sm text-blue-800">Operational financial control: {s.sourceOfTruth.operationalFinancialControl} · Statutory accounting: {s.sourceOfTruth.statutoryAccounting}</div><section className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6"><Metric l="Budget revenue" v={s.budgetRevenue}/><Metric l="Budget cost" v={s.budgetCost}/><Metric l="Forecast margin" v={s.forecastMargin}/><Metric l="Committed cost" v={s.committedCost}/><Metric l="Receivable" v={s.accountsReceivable}/><Metric l="Cleared receipts" v={s.clearedReceipts}/></section><section className="grid gap-5 xl:grid-cols-2">
-<Panel t="Financial structure and baseline"><Form fields={['code','name']} b="Add WBS node" on={(d)=>act(()=>createFinanceWbs(o,org,eventId,{code:d.code,name:d.name}),'WBS node created.')}/>{w.wbsNodes.length?<Form fields={['versionType','description','lineType','lineDescription','amount','currency']} b="Create budget version" on={(d)=>act(()=>createFinanceBudget(o,org,eventId,{versionType:d.versionType,description:d.description,lines:[{wbsNodeId:w.wbsNodes[0].id,lineType:d.lineType,description:d.lineDescription,amount:Number(d.amount),currency:d.currency}]}),'Draft budget version created. Prior baselines remain immutable.')}/>:null}{w.budgetVersions.map(x=><Row key={x.id} a={`${x.versionType} v${x.version} · ${x.status}`} action={x.status==='Draft'?()=>act(()=>changeFinanceBudgetStatus(o,org,eventId,x.id,'Submitted'),'Budget submitted for approval.'):x.status==='Submitted'?()=>act(()=>changeFinanceBudgetStatus(o,org,eventId,x.id,'Approved'),'Budget explicitly approved.'):undefined}/>)}</Panel>
-<Panel t="Financial changes"><Form fields={['changeType','description','sourceModule','sourceType','sourceId','revenueImpact','costImpact']} b="Record change" on={(d)=>act(()=>createFinancialChange(o,org,eventId,{changeType:d.changeType,description:d.description,sourceModule:d.sourceModule,sourceType:d.sourceType,sourceId:d.sourceId,revenueImpact:Number(d.revenueImpact)||undefined,costImpact:Number(d.costImpact)||undefined}),'Financial change recorded for approval.')}/>{w.changes.map(x=><Row key={x.id} a={`${x.changeType} · ${x.description} · ${x.status}`} action={x.status==='Draft'||x.status==='Submitted'?()=>act(()=>approveFinancialChange(o,org,eventId,x.id),'Financial change approved.'):undefined}/>)}</Panel>
-<Panel t="Supplier commitments"><Form fields={['supplierId','description','amountExcludingTax','taxAmount','currency']} b="Create commitment" on={(d)=>act(()=>createFinanceCommitment(o,org,eventId,{supplierId:d.supplierId,description:d.description,amountExcludingTax:Number(d.amountExcludingTax),taxAmount:Number(d.taxAmount)||undefined,currency:d.currency}),'Draft supplier commitment created.')}/>{w.commitments.map(x=><Row key={x.id} a={`${x.description} · ${money(x.totalAmount,x.currency)} · ${x.status}`} action={x.status==='Draft'?()=>act(()=>changeFinanceCommitmentStatus(o,org,eventId,x.id,'Approved'),'Commitment approved.'):undefined}/>)}</Panel>
-<Panel t="Client billing"><Form fields={['invoiceNumber','description','quantity','unitPrice','taxAmount','currency','dueDate']} b="Create invoice draft" on={(d)=>act(()=>createClientInvoice(o,org,eventId,{contactId:contact,invoiceNumber:d.invoiceNumber,dueDate:d.dueDate?new Date(d.dueDate).toISOString():undefined,currency:d.currency,lines:[{description:d.description,quantity:Number(d.quantity),unitPrice:Number(d.unitPrice),taxAmount:Number(d.taxAmount)||undefined,sourceType:'Event',sourceId:eventId}]}),'Client invoice draft created.')}/>{w.invoices.map(x=><Row key={x.id} a={`${x.invoiceNumber} · ${money(x.totalAmount,x.currency)} · ${x.status}`} action={x.status==='Draft'?()=>act(()=>changeInvoiceStatus(o,org,eventId,x.id,'Approved'),'Invoice approved; issuance remains explicit.'):x.status==='Approved'?()=>act(()=>changeInvoiceStatus(o,org,eventId,x.id,'Issued'),'Invoice marked issued.'):undefined}/>)}</Panel>
-<Panel t="Cash control"><Form fields={['direction','amount','currency','plannedDate','bankReference']} b="Record payment plan" on={(d)=>act(()=>createFinancePayment(o,org,eventId,{direction:d.direction,amount:Number(d.amount),currency:d.currency,plannedDate:d.plannedDate?new Date(d.plannedDate).toISOString():undefined,bankReference:d.bankReference||undefined}),'Payment plan recorded; this does not move money.')}/>{w.payments.map(x=><Row key={x.id} a={`${x.direction} · ${money(x.amount,x.currency)} · ${x.status}`} action={x.status==='Planned'?()=>act(()=>changeFinancePaymentStatus(o,org,eventId,x.id,'PendingApproval'),'Payment submitted for approval.'):undefined}/>)}</Panel>
-<Panel t="Reconciliation and close"><Form fields={['reconciliationType','sourceModule','sourceType','sourceId','expectedAmount','recordedAmount','explanation']} b="Create reconciliation" on={(d)=>act(()=>createFinanceReconciliation(o,org,eventId,{reconciliationType:d.reconciliationType,sourceModule:d.sourceModule,sourceType:d.sourceType,sourceId:d.sourceId,expectedAmount:Number(d.expectedAmount),recordedAmount:Number(d.recordedAmount),explanation:d.explanation}),'Reconciliation difference recorded.')}/>{w.reconciliations.map(x=><Row key={x.id} a={`${x.reconciliationType} · variance ${x.varianceAmount} · ${x.status}`} action={x.status==='Open'?()=>act(()=>changeFinanceReconciliationStatus(o,org,eventId,x.id,'Resolved','Operator reconciled evidence'),'Reconciliation resolved.'):undefined}/>) }<Form fields={['closeType','criteria']} b="Add close control" on={(d)=>act(()=>createFinanceCloseItem(o,org,eventId,{closeType:d.closeType,criteria:d.criteria}),'Financial close control added.')}/>{w.closeItems.map(x=><Row key={x.id} a={`${x.closeType} · ${x.status}`} action={x.status==='Open'?()=>act(()=>changeFinanceCloseItem(o,org,eventId,x.id,'ReadyForReview'),'Close item ready for review.'):undefined}/>)}<button onClick={()=>void act(()=>closeFinanceWorkspace(o,org,eventId),'Event finance closed by authorised operator.')} className="mt-3 rounded bg-zinc-900 px-3 py-2 text-sm text-white">Close event finance</button></Panel></section></>:null}{busy?<p className="text-sm text-zinc-500">Recording governed financial action…</p>:null}</div>}
-function Metric({l,v}:{l:string;v:number}){return <div className="rounded-xl border bg-white p-4"><p className="text-xs text-zinc-500">{l}</p><p className="mt-1 font-semibold">{money(v,'ZAR')}</p></div>}function money(v:number,c:string){return `${c} ${v.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`}function Panel({t,children}:{t:string;children:React.ReactNode}){return <section className="rounded-xl border bg-white p-5"><h2 className="font-semibold">{t}</h2>{children}</section>}function Row({a,action}:{a:string;action?:()=>Promise<void>}){return <div className="mt-2 flex justify-between gap-2 rounded border p-3 text-sm"><span>{a}</span>{action?<button onClick={()=>void action()} className="rounded border px-2 py-1 text-xs">Next approval action</button>:null}</div>}function Form({fields,b,on}:{fields:string[];b:string;on:(d:Record<string,string>)=>Promise<void>}){return <form onSubmit={e=>{e.preventDefault();const x=new FormData(e.currentTarget);void on(Object.fromEntries(fields.map(k=>[k,String(x.get(k))])))}} className="mt-3 grid gap-2 sm:grid-cols-2">{fields.map(k=><input key={k} required={!['description','taxAmount','dueDate','plannedDate','bankReference','explanation','revenueImpact','costImpact'].includes(k)} name={k} type={['amount','amountExcludingTax','taxAmount','quantity','unitPrice','expectedAmount','recordedAmount','revenueImpact','costImpact'].includes(k)?'number':k.toLowerCase().includes('date')?'datetime-local':'text'} placeholder={k.replace(/([A-Z])/g,' $1')} className={f}/>)}<button className="rounded bg-zinc-900 px-3 py-2 text-sm text-white sm:col-span-2">{b}</button></form>}
-
+import Link from 'next/link';
+import { useParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { PageHeader } from '../../../../components/app-shell/page-header';
+import { WorkspaceNextAction } from '../../../../components/events/workspace-next-action';
+import { useAppSession } from '../../../../components/app-shell/session-context';
+import { getEvent } from '../../../../lib/events-api';
+import { approveFinancialChange, changeFinanceBudgetStatus, changeFinanceCloseItem, changeFinanceCommitmentStatus, changeFinancePaymentStatus, changeFinanceReconciliationStatus, changeInvoiceStatus, closeFinanceWorkspace, createClientInvoice, createFinanceBudget, createFinanceCloseItem, createFinanceCommitment, createFinancePayment, createFinanceReconciliation, createFinanceWbs, createFinanceWorkspace, createFinancialChange, getFinanceSummary, getFinanceWorkspace } from '../../../../lib/finance-control-api';
+import type { FinanceSummary, FinanceWorkspace } from '../../../../lib/finance-control-types';
+import { financeGuidance } from '../../../../lib/event-workspace-guidance';
+const f = 'rounded-md border border-zinc-300 px-3 py-2 text-sm';
+export default function FinancePage() {
+  const { id } = useParams<{ id: string }>();
+  const eventId = String(id);
+  const { session } = useAppSession();
+  const o = useMemo(() => ({ token: session.token, baseUrl: session.baseUrl }), [session]);
+  const [org, setOrg] = useState('');
+  const [contact, setContact] = useState('');
+  const [w, setW] = useState<FinanceWorkspace | null>(null);
+  const [s, setS] = useState<FinanceSummary | null>(null);
+  const [missing, setMissing] = useState(false);
+  const [error, setError] = useState('');
+  const [msg, setMsg] = useState('');
+  const [busy, setBusy] = useState(false);
+  const load = useCallback(async () => {
+    if (!session.token) return;
+    try {
+      const e = await getEvent(o, eventId);
+      setOrg(e.organizationId);
+      setContact(e.contactId);
+      try {
+        const [workspace, summary] = await Promise.all([getFinanceWorkspace(o, e.organizationId, eventId), getFinanceSummary(o, e.organizationId, eventId)]);
+        setW(workspace);
+        setS(summary);
+        setMissing(false);
+      } catch (x) {
+        if (x instanceof Error && x.message.includes('not found')) {
+          setMissing(true);
+          setW(null);
+          setS(null);
+        } else throw x;
+      }
+    } catch (x) {
+      setError(x instanceof Error ? x.message : 'Failed to load finance.');
+    }
+  }, [eventId, o, session.token]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
+  }, [load]);
+  async function act(fn: () => Promise<unknown>, text: string) {
+    setBusy(true);
+    setError('');
+    try {
+      await fn();
+      setMsg(text);
+      await load();
+    } catch (x) {
+      setError(x instanceof Error ? x.message : 'Finance action failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="flex flex-col gap-5">
+      <PageHeader
+        title="Event Financial Control"
+        description="Control event budget, commitments, billing, cash, reconciliation and close while external accounting remains the statutory ledger."
+        actions={
+          <Link href={`/events/${eventId}`} className="rounded border px-3 py-2 text-sm">
+            Back to Event
+          </Link>
+        }
+      />
+      {error ? (
+        <p role="alert" className="rounded bg-red-50 p-3 text-sm text-red-700">
+          {error}
+        </p>
+      ) : null}
+      {msg ? <p className="rounded bg-emerald-50 p-3 text-sm text-emerald-700">{msg}</p> : null}
+      {w ? <WorkspaceNextAction {...financeGuidance(w)} /> : null}
+      {missing ? (
+        <section className="rounded-xl border bg-white p-5">
+          <h2 className="font-semibold">Create event financial control</h2>
+          <button onClick={() => void act(() => createFinanceWorkspace(o, org, eventId, { currency: 'ZAR' }), 'Financial workspace created.')} className="mt-3 rounded bg-zinc-900 px-3 py-2 text-sm text-white">
+            Create Finance Workspace
+          </button>
+        </section>
+      ) : null}
+      {w && s ? (
+        <>
+          <div className="rounded bg-blue-50 p-3 text-sm text-blue-800">
+            Operational financial control: {s.sourceOfTruth.operationalFinancialControl} · Statutory accounting: {s.sourceOfTruth.statutoryAccounting}
+          </div>
+          <section className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            <Metric l="Budget revenue" v={s.budgetRevenue} />
+            <Metric l="Budget cost" v={s.budgetCost} />
+            <Metric l="Forecast margin" v={s.forecastMargin} />
+            <Metric l="Committed cost" v={s.committedCost} />
+            <Metric l="Receivable" v={s.accountsReceivable} />
+            <Metric l="Cleared receipts" v={s.clearedReceipts} />
+          </section>
+          <section className="grid gap-5 xl:grid-cols-2">
+            <Panel t="Financial structure and baseline">
+              <Form
+                fields={['code', 'name']}
+                b="Add WBS node"
+                on={(d) =>
+                  act(
+                    () =>
+                      createFinanceWbs(o, org, eventId, {
+                        code: d.code,
+                        name: d.name,
+                      }),
+                    'WBS node created.',
+                  )
+                }
+              />
+              {w.wbsNodes.length ? (
+                <Form
+                  fields={['versionType', 'description', 'lineType', 'lineDescription', 'amount', 'currency']}
+                  b="Create budget version"
+                  on={(d) =>
+                    act(
+                      () =>
+                        createFinanceBudget(o, org, eventId, {
+                          versionType: d.versionType,
+                          description: d.description,
+                          lines: [
+                            {
+                              wbsNodeId: w.wbsNodes[0].id,
+                              lineType: d.lineType,
+                              description: d.lineDescription,
+                              amount: Number(d.amount),
+                              currency: d.currency,
+                            },
+                          ],
+                        }),
+                      'Draft budget version created. Prior baselines remain immutable.',
+                    )
+                  }
+                />
+              ) : null}
+              {w.budgetVersions.map((x) => (
+                <Row key={x.id} a={`${x.versionType} v${x.version} · ${x.status}`} action={x.status === 'Draft' ? () => act(() => changeFinanceBudgetStatus(o, org, eventId, x.id, 'Submitted'), 'Budget submitted for approval.') : x.status === 'Submitted' ? () => act(() => changeFinanceBudgetStatus(o, org, eventId, x.id, 'Approved'), 'Budget explicitly approved.') : undefined} />
+              ))}
+            </Panel>
+            <Panel t="Financial changes">
+              <Form
+                fields={['changeType', 'description', 'sourceModule', 'sourceType', 'sourceId', 'revenueImpact', 'costImpact']}
+                b="Record change"
+                on={(d) =>
+                  act(
+                    () =>
+                      createFinancialChange(o, org, eventId, {
+                        changeType: d.changeType,
+                        description: d.description,
+                        sourceModule: d.sourceModule,
+                        sourceType: d.sourceType,
+                        sourceId: d.sourceId,
+                        revenueImpact: Number(d.revenueImpact) || undefined,
+                        costImpact: Number(d.costImpact) || undefined,
+                      }),
+                    'Financial change recorded for approval.',
+                  )
+                }
+              />
+              {w.changes.map((x) => (
+                <Row key={x.id} a={`${x.changeType} · ${x.description} · ${x.status}`} action={x.status === 'Draft' || x.status === 'Submitted' ? () => act(() => approveFinancialChange(o, org, eventId, x.id), 'Financial change approved.') : undefined} />
+              ))}
+            </Panel>
+            <Panel t="Supplier commitments">
+              <Form
+                fields={['supplierId', 'description', 'amountExcludingTax', 'taxAmount', 'currency']}
+                b="Create commitment"
+                on={(d) =>
+                  act(
+                    () =>
+                      createFinanceCommitment(o, org, eventId, {
+                        supplierId: d.supplierId,
+                        description: d.description,
+                        amountExcludingTax: Number(d.amountExcludingTax),
+                        taxAmount: Number(d.taxAmount) || undefined,
+                        currency: d.currency,
+                      }),
+                    'Draft supplier commitment created.',
+                  )
+                }
+              />
+              {w.commitments.map((x) => (
+                <Row key={x.id} a={`${x.description} · ${money(x.totalAmount, x.currency)} · ${x.status}`} action={x.status === 'Draft' ? () => act(() => changeFinanceCommitmentStatus(o, org, eventId, x.id, 'Approved'), 'Commitment approved.') : undefined} />
+              ))}
+            </Panel>
+            <Panel t="Client billing">
+              <Form
+                fields={['invoiceNumber', 'description', 'quantity', 'unitPrice', 'taxAmount', 'currency', 'dueDate']}
+                b="Create invoice draft"
+                on={(d) =>
+                  act(
+                    () =>
+                      createClientInvoice(o, org, eventId, {
+                        contactId: contact,
+                        invoiceNumber: d.invoiceNumber,
+                        dueDate: d.dueDate ? new Date(d.dueDate).toISOString() : undefined,
+                        currency: d.currency,
+                        lines: [
+                          {
+                            description: d.description,
+                            quantity: Number(d.quantity),
+                            unitPrice: Number(d.unitPrice),
+                            taxAmount: Number(d.taxAmount) || undefined,
+                            sourceType: 'Event',
+                            sourceId: eventId,
+                          },
+                        ],
+                      }),
+                    'Client invoice draft created.',
+                  )
+                }
+              />
+              {w.invoices.map((x) => (
+                <Row key={x.id} a={`${x.invoiceNumber} · ${money(x.totalAmount, x.currency)} · ${x.status}`} action={x.status === 'Draft' ? () => act(() => changeInvoiceStatus(o, org, eventId, x.id, 'Approved'), 'Invoice approved; issuance remains explicit.') : x.status === 'Approved' ? () => act(() => changeInvoiceStatus(o, org, eventId, x.id, 'Issued'), 'Invoice marked issued.') : undefined} />
+              ))}
+            </Panel>
+            <Panel t="Cash control">
+              <Form
+                fields={['direction', 'amount', 'currency', 'plannedDate', 'bankReference']}
+                b="Record payment plan"
+                on={(d) =>
+                  act(
+                    () =>
+                      createFinancePayment(o, org, eventId, {
+                        direction: d.direction,
+                        amount: Number(d.amount),
+                        currency: d.currency,
+                        plannedDate: d.plannedDate ? new Date(d.plannedDate).toISOString() : undefined,
+                        bankReference: d.bankReference || undefined,
+                      }),
+                    'Payment plan recorded; this does not move money.',
+                  )
+                }
+              />
+              {w.payments.map((x) => (
+                <Row key={x.id} a={`${x.direction} · ${money(x.amount, x.currency)} · ${x.status}`} action={x.status === 'Planned' ? () => act(() => changeFinancePaymentStatus(o, org, eventId, x.id, 'PendingApproval'), 'Payment submitted for approval.') : undefined} />
+              ))}
+            </Panel>
+            <Panel t="Reconciliation and close">
+              <Form
+                fields={['reconciliationType', 'sourceModule', 'sourceType', 'sourceId', 'expectedAmount', 'recordedAmount', 'explanation']}
+                b="Create reconciliation"
+                on={(d) =>
+                  act(
+                    () =>
+                      createFinanceReconciliation(o, org, eventId, {
+                        reconciliationType: d.reconciliationType,
+                        sourceModule: d.sourceModule,
+                        sourceType: d.sourceType,
+                        sourceId: d.sourceId,
+                        expectedAmount: Number(d.expectedAmount),
+                        recordedAmount: Number(d.recordedAmount),
+                        explanation: d.explanation,
+                      }),
+                    'Reconciliation difference recorded.',
+                  )
+                }
+              />
+              {w.reconciliations.map((x) => (
+                <Row key={x.id} a={`${x.reconciliationType} · variance ${x.varianceAmount} · ${x.status}`} action={x.status === 'Open' ? () => act(() => changeFinanceReconciliationStatus(o, org, eventId, x.id, 'Resolved', 'Operator reconciled evidence'), 'Reconciliation resolved.') : undefined} />
+              ))}
+              <Form
+                fields={['closeType', 'criteria']}
+                b="Add close control"
+                on={(d) =>
+                  act(
+                    () =>
+                      createFinanceCloseItem(o, org, eventId, {
+                        closeType: d.closeType,
+                        criteria: d.criteria,
+                      }),
+                    'Financial close control added.',
+                  )
+                }
+              />
+              {w.closeItems.map((x) => (
+                <Row key={x.id} a={`${x.closeType} · ${x.status}`} action={x.status === 'Open' ? () => act(() => changeFinanceCloseItem(o, org, eventId, x.id, 'ReadyForReview'), 'Close item ready for review.') : undefined} />
+              ))}
+              <button onClick={() => void act(() => closeFinanceWorkspace(o, org, eventId), 'Event finance closed by authorised operator.')} className="mt-3 rounded bg-zinc-900 px-3 py-2 text-sm text-white">
+                Close event finance
+              </button>
+            </Panel>
+          </section>
+        </>
+      ) : null}
+      {busy ? <p className="text-sm text-zinc-500">Recording governed financial action…</p> : null}
+    </div>
+  );
+}
+function Metric({ l, v }: { l: string; v: number }) {
+  return (
+    <div className="rounded-xl border bg-white p-4">
+      <p className="text-xs text-zinc-500">{l}</p>
+      <p className="mt-1 font-semibold">{money(v, 'ZAR')}</p>
+    </div>
+  );
+}
+function money(v: number, c: string) {
+  return `${c} ${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+function Panel({ t, children }: { t: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-xl border bg-white p-5">
+      <h2 className="font-semibold">{t}</h2>
+      {children}
+    </section>
+  );
+}
+function Row({ a, action }: { a: string; action?: () => Promise<void> }) {
+  return (
+    <div className="mt-2 flex justify-between gap-2 rounded border p-3 text-sm">
+      <span>{a}</span>
+      {action ? (
+        <button onClick={() => void action()} className="rounded border px-2 py-1 text-xs">
+          Next approval action
+        </button>
+      ) : null}
+    </div>
+  );
+}
+function Form({ fields, b, on }: { fields: string[]; b: string; on: (d: Record<string, string>) => Promise<void> }) {
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const x = new FormData(e.currentTarget);
+        void on(Object.fromEntries(fields.map((k) => [k, String(x.get(k))])));
+      }}
+      className="mt-3 grid gap-2 sm:grid-cols-2"
+    >
+      {fields.map((k) => (
+        <input key={k} required={!['description', 'taxAmount', 'dueDate', 'plannedDate', 'bankReference', 'explanation', 'revenueImpact', 'costImpact'].includes(k)} name={k} type={['amount', 'amountExcludingTax', 'taxAmount', 'quantity', 'unitPrice', 'expectedAmount', 'recordedAmount', 'revenueImpact', 'costImpact'].includes(k) ? 'number' : k.toLowerCase().includes('date') ? 'datetime-local' : 'text'} placeholder={k.replace(/([A-Z])/g, ' $1')} className={f} />
+      ))}
+      <button className="rounded bg-zinc-900 px-3 py-2 text-sm text-white sm:col-span-2">{b}</button>
+    </form>
+  );
+}

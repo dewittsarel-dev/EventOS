@@ -1,4 +1,4 @@
-import type { MoodBoard, MoodBoardObjectSource } from './mood-board-types';
+import type { MoodBoard, MoodBoardComparison, MoodBoardObjectSource } from './mood-board-types';
 
 type Options = { token: string; baseUrl: string };
 
@@ -32,6 +32,7 @@ export const createMoodBoard = (options: Options, eventId: string, input: {
     name: string;
     description?: string;
     objects: Array<{
+      objectKey?: string;
       requirementItemId: string;
       name: string;
       source: MoodBoardObjectSource;
@@ -56,3 +57,6 @@ export const requestMoodBoardChanges = (options: Options, eventId: string, board
 
 export const approveMoodBoard = (options: Options, eventId: string, boardId: string) =>
   request<MoodBoard>(options, `/events/${eventId}/mood-boards/${boardId}/approve`, { method: 'POST' });
+
+export const compareMoodBoards = (options: Options, eventId: string, fromBoardId: string, toBoardId: string) =>
+  request<MoodBoardComparison>(options, `/events/${eventId}/mood-boards/${fromBoardId}/compare/${toBoardId}`);
