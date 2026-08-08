@@ -215,6 +215,19 @@ export default function InventoryOverviewPage() {
         actions={
           <div className="flex gap-2">
             <Link
+              href="/settings/marketplace"
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100"
+            >
+              Manage Marketplace
+            </Link>
+            <Link
+              href="/marketplace"
+              target="_blank"
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100"
+            >
+              Preview Marketplace
+            </Link>
+            <Link
               href="/resources"
               className="rounded-md bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-700"
             >

@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Get,
   Post,
+  Query,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -26,6 +28,8 @@ import {
   MarketplaceSupplierShortfallSummaryDto,
 } from './dto/marketplace-capability-response.dto';
 import { MarketplaceCapabilityService } from './marketplace-capability.service';
+import { FindMarketplaceEnquiriesQueryDto } from './dto/find-marketplace-enquiries-query.dto';
+import { MarketplacePublicService } from './marketplace-public.service';
 
 @ApiTags('marketplace')
 @ApiBearerAuth('access-token')
@@ -34,7 +38,25 @@ import { MarketplaceCapabilityService } from './marketplace-capability.service';
 export class MarketplaceController {
   constructor(
     private readonly marketplaceCapabilityService: MarketplaceCapabilityService,
+    private readonly marketplacePublicService: MarketplacePublicService,
   ) {}
+
+  @Get('enquiries')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  @ApiOperation({
+    summary:
+      'List Marketplace enquiries received by the active supplier organization.',
+  })
+  @ApiOkResponse({ description: 'Private organization enquiry inbox.' })
+  getEnquiries(
+    @CurrentUser() user: UserResponseDto,
+    @Query() query: FindMarketplaceEnquiriesQueryDto,
+  ) {
+    return this.marketplacePublicService.findOrganizationEnquiries(
+      user.id,
+      query.organizationId,
+    );
+  }
 
   @Post('capability/search')
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))

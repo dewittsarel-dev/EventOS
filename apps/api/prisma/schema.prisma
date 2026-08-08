@@ -597,6 +597,13 @@ enum InventoryMarketplaceVisibility {
   Public
 }
 
+enum MarketplaceEnquiryStatus {
+  New
+  Acknowledged
+  Converted
+  Closed
+}
+
 enum PurchaseOrderStatus {
   Draft
   PendingApproval
@@ -809,6 +816,7 @@ model Organization {
   assetKits                 AssetKit[]
   eventExecutions           EventExecution[]
   financeWorkspaces         EventFinanceWorkspace[]
+  marketplaceEnquiries      MarketplaceEnquiry[]
 
   @@index([slug])
 }
@@ -3069,6 +3077,7 @@ model InventoryItem {
   stockMovements         StockMovement[]
   purchaseOrderLineItems PurchaseOrderLineItem[]
   goodsReceiptLines      GoodsReceiptLine[]
+  marketplaceEnquiries   MarketplaceEnquiry[]
 
   @@unique([organizationId, sku])
   @@unique([organizationId, barcode])
@@ -3084,6 +3093,29 @@ model InventoryItem {
   @@index([marketplaceVisibility])
   @@index([active])
   @@index([name])
+}
+
+model MarketplaceEnquiry {
+  id              String                   @id @default(uuid())
+  organizationId  String
+  inventoryItemId String
+  status          MarketplaceEnquiryStatus @default(New)
+  customerName    String
+  customerEmail   String
+  customerPhone   String?
+  eventDate       DateTime?
+  eventLocation   String?
+  quantity        Float?
+  message         String
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  organization    Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inventoryItem   InventoryItem            @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([inventoryItemId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model StockLevel {

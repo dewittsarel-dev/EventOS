@@ -141,6 +141,8 @@ export function AppShell({ children }: AppShellProps) {
   const [demoSignInBusy, setDemoSignInBusy] = useState(false);
   const [demoSignInError, setDemoSignInError] = useState('');
 
+  const isPublicMarketplace = pathname === '/marketplace' || pathname.startsWith('/marketplace/');
+
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
 
@@ -311,6 +313,10 @@ export function AppShell({ children }: AppShellProps) {
     </nav>
   );
 
+  if (isPublicMarketplace) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#ffffff_0%,_#f4f5f7_38%,_#eceef2_100%)] text-zinc-900">
       <div className="flex min-h-screen w-full overflow-x-hidden">
@@ -349,7 +355,9 @@ export function AppShell({ children }: AppShellProps) {
 
           <div className={`border-t border-zinc-200 p-3 text-xs text-zinc-500 ${isSidebarCollapsed ? 'hidden md:block md:text-center xl:block xl:text-left' : ''}`}>
             <p className={isSidebarCollapsed ? 'md:hidden xl:block' : ''}>
-              Marketplace is a separate customer-facing product.
+              <Link className="underline hover:text-zinc-900" href="/marketplace" target="_blank">
+                Open customer Marketplace
+              </Link>
             </p>
             {isSidebarCollapsed ? <p className="md:block xl:hidden">Later</p> : null}
           </div>
