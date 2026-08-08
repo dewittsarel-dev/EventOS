@@ -174,6 +174,128 @@ enum CommercialPurchaseOrderDraftStatus {
   Generated
 }
 
+enum AssetTrackingMode {
+  Serialized
+  Quantity
+  Batch
+  Kit
+}
+
+enum AssetOwnershipType {
+  BusinessOwned
+  ClientOwned
+  SupplierOwned
+  ThirdPartyOwned
+  Leased
+  Financed
+  PendingConfirmation
+}
+
+enum AssetCreationSource {
+  ManualRegistration
+  ProcurementPurchase
+  SupplierHireIntake
+  ClientAssetIntake
+  StockImport
+  ManufacturingCompletion
+  AssetSplit
+  BatchReceipt
+  SystemIntegration
+  LegacyMigration
+}
+
+enum AssetLifecycleStatus {
+  PendingIntake
+  Active
+  InInspection
+  InMaintenance
+  Quarantined
+  Damaged
+  Lost
+  Stolen
+  WrittenOff
+  Sold
+  ReturnedToOwner
+  Retired
+  Archived
+}
+
+enum AssetMovementType {
+  Intake
+  PutAway
+  Relocation
+  Pick
+  Pack
+  Stage
+  Load
+  Dispatch
+  Deliver
+  Deploy
+  Return
+  Quarantine
+  MaintenanceTransfer
+  Disposal
+}
+
+enum AssetOperationStatus {
+  Draft
+  Ready
+  InProgress
+  Exception
+  Completed
+  Cancelled
+}
+
+enum AssetReservationStatus {
+  Draft
+  Reserved
+  Confirmed
+  Released
+  Fulfilled
+  Cancelled
+}
+
+enum AssetInspectionOutcome {
+  Pass
+  PassWithNotes
+  Fail
+  Quarantine
+}
+
+enum AssetMaintenanceStatus {
+  Draft
+  Approved
+  Scheduled
+  InProgress
+  AwaitingParts
+  Completed
+  Cancelled
+}
+
+enum AssetIncidentType {
+  Damage
+  Loss
+  Missing
+  Theft
+  Failure
+}
+
+enum AssetIncidentStatus {
+  Open
+  Investigating
+  RecoveryInProgress
+  Recovered
+  Resolved
+  WrittenOff
+}
+
+enum AssetDisposalStatus {
+  Proposed
+  Approved
+  Executed
+  Cancelled
+}
+
 enum QuotationStatus {
   Draft
   Sent
@@ -488,6 +610,8 @@ model User {
   commercialWorkspacesCreated      CommercialWorkspace[]      @relation("CommercialWorkspaceCreatedBy")
   commercialRfqsApproved           CommercialRfq[]            @relation("CommercialRfqApprovedBy")
   commercialMessagesAuthored       CommercialMessage[]
+  assetDefinitionsCreated          AssetDefinition[]          @relation("AssetDefinitionCreatedBy")
+  assetInstancesCreated            AssetInstance[]            @relation("AssetInstanceCreatedBy")
 
   @@index([email])
 }
@@ -536,6 +660,10 @@ model Organization {
   moodBoards                MoodBoard[]
   procurementPackages       ProcurementPackage[]
   commercialWorkspaces      CommercialWorkspace[]
+  assetDefinitions          AssetDefinition[]
+  assetInstances            AssetInstance[]
+  assetBatches              AssetBatch[]
+  assetKits                 AssetKit[]
 
   @@index([slug])
 }
@@ -1274,6 +1402,469 @@ model CommercialPurchaseOrderDraftLine {
 
   @@index([commercialPurchaseOrderDraftId])
   @@index([requirementItemId])
+}
+
+model AssetDefinition {
+  id                   String              @id @default(uuid())
+  systemNumber         Int                 @unique @default(autoincrement())
+  organizationId       String
+  assetCode            String
+  name                 String
+  description          String?
+  classification       String
+  category             String
+  subcategory          String?
+  trackingMode         AssetTrackingMode
+  ownershipType        AssetOwnershipType
+  ownershipPartyType   String?
+  ownershipPartyId     String?
+  unitOfMeasure        String
+  creationSource       AssetCreationSource
+  originatingType      String?
+  originatingId        String?
+  family               String?
+  variantAttributes    Json?
+  brand                String?
+  model                String?
+  manufacturer         String?
+  internalSku          String?
+  supplierSku          String?
+  barcode              String?
+  dimensions           String?
+  weight               String?
+  material             String?
+  colour               String?
+  finish               String?
+  handlingRequirements String?
+  replacementValue     Float?
+  capabilityTags       String[]            @default([])
+  quantityOnHand       Float               @default(0)
+  quantityUnavailable  Float               @default(0)
+  media                Json?
+  active               Boolean             @default(true)
+  createdByUserId      String
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  archivedAt           DateTime?
+  organization         Organization        @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  createdBy            User                @relation("AssetDefinitionCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  instances            AssetInstance[]
+  batches              AssetBatch[]
+  kits                 AssetKit[]
+
+  @@unique([organizationId, assetCode])
+  @@unique([organizationId, barcode])
+  @@index([organizationId, classification, category])
+  @@index([trackingMode])
+  @@index([name])
+  @@index([archivedAt])
+}
+
+model AssetInstance {
+  id                       String               @id @default(uuid())
+  systemNumber             Int                  @unique @default(autoincrement())
+  organizationId           String
+  assetDefinitionId        String
+  operationalCode          String
+  manufacturerSerial       String?
+  lifecycleStatus          AssetLifecycleStatus @default(PendingIntake)
+  ownershipType            AssetOwnershipType
+  creationSource           AssetCreationSource
+  qrIdentity               String?              @unique
+  barcodeIdentity          String?
+  nfcIdentity              String?
+  acquisitionDate          DateTime?
+  commissioningDate        DateTime?
+  warrantyExpiryDate       DateTime?
+  replacementValue         Float?
+  conditionGrade           String?
+  currentLocationId        String?
+  currentCustodianType     String?
+  currentCustodianId       String?
+  controlStartDate         DateTime?
+  expectedControlEndDate   DateTime?
+  actualControlEndDate     DateTime?
+  sourceAgreementReference String?
+  parentInstanceId         String?
+  createdByUserId          String
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+  archivedAt               DateTime?
+  organization             Organization         @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  assetDefinition          AssetDefinition      @relation(fields: [assetDefinitionId], references: [id], onDelete: Restrict)
+  createdBy                User                 @relation("AssetInstanceCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  parentInstance           AssetInstance?       @relation("AssetInstanceComponents", fields: [parentInstanceId], references: [id], onDelete: Restrict)
+  childInstances           AssetInstance[]      @relation("AssetInstanceComponents")
+
+  @@unique([organizationId, operationalCode])
+  @@unique([organizationId, manufacturerSerial])
+  @@index([organizationId, lifecycleStatus])
+  @@index([assetDefinitionId])
+  @@index([currentLocationId])
+  @@index([archivedAt])
+}
+
+model AssetBatch {
+  id                String          @id @default(uuid())
+  systemNumber      Int             @unique @default(autoincrement())
+  organizationId    String
+  assetDefinitionId String
+  quantityReceived  Float
+  quantityBalance   Float
+  originReference   String?
+  attributes        Json?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  organization      Organization    @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  assetDefinition   AssetDefinition @relation(fields: [assetDefinitionId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([assetDefinitionId])
+}
+
+model AssetKit {
+  id                String           @id @default(uuid())
+  systemNumber      Int              @unique @default(autoincrement())
+  organizationId    String
+  assetDefinitionId String
+  name              String
+  active            Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  assetDefinition   AssetDefinition  @relation(fields: [assetDefinitionId], references: [id], onDelete: Restrict)
+  members           AssetKitMember[]
+
+  @@index([organizationId])
+  @@index([assetDefinitionId])
+}
+
+model AssetKitMember {
+  id            String    @id @default(uuid())
+  assetKitId    String
+  memberType    String
+  memberId      String
+  quantity      Float     @default(1)
+  effectiveFrom DateTime  @default(now())
+  effectiveTo   DateTime?
+  required      Boolean   @default(true)
+  assetKit      AssetKit  @relation(fields: [assetKitId], references: [id], onDelete: Cascade)
+
+  @@index([assetKitId, effectiveTo])
+  @@index([memberType, memberId])
+}
+
+model AssetIdentityAudit {
+  id             String   @id @default(uuid())
+  organizationId String
+  entityType     String
+  entityId       String
+  action         String
+  previousValue  Json?
+  newValue       Json?
+  reason         String?
+  sourceAction   String
+  relatedType    String?
+  relatedId      String?
+  userId         String
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([entityType, entityId, createdAt])
+  @@index([userId])
+}
+
+model AssetLocation {
+  id                String          @id @default(uuid())
+  organizationId    String
+  storageLocationId String?
+  parentLocationId  String?
+  code              String
+  name              String
+  locationType      String
+  barcode           String?
+  qrIdentity        String?
+  capacity          Float?
+  capacityUnit      String?
+  handlingRules     Json?
+  active            Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  parentLocation    AssetLocation?  @relation("AssetLocationHierarchy", fields: [parentLocationId], references: [id], onDelete: Restrict)
+  childLocations    AssetLocation[] @relation("AssetLocationHierarchy")
+
+  @@unique([organizationId, code])
+  @@unique([organizationId, qrIdentity])
+  @@index([organizationId, active])
+  @@index([storageLocationId])
+  @@index([parentLocationId])
+}
+
+model AssetMovement {
+  id                String            @id @default(uuid())
+  organizationId    String
+  assetEntityType   String
+  assetEntityId     String
+  movementType      AssetMovementType
+  quantity          Float             @default(1)
+  fromLocationId    String?
+  toLocationId      String?
+  fromCustodianType String?
+  fromCustodianId   String?
+  toCustodianType   String?
+  toCustodianId     String?
+  eventId           String?
+  referenceType     String?
+  referenceId       String?
+  reason            String?
+  evidence          Json?
+  performedByUserId String
+  occurredAt        DateTime          @default(now())
+  recordedAt        DateTime          @default(now())
+
+  @@index([organizationId, occurredAt])
+  @@index([assetEntityType, assetEntityId, occurredAt])
+  @@index([eventId])
+  @@index([fromLocationId])
+  @@index([toLocationId])
+}
+
+model AssetQrEvent {
+  id                String    @id @default(uuid())
+  organizationId    String
+  qrIdentity        String
+  assetEntityType   String
+  assetEntityId     String
+  action            String
+  locationId        String?
+  eventId           String?
+  deviceId          String?
+  offlineRecordedAt DateTime?
+  synchronizedAt    DateTime?
+  latitude          Float?
+  longitude         Float?
+  evidence          Json?
+  scannedByUserId   String
+  createdAt         DateTime  @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([qrIdentity, createdAt])
+  @@index([assetEntityType, assetEntityId, createdAt])
+  @@index([eventId])
+}
+
+model AssetReservation {
+  id                String                 @id @default(uuid())
+  organizationId    String
+  eventId           String
+  requirementItemId String
+  assetDefinitionId String
+  assetInstanceId   String?
+  quantity          Float
+  startDateTime     DateTime
+  endDateTime       DateTime
+  status            AssetReservationStatus @default(Draft)
+  priority          Int                    @default(0)
+  overrideReason    String?
+  approvedByUserId  String?
+  approvedAt        DateTime?
+  createdByUserId   String
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  @@index([organizationId, eventId])
+  @@index([requirementItemId])
+  @@index([assetDefinitionId, startDateTime, endDateTime, status])
+  @@index([assetInstanceId, startDateTime, endDateTime, status])
+}
+
+model AssetOperation {
+  id               String               @id @default(uuid())
+  organizationId   String
+  eventId          String?
+  operationType    String
+  status           AssetOperationStatus @default(Draft)
+  sourceLocationId String?
+  targetLocationId String?
+  assignedTeamId   String?
+  plannedStart     DateTime?
+  plannedEnd       DateTime?
+  actualStart      DateTime?
+  actualEnd        DateTime?
+  approvedByUserId String?
+  approvedAt       DateTime?
+  exceptionNotes   String?
+  createdByUserId  String
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  lines            AssetOperationLine[]
+
+  @@index([organizationId, status])
+  @@index([eventId, operationType])
+}
+
+model AssetOperationLine {
+  id                 String         @id @default(uuid())
+  assetOperationId   String
+  requirementItemId  String?
+  assetEntityType    String
+  assetEntityId      String
+  quantityPlanned    Float
+  quantityCompleted  Float          @default(0)
+  sequence           Int            @default(0)
+  verificationMethod String?
+  evidence           Json?
+  assetOperation     AssetOperation @relation(fields: [assetOperationId], references: [id], onDelete: Cascade)
+
+  @@index([assetOperationId, sequence])
+  @@index([assetEntityType, assetEntityId])
+  @@index([requirementItemId])
+}
+
+model AssetDeployment {
+  id                String    @id @default(uuid())
+  organizationId    String
+  eventId           String
+  requirementItemId String?
+  assetEntityType   String
+  assetEntityId     String
+  quantity          Float     @default(1)
+  deploymentArea    String?
+  setupStatus       String
+  deployedAt        DateTime?
+  verifiedAt        DateTime?
+  returnedAt        DateTime?
+  custodianUserId   String?
+  conditionAtDeploy String?
+  conditionAtReturn String?
+  evidence          Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([organizationId, eventId])
+  @@index([assetEntityType, assetEntityId])
+  @@index([requirementItemId])
+}
+
+model AssetInspection {
+  id                String                 @id @default(uuid())
+  organizationId    String
+  assetEntityType   String
+  assetEntityId     String
+  inspectionType    String
+  outcome           AssetInspectionOutcome
+  checklistVersion  String?
+  responses         Json?
+  conditionGrade    String?
+  notes             String?
+  evidence          Json?
+  eventId           String?
+  performedByUserId String
+  performedAt       DateTime               @default(now())
+
+  @@index([organizationId, performedAt])
+  @@index([assetEntityType, assetEntityId, performedAt])
+  @@index([eventId])
+}
+
+model AssetMaintenanceWorkOrder {
+  id                 String                 @id @default(uuid())
+  systemNumber       Int                    @unique @default(autoincrement())
+  organizationId     String
+  assetEntityType    String
+  assetEntityId      String
+  maintenanceType    String
+  status             AssetMaintenanceStatus @default(Draft)
+  priority           String
+  description        String
+  scheduledStart     DateTime?
+  scheduledEnd       DateTime?
+  completedAt        DateTime?
+  assignedSupplierId String?
+  assignedUserId     String?
+  estimatedCost      Float?
+  actualCost         Float?
+  parts              Json?
+  completionNotes    String?
+  approvedByUserId   String?
+  approvedAt         DateTime?
+  createdByUserId    String
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  @@index([organizationId, status])
+  @@index([assetEntityType, assetEntityId])
+  @@index([scheduledStart])
+}
+
+model AssetIncident {
+  id                 String              @id @default(uuid())
+  systemNumber       Int                 @unique @default(autoincrement())
+  organizationId     String
+  eventId            String?
+  assetEntityType    String
+  assetEntityId      String
+  incidentType       AssetIncidentType
+  status             AssetIncidentStatus @default(Open)
+  quantity           Float               @default(1)
+  occurredAt         DateTime
+  reportedAt         DateTime            @default(now())
+  locationId         String?
+  custodianType      String?
+  custodianId        String?
+  description        String
+  evidence           Json?
+  estimatedLoss      Float?
+  recoveryAmount     Float?
+  liabilityPartyType String?
+  liabilityPartyId   String?
+  resolutionNotes    String?
+  reportedByUserId   String
+  resolvedByUserId   String?
+  resolvedAt         DateTime?
+
+  @@index([organizationId, status])
+  @@index([assetEntityType, assetEntityId])
+  @@index([eventId])
+}
+
+model AssetDisposal {
+  id               String              @id @default(uuid())
+  organizationId   String
+  assetEntityType  String
+  assetEntityId    String
+  status           AssetDisposalStatus @default(Proposed)
+  disposalMethod   String
+  reason           String
+  proposedValue    Float?
+  realisedValue    Float?
+  proposedByUserId String
+  proposedAt       DateTime            @default(now())
+  approvedByUserId String?
+  approvedAt       DateTime?
+  executedByUserId String?
+  executedAt       DateTime?
+  evidence         Json?
+
+  @@index([organizationId, status])
+  @@index([assetEntityType, assetEntityId])
+}
+
+model AssetGovernanceException {
+  id               String    @id @default(uuid())
+  organizationId   String
+  exceptionType    String
+  severity         String
+  entityType       String
+  entityId         String
+  details          Json?
+  detectedAt       DateTime  @default(now())
+  resolvedAt       DateTime?
+  resolvedByUserId String?
+  resolutionNotes  String?
+
+  @@index([organizationId, resolvedAt, severity])
+  @@index([entityType, entityId])
 }
 
 model Quotation {

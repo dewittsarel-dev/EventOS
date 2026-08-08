@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { AssetManagementModule } from './asset-management/asset-management.module';
 import { CapabilityModule } from './capabilities/capability.module';
 import { CommercialWorkspacesModule } from './commercial-workspaces/commercial-workspaces.module';
 import { ContactsModule } from './contacts/contacts.module';
@@ -38,6 +39,7 @@ import { PrismaModule } from './prisma/prisma.module';
     PrismaModule,
     OrganizationModule,
     AuthModule,
+    AssetManagementModule,
     DashboardModule,
     ContactsModule,
     MarketplaceModule,
