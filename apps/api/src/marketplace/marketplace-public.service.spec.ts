@@ -51,7 +51,9 @@ describe('MarketplacePublicService', () => {
         organization: {
           tradingName: 'Celebrations',
           name: 'Celebrations Pty',
+          slug: 'celebrations',
           logoUrl: null,
+          website: 'https://celebrations.example',
         },
       },
     ]);
@@ -61,6 +63,7 @@ describe('MarketplacePublicService', () => {
     expect(result.items[0]).toMatchObject({
       title: 'Gold Chair',
       supplierName: 'Celebrations',
+      supplierSlug: 'celebrations',
       categoryName: 'Furniture',
     });
     expect(prisma.resource.findMany).toHaveBeenCalledWith(
@@ -74,6 +77,31 @@ describe('MarketplacePublicService', () => {
       }),
     );
     expect(result.items[0]).not.toHaveProperty('costPrice');
+  });
+
+  it('applies public category, type and supplier filters', async () => {
+    prisma.resource.findMany.mockResolvedValue([]);
+    prisma.resource.count.mockResolvedValue(0);
+
+    await service.findListings({
+      page: 1,
+      limit: 24,
+      category: 'Furniture',
+      resourceType: 'ASSET',
+      supplier: 'celebrations',
+    });
+
+    expect(prisma.resource.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        // Jest's asymmetric matcher is intentionally dynamic in this assertion.
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        where: expect.objectContaining({
+          category: { equals: 'Furniture', mode: 'insensitive' },
+          resourceType: 'ASSET',
+          organization: { slug: 'celebrations' },
+        }),
+      }),
+    );
   });
 
   it('creates an enquiry against the published listing owner', async () => {

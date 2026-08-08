@@ -3,8 +3,10 @@ export type MarketplaceListing = {
   title: string | null;
   description: string | null;
   supplierName: string;
+  supplierSlug: string;
   categoryName: string;
   supplierLogoUrl: string | null;
+  supplierWebsite: string | null;
   tags: string[];
   photoUrls: string[];
   primaryPhotoUrl: string | null;

@@ -1,4 +1,4 @@
-import type { MarketplaceEnquiry, MarketplaceListingPage } from './marketplace-public-types';
+import type { MarketplaceEnquiry, MarketplaceListing, MarketplaceListingPage } from './marketplace-public-types';
 
 const apiBaseUrl = () => (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001').replace(/\/$/, '');
 
@@ -11,12 +11,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-export function listMarketplaceListings(params: { search?: string; page?: number; limit?: number }) {
+export function listMarketplaceListings(params: { search?: string; category?: string; resourceType?: string; supplier?: string; page?: number; limit?: number }) {
   const query = new URLSearchParams();
   if (params.search) query.set('search', params.search);
+  if (params.category) query.set('category', params.category);
+  if (params.resourceType) query.set('resourceType', params.resourceType);
+  if (params.supplier) query.set('supplier', params.supplier);
   if (params.page) query.set('page', String(params.page));
   if (params.limit) query.set('limit', String(params.limit));
   return request<MarketplaceListingPage>(`/public/marketplace/listings?${query}`);
+}
+
+export function getMarketplaceListing(id: string) {
+  return request<MarketplaceListing>(`/public/marketplace/listings/${encodeURIComponent(id)}`);
 }
 
 export function createMarketplaceEnquiry(payload: { resourceId: string; customerName: string; customerEmail: string; customerPhone?: string; eventDate?: string; eventLocation?: string; quantity?: number; message: string }) {

@@ -1,6 +1,7 @@
 import { Transform, Type } from 'class-transformer';
 import {
   IsInt,
+  IsIn,
   IsOptional,
   IsString,
   Max,
@@ -16,6 +17,34 @@ export class FindMarketplaceListingsQueryDto {
   @IsString()
   @MaxLength(120)
   search?: string;
+
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  category?: string;
+
+  @IsOptional()
+  @IsIn([
+    'ASSET',
+    'BULK_ITEM',
+    'CONSUMABLE',
+    'SERVICE',
+    'STAFF',
+    'VEHICLE',
+    'VENUE',
+  ])
+  resourceType?: string;
+
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' ? value.trim() : value,
+  )
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  supplier?: string;
 
   @Type(() => Number)
   @IsOptional()

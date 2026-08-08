@@ -4,6 +4,7 @@ import {
   Prisma,
   ResourceQuantityMode,
   ResourceStatus,
+  ResourceType,
   ResourceVisibility,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -33,7 +34,13 @@ const publicListingSelect = {
     select: { quantity: true, startDateTime: true, endDateTime: true },
   },
   organization: {
-    select: { tradingName: true, name: true, logoUrl: true },
+    select: {
+      tradingName: true,
+      name: true,
+      slug: true,
+      logoUrl: true,
+      website: true,
+    },
   },
 } satisfies Prisma.ResourceSelect;
 
@@ -48,6 +55,13 @@ export class MarketplacePublicService {
       archivedAt: null,
       visibility: ResourceVisibility.MARKETPLACE,
       status: { not: ResourceStatus.RETIRED },
+      ...(query.category
+        ? { category: { equals: query.category, mode: 'insensitive' } }
+        : {}),
+      ...(query.resourceType
+        ? { resourceType: query.resourceType as ResourceType }
+        : {}),
+      ...(query.supplier ? { organization: { slug: query.supplier } } : {}),
       ...(query.search
         ? {
             OR: [
@@ -239,7 +253,9 @@ export class MarketplacePublicService {
       title: item.name,
       description: item.description,
       supplierName: item.organization.tradingName || item.organization.name,
+      supplierSlug: item.organization.slug,
       supplierLogoUrl: item.organization.logoUrl,
+      supplierWebsite: this.publicWebsite(item.organization.website),
       categoryName: item.category,
       tags: item.tags,
       photoUrls: item.imageUrls,
@@ -249,5 +265,17 @@ export class MarketplacePublicService {
       resourceType: item.resourceType,
       availabilityStatus,
     };
+  }
+
+  private publicWebsite(value: string | null) {
+    if (!value) return null;
+    try {
+      const url = new URL(value);
+      return url.protocol === 'https:' || url.protocol === 'http:'
+        ? url.toString()
+        : null;
+    } catch {
+      return null;
+    }
   }
 }

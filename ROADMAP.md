@@ -116,7 +116,8 @@ The repository now contains the verified backend architecture from M004 through 
 
 - Public catalogue and enquiry intake are implemented over explicitly published data.
 - ClientOS suppliers can create and edit Resource Engine records, explicitly publish or unpublish them, preview the public product, reply to enquiries and record audited enquiry outcomes privately.
-- Booking conversion, customer accounts, payments and richer discovery remain refinement work after the first-draft checkpoint; no booking or payment is created silently from an enquiry.
+- Booking conversion, customer accounts and payments remain refinement work after the first-draft checkpoint; no booking or payment is created silently from an enquiry.
+- Marketplace discovery refinement — COMPLETE: customers can filter published resources by category and type, open rich listing details, browse supplier public catalogues and send listing-specific enquiries while private operational fields remain excluded.
 
 ### End-to-End and Deployment Readiness — IN PROGRESS
 

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createMarketplaceEnquiry, listMarketplaceListings, updateMarketplaceEnquiryStatus } from './marketplace-public-api';
+import { createMarketplaceEnquiry, getMarketplaceListing, listMarketplaceListings, updateMarketplaceEnquiryStatus } from './marketplace-public-api';
 
 describe('marketplace-public-api', () => {
   afterEach(() => vi.restoreAllMocks());
@@ -10,6 +10,16 @@ describe('marketplace-public-api', () => {
     expect(fetchMock).toHaveBeenCalledWith('http://localhost:3001/public/marketplace/listings?search=chairs', expect.objectContaining({ cache: 'no-store' }));
     const init = fetchMock.mock.calls[0][1] as RequestInit;
     expect(init.headers).not.toHaveProperty('Authorization');
+  });
+
+  it('loads filtered listings and a public listing detail', async () => {
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'listing-1' }), { status: 200 }));
+    await listMarketplaceListings({ category: 'Furniture', resourceType: 'ASSET', supplier: 'celebrations' });
+    expect(fetchMock).toHaveBeenLastCalledWith('http://localhost:3001/public/marketplace/listings?category=Furniture&resourceType=ASSET&supplier=celebrations', expect.any(Object));
+    await getMarketplaceListing('listing-1');
+    expect(fetchMock).toHaveBeenLastCalledWith('http://localhost:3001/public/marketplace/listings/listing-1', expect.any(Object));
   });
 
   it('sends an enquiry to the public intake endpoint', async () => {

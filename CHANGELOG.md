@@ -13,6 +13,15 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — Marketplace Discovery Refinement
+
+- Added public category, resource-type and supplier filters over explicitly published Resource Engine records.
+- Added dedicated listing detail pages with multi-image galleries, public pricing/availability guidance, supplier identity and direct enquiry intake.
+- Added public supplier catalogue pages using only approved organization identity and published resources.
+- Restricted public supplier website links to HTTP/HTTPS and preserved the exclusion of costs, exact quantities, internal notes and operational records.
+- Verified the real local journey from catalogue to listing detail to supplier catalogue with the demo Resource Engine listing and no horizontal overflow.
+- Verification status: all 49 web test files and 109 tests passed; web build and lint passed; all 30 API suites and 162 tests passed; API build and lint passed.
+
 ### 2026-08-08 — ClientOS and Marketplace Responsive Foundation
 
 - Made action-heavy page headers horizontally accessible on phones while preserving wrapped desktop actions.
