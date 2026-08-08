@@ -7,6 +7,7 @@ import { PageHeader } from '../../../../components/app-shell/page-header';
 import { useAppSession } from '../../../../components/app-shell/session-context';
 import { RequirementSetEditor } from '../../../../components/events/requirement-set-editor';
 import { RequirementHistory } from '../../../../components/events/requirement-history';
+import { RequirementImpactPanel } from '../../../../components/events/requirement-impact-panel';
 import {
   approveEventDesign,
   approveRequirementSet,
@@ -14,9 +15,10 @@ import {
   createEventDesign,
   listClientBriefs,
   listEventDesigns,
+  listRequirementImpactReports,
   listRequirementSets,
 } from '../../../../lib/event-planning-api';
-import type { ClientBriefVersion, EventDesignVersion, RequirementSet } from '../../../../lib/event-planning-types';
+import type { ClientBriefVersion, EventDesignVersion, RequirementImpactReport, RequirementSet } from '../../../../lib/event-planning-types';
 
 const fieldClass = 'rounded-md border border-zinc-300 px-3 py-2 text-sm';
 
@@ -28,6 +30,7 @@ export default function EventPlanningPage() {
   const [briefs, setBriefs] = useState<ClientBriefVersion[]>([]);
   const [designs, setDesigns] = useState<EventDesignVersion[]>([]);
   const [sets, setSets] = useState<RequirementSet[]>([]);
+  const [impactReports, setImpactReports] = useState<RequirementImpactReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -38,14 +41,16 @@ export default function EventPlanningPage() {
     setError('');
     try {
       const requestOptions = { token: session.token, baseUrl: session.baseUrl };
-      const [briefRows, designRows, setRows] = await Promise.all([
+      const [briefRows, designRows, setRows, impactRows] = await Promise.all([
         listClientBriefs(requestOptions, eventId),
         listEventDesigns(requestOptions, eventId),
         listRequirementSets(requestOptions, eventId),
+        listRequirementImpactReports(requestOptions, eventId),
       ]);
       setBriefs(briefRows);
       setDesigns(designRows);
       setSets(setRows);
+      setImpactReports(impactRows);
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Failed to load planning workspace.');
     } finally {
@@ -159,6 +164,18 @@ export default function EventPlanningPage() {
           token={session.token}
           baseUrl={session.baseUrl}
           sets={sets}
+          onError={setError}
+          onChanged={async (nextMessage) => {
+            setMessage(nextMessage);
+            await load();
+          }}
+        />
+        <RequirementImpactPanel
+          eventId={eventId}
+          token={session.token}
+          baseUrl={session.baseUrl}
+          sets={sets}
+          reports={impactReports}
           onError={setError}
           onChanged={async (nextMessage) => {
             setMessage(nextMessage);

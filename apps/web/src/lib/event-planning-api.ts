@@ -5,6 +5,7 @@ import type {
   EventDesignVersion,
   RequirementSet,
   RequirementSetInput,
+  RequirementImpactReport,
 } from './event-planning-types';
 
 type Options = { token: string; baseUrl: string };
@@ -67,4 +68,29 @@ export const overrideRequirementQuantity = (
   options,
   `/events/${eventId}/requirement-sets/${setId}/quantity-override`,
   { method: 'POST', body: JSON.stringify(input) },
+);
+
+export const listRequirementImpactReports = (options: Options, eventId: string) =>
+  request<RequirementImpactReport[]>(options, `/events/${eventId}/requirement-sets/impact-reports/all`);
+
+export const createRequirementImpactReport = (
+  options: Options,
+  eventId: string,
+  setId: string,
+  proposedItems: Array<Record<string, unknown>>,
+) => request<RequirementImpactReport>(
+  options,
+  `/events/${eventId}/requirement-sets/${setId}/impact-reports`,
+  { method: 'POST', body: JSON.stringify({ proposedItems }) },
+);
+
+export const applyRequirementImpactReport = (
+  options: Options,
+  eventId: string,
+  reportId: string,
+  decisions: Array<{ changeId: string; decision: 'Apply' | 'KeepCurrent' }>,
+) => request<RequirementSet>(
+  options,
+  `/events/${eventId}/requirement-sets/impact-reports/${reportId}/apply`,
+  { method: 'POST', body: JSON.stringify({ decisions }) },
 );

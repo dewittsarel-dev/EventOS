@@ -13,6 +13,13 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — Requirement Impact Review
+
+- Added approved-baseline quantity comparison through M005 Requirement Impact Reports.
+- Displays affected requirement codes, current and proposed quantities, change type and downstream procurement-review consequences.
+- Requires an explicit Apply or Keep Current decision for every reported change before the API creates a new Requirement Set version.
+- Verification status: all 31 web test files and 84 tests passed; web lint and production build passed; existing Requirement Impact API coverage remained green.
+
 ### 2026-08-08 — Controlled Requirement Quantity Overrides
 
 - Added item-level quantity override controls to Requirement Set history.

@@ -101,7 +101,8 @@ The repository now contains the verified backend architecture from M004 through 
 - Event Design and Requirements foundation — COMPLETE: immutable Client Brief and Event Design versions, explicit approvals and initial Requirement Set creation are available from the event workspace.
 - Multi-item Requirement Set authoring — COMPLETE: planners can author multiple products, services and resources together with explicit direct, calculated or design dependencies.
 - Controlled quantity overrides — COMPLETE: planners can create a new auditable Requirement Set version for a changed quantity only when an explicit reason is supplied.
-- Requirement impact controls — NEXT: compare proposed requirement changes and record explicit apply-or-keep decisions.
+- Requirement impact controls — COMPLETE: proposed quantities are compared with an approved baseline and every reported change requires an explicit planner apply-or-keep decision before a new version is created.
+- Mood Board Studio interface — NEXT: visual concept creation, governed asset sourcing, collaboration and explicit approval over the recovered M006 API.
 
 ### Marketplace Product Interface — PLANNED
 

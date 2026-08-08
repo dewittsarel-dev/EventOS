@@ -55,6 +55,29 @@ export type RequirementSet = {
   createdAt: string;
 };
 
+export type RequirementImpactChange = {
+  id: string;
+  requirementCode: string;
+  changeType: 'Added' | 'Removed' | 'Changed' | 'QuantityChanged' | 'OverrideProtected';
+  previousItem: Record<string, unknown> | null;
+  proposedItem: Record<string, unknown> | null;
+  decision: 'Pending' | 'Apply' | 'KeepCurrent';
+};
+
+export type RequirementImpactReport = {
+  id: string;
+  baselineRequirementSetId: string;
+  status: 'PendingReview' | 'Applied' | 'Cancelled';
+  affectedItems: number;
+  newItems: number;
+  removedItems: number;
+  plannerOverrides: number;
+  requiresProcurementReview: boolean;
+  businessImpact: Record<string, unknown>;
+  changes: RequirementImpactChange[];
+  createdAt: string;
+};
+
 export type ClientBriefInput = {
   clientName: string;
   eventName: string;

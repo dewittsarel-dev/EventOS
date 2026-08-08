@@ -5,6 +5,7 @@ import EventPlanningPage from './page';
 const listClientBriefs = vi.fn();
 const listEventDesigns = vi.fn();
 const listRequirementSets = vi.fn();
+const listRequirementImpactReports = vi.fn();
 
 vi.mock('next/navigation', () => ({ useParams: () => ({ id: 'event-1' }) }));
 
@@ -22,6 +23,7 @@ vi.mock('../../../../lib/event-planning-api', () => ({
   listClientBriefs: (...args: unknown[]) => listClientBriefs(...args),
   listEventDesigns: (...args: unknown[]) => listEventDesigns(...args),
   listRequirementSets: (...args: unknown[]) => listRequirementSets(...args),
+  listRequirementImpactReports: (...args: unknown[]) => listRequirementImpactReports(...args),
   createClientBrief: vi.fn(),
   createEventDesign: vi.fn(),
   createRequirementSet: vi.fn(),
@@ -51,6 +53,7 @@ describe('EventPlanningPage', () => {
         items: [{ id: 'item-1' }],
       },
     ]);
+    listRequirementImpactReports.mockResolvedValue([]);
   });
 
   it('shows the versioned brief, design, and requirement workflow', async () => {
