@@ -12,6 +12,8 @@ import {
 } from 'react';
 import {
   APP_NAV_ROUTES,
+  OPERATIONS_NAV_ROUTES,
+  PRIMARY_NAV_ROUTES,
   buildBreadcrumbs,
   routeTitle,
 } from './route-meta';
@@ -49,7 +51,7 @@ type AppShellProps = {
 };
 
 function navIcon(label: string) {
-  if (label === 'Dashboard') {
+  if (label === 'Home') {
     return DashboardIcon;
   }
 
@@ -81,8 +83,16 @@ function navIcon(label: string) {
     return PurchaseOrdersIcon;
   }
 
-  if (label === 'Tasks') {
+  if (label === 'Activity') {
     return TasksIcon;
+  }
+
+  if (label === 'Documents') {
+    return MeetingNotesIcon;
+  }
+
+  if (label === 'Settings') {
+    return UserIcon;
   }
 
   return MarketplaceIcon;
@@ -262,9 +272,8 @@ export function AppShell({ children }: AppShellProps) {
     }
   }
 
-  const nav = (
-    <nav aria-label="Main navigation" className="mt-6 space-y-1">
-      {APP_NAV_ROUTES.map((item) => {
+  function navLinks(items: typeof APP_NAV_ROUTES) {
+    return items.map((item) => {
         const isActive = isActiveRoute(item.href);
         const Icon = navIcon(item.label);
 
@@ -287,7 +296,18 @@ export function AppShell({ children }: AppShellProps) {
             </span>
           </Link>
         );
-      })}
+      });
+  }
+
+  const nav = (
+    <nav aria-label="Main navigation" className="mt-6 space-y-1">
+      {navLinks(PRIMARY_NAV_ROUTES)}
+      <div className="pb-1 pt-5">
+        <p className={`px-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 ${isSidebarCollapsed ? 'md:hidden xl:block' : ''}`}>
+          Operational tools
+        </p>
+      </div>
+      {navLinks(OPERATIONS_NAV_ROUTES)}
     </nav>
   );
 
@@ -329,7 +349,7 @@ export function AppShell({ children }: AppShellProps) {
 
           <div className={`border-t border-zinc-200 p-3 text-xs text-zinc-500 ${isSidebarCollapsed ? 'hidden md:block md:text-center xl:block xl:text-left' : ''}`}>
             <p className={isSidebarCollapsed ? 'md:hidden xl:block' : ''}>
-              Marketplace launches in a future phase.
+              Marketplace is a separate customer-facing product.
             </p>
             {isSidebarCollapsed ? <p className="md:block xl:hidden">Later</p> : null}
           </div>

@@ -5,22 +5,27 @@ export type AppRouteMeta = {
   placeholder?: boolean;
 };
 
-export const APP_NAV_ROUTES: AppRouteMeta[] = [
-  { href: '/', label: 'Dashboard', section: 'Overview' },
+export const PRIMARY_NAV_ROUTES: AppRouteMeta[] = [
+  { href: '/', label: 'Home', section: 'Primary' },
+  { href: '/events', label: 'Events', section: 'Primary' },
+  { href: '/documents', label: 'Documents', section: 'Primary', placeholder: true },
+  { href: '/tasks', label: 'Activity', section: 'Primary' },
+  { href: '/settings/organization', label: 'Settings', section: 'Primary' },
+];
+
+export const OPERATIONS_NAV_ROUTES: AppRouteMeta[] = [
   { href: '/contacts', label: 'Contacts', section: 'Operations' },
-  { href: '/events', label: 'Events', section: 'Operations' },
   { href: '/meeting-notes', label: 'Meeting Notes', section: 'Operations' },
   { href: '/suppliers', label: 'Suppliers', section: 'Operations' },
   { href: '/inventory', label: 'Resources', section: 'Operations' },
   { href: '/purchase-orders', label: 'Purchase Orders', section: 'Operations' },
   { href: '/quotations', label: 'Quotations', section: 'Operations' },
-  { href: '/tasks', label: 'Tasks', section: 'Operations' },
-  {
-    href: '/marketplace',
-    label: 'Marketplace',
-    section: 'Growth',
-    placeholder: true,
-  },
+];
+
+export const APP_NAV_ROUTES = [
+  ...PRIMARY_NAV_ROUTES,
+  ...OPERATIONS_NAV_ROUTES,
+  { href: '/marketplace', label: 'Marketplace', section: 'Separate surface' },
 ];
 
 function prettifySegment(segment: string) {
@@ -46,10 +51,10 @@ export function buildBreadcrumbs(pathname: string) {
   const segments = pathname.split('/').filter(Boolean);
 
   if (segments.length === 0) {
-    return [{ href: '/', label: 'Dashboard' }];
+    return [{ href: '/', label: 'Home' }];
   }
 
-  const crumbs = [{ href: '/', label: 'Dashboard' }];
+  const crumbs = [{ href: '/', label: 'Home' }];
 
   let current = '';
 

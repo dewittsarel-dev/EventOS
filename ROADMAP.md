@@ -94,6 +94,8 @@ The repository now contains the verified backend architecture from M004 through 
 
 - Build the private operational experience over the verified M004–M011 APIs.
 - Prioritise focused vertical slices and role-appropriate workflows.
+- ClientOS navigation alignment — COMPLETE: five calm primary destinations now separate user intent from supporting operational tools, and Marketplace is no longer presented as part of the private operating surface.
+- Decision-first Home experience — NEXT: prioritised attention, explanation and action rather than a collection of database statistics.
 - Event Lifecycle workspace — COMPLETE: event details now show M004–M011 continuity, blockers and controlled synchronization without automating approvals.
 - Event Design and Requirements foundation — COMPLETE: immutable Client Brief and Event Design versions, explicit approvals and initial Requirement Set creation are available from the event workspace.
 - Requirement authoring and impact controls — NEXT: multi-item authoring, dependencies, quantity overrides and impact-report decisions.

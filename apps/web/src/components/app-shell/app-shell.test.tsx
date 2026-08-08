@@ -51,7 +51,10 @@ describe('AppShell', () => {
 
     const nav = screen.getByRole('navigation', { name: 'Main navigation' });
 
-    expect(within(nav).getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Home' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Documents (Coming Soon)' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Activity' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Settings' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Contacts' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Meeting Notes' })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: 'Suppliers' })).toBeInTheDocument();

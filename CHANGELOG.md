@@ -13,6 +13,14 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — ClientOS Navigation Alignment
+
+- Replaced the database-oriented flat navigation with five primary user destinations: Home, Events, Documents, Activity and Settings.
+- Kept existing contacts, meeting notes, suppliers, resources, purchasing and quotations available as supporting operational tools.
+- Removed Marketplace from the private ClientOS navigation model while preserving its existing route for later development as a separate customer-facing surface.
+- Added the Documents destination as an explicit relationship-based capability boundary without inventing document persistence before its backend slice exists.
+- Verification status: all 28 web test files and 81 tests passed; web lint passed; production web build passed; API regression verification passed.
+
 ### 2026-08-08 — ClientOS Event Design and Requirements Foundation
 
 - Added an authenticated event-planning workspace for immutable Client Brief versions, Event Design versions and Requirement Sets.

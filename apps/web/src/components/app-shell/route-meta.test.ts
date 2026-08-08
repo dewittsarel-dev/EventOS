@@ -1,29 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { APP_NAV_ROUTES, buildBreadcrumbs, routeTitle } from './route-meta';
+import {
+  APP_NAV_ROUTES,
+  OPERATIONS_NAV_ROUTES,
+  PRIMARY_NAV_ROUTES,
+  buildBreadcrumbs,
+  routeTitle,
+} from './route-meta';
 
 describe('route meta', () => {
   it('contains all primary navigation routes', () => {
-    const paths = APP_NAV_ROUTES.map((route) => route.href);
+    const paths = PRIMARY_NAV_ROUTES.map((route) => route.href);
 
     expect(paths).toEqual([
       '/',
-      '/contacts',
       '/events',
-      '/meeting-notes',
-      '/suppliers',
-      '/inventory',
-      '/purchase-orders',
-      '/quotations',
+      '/documents',
       '/tasks',
-      '/marketplace',
+      '/settings/organization',
     ]);
+    expect(OPERATIONS_NAV_ROUTES.map((route) => route.href)).toContain('/purchase-orders');
+    expect(APP_NAV_ROUTES.map((route) => route.href)).toContain('/marketplace');
   });
 
   it('builds breadcrumbs including dashboard root', () => {
     const crumbs = buildBreadcrumbs('/tasks/timeline');
 
     expect(crumbs).toEqual([
-      { href: '/', label: 'Dashboard' },
+      { href: '/', label: 'Home' },
       { href: '/tasks', label: 'Tasks' },
       { href: '/tasks/timeline', label: 'Timeline' },
     ]);
@@ -35,5 +38,6 @@ describe('route meta', () => {
     expect(routeTitle('/purchase-orders/123')).toBe('Purchase Orders');
     expect(routeTitle('/quotations')).toBe('Quotations');
     expect(routeTitle('/marketplace')).toBe('Marketplace');
+    expect(routeTitle('/documents')).toBe('Documents');
   });
 });
