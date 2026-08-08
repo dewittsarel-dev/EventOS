@@ -99,7 +99,8 @@ The repository now contains the verified backend architecture from M004 through 
 - Contextual Event workspace — COMPLETE: each event now explains its lifecycle health, current stage, first blocker and next relevant action from server-owned continuity rules.
 - Event Lifecycle workspace — COMPLETE: event details now show M004–M011 continuity, blockers and controlled synchronization without automating approvals.
 - Event Design and Requirements foundation — COMPLETE: immutable Client Brief and Event Design versions, explicit approvals and initial Requirement Set creation are available from the event workspace.
-- Requirement authoring and impact controls — NEXT: multi-item authoring, dependencies, quantity overrides and impact-report decisions.
+- Multi-item Requirement Set authoring — COMPLETE: planners can author multiple products, services and resources together with explicit direct, calculated or design dependencies.
+- Requirement overrides and impact controls — NEXT: planner quantity overrides and explicit impact-report decisions.
 
 ### Marketplace Product Interface — PLANNED
 

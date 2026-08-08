@@ -13,6 +13,13 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — Multi-Item Requirement Set Authoring
+
+- Replaced single-item Requirement Set creation with a practical multi-item editor for products, services and resources.
+- Added explicit source-to-target dependency authoring with direct, calculated and design dependency levels.
+- Preserved the Requirement Engine as the authority for item numbering, versioning and dependency-graph validation.
+- Verification status: all 29 web test files and 82 tests passed; web lint passed without warnings; production web build passed; unchanged API regression checks remained green.
+
 ### 2026-08-08 — Contextual ClientOS Event Workspace
 
 - Added server-owned event health, current-stage and next-action guidance to lifecycle continuity.

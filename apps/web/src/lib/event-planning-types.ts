@@ -92,4 +92,10 @@ export type RequirementSetInput = {
     quantitySource: 'Manual';
     fulfilmentStrategy?: 'OwnInventory' | 'Marketplace' | 'ExternalSupplier' | 'Hybrid' | 'Undecided';
   }>;
+  dependencies?: Array<{
+    sourceItemNumber: number;
+    targetItemNumber: number;
+    level: 'Direct' | 'Calculated' | 'Design';
+    description?: string;
+  }>;
 };

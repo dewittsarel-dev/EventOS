@@ -5,12 +5,12 @@ import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { PageHeader } from '../../../../components/app-shell/page-header';
 import { useAppSession } from '../../../../components/app-shell/session-context';
+import { RequirementSetEditor } from '../../../../components/events/requirement-set-editor';
 import {
   approveEventDesign,
   approveRequirementSet,
   createClientBrief,
   createEventDesign,
-  createRequirementSet,
   listClientBriefs,
   listEventDesigns,
   listRequirementSets,
@@ -98,31 +98,6 @@ export default function EventPlanningPage() {
     }
   }
 
-  async function submitRequirement(formEvent: React.FormEvent<HTMLFormElement>) {
-    formEvent.preventDefault();
-    const data = new FormData(formEvent.currentTarget);
-    try {
-      await createRequirementSet(options, eventId, {
-        eventDesignVersionId: String(data.get('designId')),
-        items: [{
-          category: String(data.get('category')),
-          requirementType: String(data.get('requirementType')) as 'Product' | 'Service' | 'Resource',
-          name: String(data.get('name')),
-          description: String(data.get('description')) || undefined,
-          quantityRequired: Number(data.get('quantity')),
-          unit: String(data.get('unit')),
-          quantitySource: 'Manual',
-          fulfilmentStrategy: String(data.get('strategy')) as 'OwnInventory' | 'Marketplace' | 'ExternalSupplier' | 'Hybrid' | 'Undecided',
-        }],
-      });
-      formEvent.currentTarget.reset();
-      setMessage('A new versioned Requirement Set was created.');
-      await load();
-    } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Failed to create Requirement Set.');
-    }
-  }
-
   async function approve(kind: 'design' | 'requirements', recordId: string) {
     setError('');
     try {
@@ -167,16 +142,17 @@ export default function EventPlanningPage() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        <form onSubmit={submitRequirement} className="grid gap-3 rounded-xl border border-zinc-200 bg-white p-5">
-          <div><h2 className="font-semibold">3. Requirement Set</h2><p className="text-sm text-zinc-600">Start a set from an approved design. Additional items follow as focused editing work.</p></div>
-          <select required name="designId" className={fieldClass} defaultValue=""><option value="" disabled>Select approved design</option>{designs.filter((row) => row.status === 'Approved').map((design) => <option key={design.id} value={design.id}>Design version {design.version}</option>)}</select>
-          <div className="grid gap-3 sm:grid-cols-2"><input required name="category" placeholder="Category" className={fieldClass} /><select required name="requirementType" className={fieldClass}><option>Product</option><option>Service</option><option>Resource</option></select></div>
-          <input required name="name" placeholder="Requirement name" className={fieldClass} />
-          <textarea name="description" placeholder="Description" className={fieldClass} />
-          <div className="grid gap-3 sm:grid-cols-2"><input required name="quantity" type="number" min="0" step="any" placeholder="Quantity" className={fieldClass} /><input required name="unit" placeholder="Unit" className={fieldClass} /></div>
-          <select name="strategy" className={fieldClass} defaultValue="Undecided"><option>Undecided</option><option>OwnInventory</option><option>Marketplace</option><option>ExternalSupplier</option><option>Hybrid</option></select>
-          <button disabled={!designs.some((row) => row.status === 'Approved')} className="rounded-md bg-zinc-900 px-3 py-2 text-sm text-white disabled:opacity-40">Create Requirement Set</button>
-        </form>
+        <RequirementSetEditor
+          eventId={eventId}
+          token={session.token}
+          baseUrl={session.baseUrl}
+          designs={designs}
+          onError={setError}
+          onCreated={async (nextMessage) => {
+            setMessage(nextMessage);
+            await load();
+          }}
+        />
         <VersionList title="Requirement history" empty="No Requirement Set versions yet.">{sets.map((set) => <VersionCard key={set.id} title={`Version ${set.version} · ${set.items.length} requirements`} detail={set.status} action={set.status !== 'Approved' ? <button onClick={() => void approve('requirements', set.id)} className="rounded border border-emerald-300 px-2 py-1 text-xs text-emerald-800">Approve</button> : undefined} />)}</VersionList>
       </section>
     </div>
