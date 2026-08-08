@@ -58,7 +58,7 @@ describe('EventPlanningPage', () => {
 
     expect(await screen.findAllByText('Version 2 · Gamma Expo')).toHaveLength(2);
     expect(screen.getByText('Version 1 · 1 requirements')).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: 'Approve' })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: 'Approve version' })).toHaveLength(1);
     expect(screen.getByRole('button', { name: 'Create Requirement Set' })).toBeEnabled();
   });
 });
