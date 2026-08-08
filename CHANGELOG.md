@@ -13,6 +13,15 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — Public Marketplace and ClientOS Bridge
+
+- Replaced the authenticated technical Marketplace prototype route with a separate responsive customer-facing catalogue over explicitly published inventory data.
+- Added public search and customer enquiry intake while excluding supplier costs, stock counts, internal notes and other private operating records from the public contract.
+- Added a private ClientOS Marketplace Management workspace for published-listing control, public preview and incoming customer enquiries.
+- Preserved the existing authenticated Marketplace capability service for transparent procurement matching without presenting it as the customer storefront.
+- Added a reversible Marketplace enquiry migration, API unit coverage, web client coverage and public HTTP integration coverage.
+- Verification status: all 45 web test files and 101 tests passed; web lint and production build passed; all 30 API unit suites and 160 tests passed; all 14 API end-to-end suites and 48 HTTP journey tests passed; API build and lint passed; public catalogue, enquiry flow and representative ClientOS screens were verified at phone width without horizontal overflow.
+
 ### 2026-08-08 — Shared ClientOS Documents and Activity
 
 - Replaced the Documents placeholder with a relationship-based index over source-owned event, commercial, purchasing, meeting, task and finance evidence.

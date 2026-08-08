@@ -459,8 +459,24 @@ describe('EventsController (e2e)', () => {
         update: jest.fn(),
         delete: jest.fn(),
       },
-      $transaction: jest.fn((queries: Promise<unknown>[]) =>
-        Promise.all(queries),
+      eventResourceAllocation: {
+        findMany: jest.fn().mockResolvedValue([]),
+        update: jest.fn(),
+      },
+      resourceReservation: {
+        update: jest.fn(),
+      },
+      eventResourceOutstanding: {
+        updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+      },
+      $transaction: jest.fn(
+        (
+          operation:
+            Promise<unknown>[] | ((transaction: unknown) => Promise<unknown>),
+        ) =>
+          typeof operation === 'function'
+            ? operation(prismaMock)
+            : Promise.all(operation),
       ),
       $connect: jest.fn(),
       $disconnect: jest.fn(),

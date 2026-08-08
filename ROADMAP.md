@@ -109,17 +109,19 @@ The repository now contains the verified backend architecture from M004 through 
 - Event Execution interface — COMPLETE: events now have an operational command workspace for evidence-based tasks, explicit readiness gates, run of show, go-live authority, command logging, incidents, dispatch, collection and controlled closeout.
 - Finance interface — COMPLETE: EventOS now exposes operational event financial truth, immutable budget versions, governed changes, commitments, client billing, cash controls, reconciliation and authorised financial close while preserving the external statutory ledger.
 - Shared ClientOS capabilities — COMPLETE for the first draft: Documents now indexes source-owned evidence by relationship, Activity consolidates server-owned priorities, assigned work and recent changes, the notification bell opens that actionable stream, and full task management remains available.
-- Marketplace Product Interface — NEXT: replace the internal capability-matching prototype with the first dedicated public discovery, enquiry and booking surface plus the ClientOS publishing and enquiry-management bridge.
+- Marketplace Product Interface — COMPLETE for the first draft: the public surface browses explicitly published supplier inventory, accepts customer enquiries into dedicated intake records, and returns those enquiries to a private ClientOS management inbox. Private costs, stock counts, notes and operating records remain outside the public contract.
 
-### Marketplace Product Interface — PLANNED
+### Marketplace Product Interface — COMPLETE FOR FIRST DRAFT
 
-- Build public catalogue, enquiry and booking flows over explicitly published data.
-- Keep private operational records within ClientOS.
+- Public catalogue and enquiry intake are implemented over explicitly published data.
+- ClientOS suppliers can manage publication from the Resource workspace, preview the public product and review incoming enquiries privately.
+- Booking conversion, customer accounts, payments and richer discovery remain refinement work after the first-draft checkpoint; no booking or payment is created silently from an enquiry.
 
-### End-to-End and Deployment Readiness — PLANNED
+### End-to-End and Deployment Readiness — IN PROGRESS
 
-- Validate complete ClientOS and Marketplace journeys.
-- Apply migrations against an approved PostgreSQL environment and complete deployment and security checks.
+- Automated package verification and public Marketplace integration coverage are active.
+- The Marketplace enquiry migration has been applied to the local approved development database.
+- Production hosting, managed PostgreSQL, secrets, observability and deployment verification require the chosen production environment and credentials.
 
 ## Future package guidance
 
