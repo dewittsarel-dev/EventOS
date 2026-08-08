@@ -14,6 +14,11 @@ import { UserResponseDto } from '../auth/dto/auth-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateRequirementSetDto } from './dto/create-requirement-set.dto';
 import { OverrideRequirementDto } from './dto/override-requirement.dto';
+import {
+  ApplyRequirementImpactReportDto,
+  CreateRequirementImpactReportDto,
+} from './dto/requirement-impact-report.dto';
+import { RequirementImpactService } from './requirement-impact.service';
 import { RequirementsService } from './requirements.service';
 
 @ApiTags('requirements')
@@ -22,7 +27,10 @@ import { RequirementsService } from './requirements.service';
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
 @Controller('events/:eventId/requirement-sets')
 export class RequirementsController {
-  constructor(private readonly requirementsService: RequirementsService) {}
+  constructor(
+    private readonly requirementsService: RequirementsService,
+    private readonly requirementImpactService: RequirementImpactService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a versioned Requirement Set' })
@@ -65,6 +73,52 @@ export class RequirementsController {
       user.id,
       eventId,
       setId,
+      dto,
+    );
+  }
+
+  @Post(':setId/impact-reports')
+  @ApiOperation({
+    summary: 'Compare proposed requirements and create an Impact Report',
+  })
+  createImpactReport(
+    @CurrentUser() user: UserResponseDto,
+    @Param('eventId') eventId: string,
+    @Param('setId') setId: string,
+    @Body() dto: CreateRequirementImpactReportDto,
+  ) {
+    return this.requirementImpactService.createReport(
+      user.id,
+      eventId,
+      setId,
+      dto,
+    );
+  }
+
+  @Get('impact-reports/all')
+  @ApiOperation({ summary: 'List Requirement Impact Reports' })
+  listImpactReports(
+    @CurrentUser() user: UserResponseDto,
+    @Param('eventId') eventId: string,
+  ) {
+    return this.requirementImpactService.listReports(user.id, eventId);
+  }
+
+  @Post('impact-reports/:reportId/apply')
+  @ApiOperation({
+    summary:
+      'Apply explicit planner decisions as a new Requirement Set version',
+  })
+  applyImpactReport(
+    @CurrentUser() user: UserResponseDto,
+    @Param('eventId') eventId: string,
+    @Param('reportId') reportId: string,
+    @Body() dto: ApplyRequirementImpactReportDto,
+  ) {
+    return this.requirementImpactService.applyReport(
+      user.id,
+      eventId,
+      reportId,
       dto,
     );
   }

@@ -68,6 +68,26 @@ enum RequirementDependencyLevel {
   Design
 }
 
+enum RequirementImpactReportStatus {
+  PendingReview
+  Applied
+  Cancelled
+}
+
+enum RequirementImpactChangeType {
+  Added
+  Removed
+  Changed
+  QuantityChanged
+  OverrideProtected
+}
+
+enum RequirementImpactDecision {
+  Pending
+  Apply
+  KeepCurrent
+}
+
 enum QuotationStatus {
   Draft
   Sent
@@ -372,6 +392,8 @@ model User {
   requirementSetsCreated           RequirementSet[]           @relation("RequirementSetCreatedBy")
   requirementSetsApproved          RequirementSet[]           @relation("RequirementSetApprovedBy")
   requirementItemChanges           RequirementItemChange[]
+  requirementImpactReportsCreated  RequirementImpactReport[]  @relation("RequirementImpactReportCreatedBy")
+  requirementImpactReportsResolved RequirementImpactReport[]  @relation("RequirementImpactReportResolvedBy")
 
   @@index([email])
 }
@@ -416,6 +438,7 @@ model Organization {
   clientBriefVersions       ClientBriefVersion[]
   eventDesignVersions       EventDesignVersion[]
   requirementSets           RequirementSet[]
+  requirementImpactReports  RequirementImpactReport[]
 
   @@index([slug])
 }
@@ -477,37 +500,38 @@ model Contact {
 }
 
 model Event {
-  id                   String                     @id @default(uuid())
-  organizationId       String
-  contactId            String
-  assignedUserId       String?
-  title                String
-  eventType            String
-  eventDate            DateTime
-  startTime            String
-  endTime              String
-  venue                String?
-  budgetCents          Int?
-  notes                String?
-  description          String?
-  startDateTime        DateTime
-  endDateTime          DateTime
-  location             String?
-  status               EventStatus
-  createdAt            DateTime                   @default(now())
-  updatedAt            DateTime                   @updatedAt
-  organization         Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  contact              Contact                    @relation(fields: [contactId], references: [id], onDelete: Restrict)
-  assignedUser         User?                      @relation("EventAssignedUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
-  quotations           Quotation[]
-  tasks                Task[]
-  meetingNotes         MeetingNote[]
-  supplierLinks        SupplierEvent[]
-  resourceAllocations  EventResourceAllocation[]
-  resourceOutstandings EventResourceOutstanding[]
-  clientBriefVersions  ClientBriefVersion[]
-  eventDesignVersions  EventDesignVersion[]
-  requirementSets      RequirementSet[]
+  id                       String                     @id @default(uuid())
+  organizationId           String
+  contactId                String
+  assignedUserId           String?
+  title                    String
+  eventType                String
+  eventDate                DateTime
+  startTime                String
+  endTime                  String
+  venue                    String?
+  budgetCents              Int?
+  notes                    String?
+  description              String?
+  startDateTime            DateTime
+  endDateTime              DateTime
+  location                 String?
+  status                   EventStatus
+  createdAt                DateTime                   @default(now())
+  updatedAt                DateTime                   @updatedAt
+  organization             Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact                  Contact                    @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  assignedUser             User?                      @relation("EventAssignedUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  quotations               Quotation[]
+  tasks                    Task[]
+  meetingNotes             MeetingNote[]
+  supplierLinks            SupplierEvent[]
+  resourceAllocations      EventResourceAllocation[]
+  resourceOutstandings     EventResourceOutstanding[]
+  clientBriefVersions      ClientBriefVersion[]
+  eventDesignVersions      EventDesignVersion[]
+  requirementSets          RequirementSet[]
+  requirementImpactReports RequirementImpactReport[]
 
   @@index([organizationId])
   @@index([contactId])
@@ -583,24 +607,25 @@ model EventDesignVersion {
 }
 
 model RequirementSet {
-  id                   String                  @id @default(uuid())
+  id                   String                    @id @default(uuid())
   organizationId       String
   eventId              String
   eventDesignVersionId String
   version              Int
-  status               RequirementSetStatus    @default(Draft)
+  status               RequirementSetStatus      @default(Draft)
   createdByUserId      String
   approvedByUserId     String?
   approvedAt           DateTime?
-  createdAt            DateTime                @default(now())
-  organization         Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  event                Event                   @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  eventDesignVersion   EventDesignVersion      @relation(fields: [eventDesignVersionId], references: [id], onDelete: Restrict)
-  createdBy            User                    @relation("RequirementSetCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  approvedBy           User?                   @relation("RequirementSetApprovedBy", fields: [approvedByUserId], references: [id], onDelete: Restrict)
+  createdAt            DateTime                  @default(now())
+  organization         Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event                Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventDesignVersion   EventDesignVersion        @relation(fields: [eventDesignVersionId], references: [id], onDelete: Restrict)
+  createdBy            User                      @relation("RequirementSetCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  approvedBy           User?                     @relation("RequirementSetApprovedBy", fields: [approvedByUserId], references: [id], onDelete: Restrict)
   items                RequirementItem[]
   dependencies         RequirementDependency[]
   changes              RequirementItemChange[]
+  impactReports        RequirementImpactReport[]
 
   @@unique([eventId, version])
   @@index([organizationId])
@@ -692,6 +717,51 @@ model RequirementItemChange {
   @@index([requirementSetId])
   @@index([requirementItemId])
   @@index([changedByUserId])
+}
+
+model RequirementImpactReport {
+  id                        String                        @id @default(uuid())
+  organizationId            String
+  eventId                   String
+  baselineRequirementSetId  String
+  status                    RequirementImpactReportStatus @default(PendingReview)
+  affectedItems             Int
+  newItems                  Int
+  removedItems              Int
+  plannerOverrides          Int
+  requiresProcurementReview Boolean
+  businessImpact            Json
+  createdByUserId           String
+  resolvedByUserId          String?
+  resolvedAt                DateTime?
+  createdAt                 DateTime                      @default(now())
+  organization              Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event                     Event                         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  baselineRequirementSet    RequirementSet                @relation(fields: [baselineRequirementSetId], references: [id], onDelete: Restrict)
+  createdBy                 User                          @relation("RequirementImpactReportCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  resolvedBy                User?                         @relation("RequirementImpactReportResolvedBy", fields: [resolvedByUserId], references: [id], onDelete: Restrict)
+  changes                   RequirementImpactChange[]
+
+  @@index([organizationId])
+  @@index([eventId, status])
+  @@index([baselineRequirementSetId])
+  @@index([createdByUserId])
+  @@index([resolvedByUserId])
+}
+
+model RequirementImpactChange {
+  id              String                      @id @default(uuid())
+  impactReportId  String
+  requirementCode String
+  changeType      RequirementImpactChangeType
+  decision        RequirementImpactDecision   @default(Pending)
+  previousItem    Json?
+  proposedItem    Json?
+  createdAt       DateTime                    @default(now())
+  impactReport    RequirementImpactReport     @relation(fields: [impactReportId], references: [id], onDelete: Cascade)
+
+  @@unique([impactReportId, requirementCode])
+  @@index([impactReportId, decision])
 }
 
 model Quotation {
