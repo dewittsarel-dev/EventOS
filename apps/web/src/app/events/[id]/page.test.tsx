@@ -110,5 +110,6 @@ describe('EventDetailsPage', () => {
     );
     expect(screen.getByRole('link', { name: 'Assets' })).toHaveAttribute('href', '/events/event-1/assets');
     expect(screen.getByRole('link', { name: 'Execution' })).toHaveAttribute('href', '/events/event-1/execution');
+    expect(screen.getByRole('link', { name: 'Finance' })).toHaveAttribute('href', '/events/event-1/finance');
   });
 });

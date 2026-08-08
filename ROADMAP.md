@@ -107,7 +107,8 @@ The repository now contains the verified backend architecture from M004 through 
 - Commercial Workspace interface — COMPLETE: selected procurement strategies now become governed RFQ drafts, separately approved and sent supplier conversations, immutable quote revisions, explainable comparisons, substitution review, explicit awards and unsent purchase-order drafts.
 - Asset Management interface — COMPLETE: event requirements now connect to governed asset search, system-calculated availability, reservations, preparation operations, deployment evidence, return inspections, incidents and organization-level exception visibility.
 - Event Execution interface — COMPLETE: events now have an operational command workspace for evidence-based tasks, explicit readiness gates, run of show, go-live authority, command logging, incidents, dispatch, collection and controlled closeout.
-- Finance interface — NEXT: expose the governed event financial workspace for budget baselines, changes, commitments, invoices, payments, reconciliation and financial close.
+- Finance interface — COMPLETE: EventOS now exposes operational event financial truth, immutable budget versions, governed changes, commitments, client billing, cash controls, reconciliation and authorised financial close while preserving the external statutory ledger.
+- Shared ClientOS capabilities — NEXT: complete the relationship-based Documents workspace and consolidate Activity, tasks, approvals and notifications around the event lifecycle.
 
 ### Marketplace Product Interface — PLANNED
 

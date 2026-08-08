@@ -13,6 +13,14 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — ClientOS Event Financial Control
+
+- Added an event-context financial-control workspace over the recovered M011 API and linked it from the Event workspace.
+- Added decision-ready budget, forecast, commitment, receivable and cash summaries with explicit operational-versus-statutory source-of-truth disclosure.
+- Added controlled WBS, budget versions, financial changes, supplier commitments, client billing, payment planning, reconciliation and financial close.
+- Preserved immutable baselines and explicit human approval; EventOS does not silently move money, post accounting entries or replace the statutory accounting ledger.
+- Verification status: all 42 web test files and 97 tests passed; web lint and production build passed; all 29 API suites and 157 tests passed; API build and lint passed.
+
 ### 2026-08-08 — ClientOS Event Execution
 
 - Added an event-context operational command workspace over the recovered M010 API and linked it from the Event workspace.
