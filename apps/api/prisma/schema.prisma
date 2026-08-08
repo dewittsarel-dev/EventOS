@@ -108,6 +108,22 @@ enum MoodBoardReviewType {
   Approval
 }
 
+enum ProcurementPackageStatus {
+  Draft
+  Analysed
+  SolutionSelected
+  QuotationRequested
+}
+
+enum ProcurementSolutionStrategy {
+  LowestCost
+  LowestRisk
+  FewestSuppliers
+  HighestConfidence
+  PreferLocal
+  Balanced
+}
+
 enum QuotationStatus {
   Draft
   Sent
@@ -417,6 +433,8 @@ model User {
   moodBoardsCreated                MoodBoard[]                @relation("MoodBoardCreatedBy")
   moodBoardsApproved               MoodBoard[]                @relation("MoodBoardApprovedBy")
   moodBoardReviews                 MoodBoardReview[]
+  procurementPackagesCreated       ProcurementPackage[]       @relation("ProcurementPackageCreatedBy")
+  procurementSolutionsSelected     ProcurementSolution[]      @relation("ProcurementSolutionSelectedBy")
 
   @@index([email])
 }
@@ -463,6 +481,7 @@ model Organization {
   requirementSets           RequirementSet[]
   requirementImpactReports  RequirementImpactReport[]
   moodBoards                MoodBoard[]
+  procurementPackages       ProcurementPackage[]
 
   @@index([slug])
 }
@@ -557,6 +576,7 @@ model Event {
   requirementSets          RequirementSet[]
   requirementImpactReports RequirementImpactReport[]
   moodBoards               MoodBoard[]
+  procurementPackages      ProcurementPackage[]
 
   @@index([organizationId])
   @@index([contactId])
@@ -653,6 +673,7 @@ model RequirementSet {
   changes              RequirementItemChange[]
   impactReports        RequirementImpactReport[]
   moodBoards           MoodBoard[]
+  procurementPackages  ProcurementPackage[]
 
   @@unique([eventId, version])
   @@index([organizationId])
@@ -663,48 +684,50 @@ model RequirementSet {
 }
 
 model RequirementItem {
-  id                      String                        @id @default(uuid())
-  requirementSetId        String
-  requirementCode         String
-  requirementVersion      Int
-  category                String
-  requirementType         RequirementType
-  name                    String
-  description             String?
-  specification           Json?
-  images                  Json?
-  quantityRequired        Float
-  unit                    String
-  quantitySource          RequirementQuantitySource
-  plannerOverride         Boolean                       @default(false)
-  overrideReason          String?
-  deliveryDate            DateTime?
-  collectionDate          DateTime?
-  setupDate               DateTime?
-  removalDate             DateTime?
-  requiredTime            String?
-  venue                   String?
-  deliveryArea            String?
-  setupArea               String?
-  gps                     String?
-  status                  RequirementStatus             @default(Draft)
-  fulfilmentStrategy      RequirementFulfilmentStrategy @default(Undecided)
-  supplierAllocation      Json?
-  estimatedBudgetCents    Int?
-  quotedPriceCents        Int?
-  approvedPriceCents      Int?
-  actualCostCents         Int?
-  aiConfidence            Float?
-  aiRecommendation        String?
-  alternativeSuggestions  Json?
-  similarMarketplaceItems Json?
-  riskWarnings            Json?
-  createdAt               DateTime                      @default(now())
-  requirementSet          RequirementSet                @relation(fields: [requirementSetId], references: [id], onDelete: Cascade)
-  dependenciesFrom        RequirementDependency[]       @relation("RequirementDependencySource")
-  dependenciesTo          RequirementDependency[]       @relation("RequirementDependencyTarget")
-  changes                 RequirementItemChange[]
-  moodBoardObjects        MoodBoardObject[]
+  id                             String                          @id @default(uuid())
+  requirementSetId               String
+  requirementCode                String
+  requirementVersion             Int
+  category                       String
+  requirementType                RequirementType
+  name                           String
+  description                    String?
+  specification                  Json?
+  images                         Json?
+  quantityRequired               Float
+  unit                           String
+  quantitySource                 RequirementQuantitySource
+  plannerOverride                Boolean                         @default(false)
+  overrideReason                 String?
+  deliveryDate                   DateTime?
+  collectionDate                 DateTime?
+  setupDate                      DateTime?
+  removalDate                    DateTime?
+  requiredTime                   String?
+  venue                          String?
+  deliveryArea                   String?
+  setupArea                      String?
+  gps                            String?
+  status                         RequirementStatus               @default(Draft)
+  fulfilmentStrategy             RequirementFulfilmentStrategy   @default(Undecided)
+  supplierAllocation             Json?
+  estimatedBudgetCents           Int?
+  quotedPriceCents               Int?
+  approvedPriceCents             Int?
+  actualCostCents                Int?
+  aiConfidence                   Float?
+  aiRecommendation               String?
+  alternativeSuggestions         Json?
+  similarMarketplaceItems        Json?
+  riskWarnings                   Json?
+  createdAt                      DateTime                        @default(now())
+  requirementSet                 RequirementSet                  @relation(fields: [requirementSetId], references: [id], onDelete: Cascade)
+  dependenciesFrom               RequirementDependency[]         @relation("RequirementDependencySource")
+  dependenciesTo                 RequirementDependency[]         @relation("RequirementDependencyTarget")
+  changes                        RequirementItemChange[]
+  moodBoardObjects               MoodBoardObject[]
+  procurementPackageItems        ProcurementPackageItem[]
+  procurementSolutionAllocations ProcurementSolutionAllocation[]
 
   @@unique([requirementSetId, requirementCode])
   @@index([requirementSetId, category])
@@ -878,6 +901,102 @@ model MoodBoardReview {
 
   @@index([moodBoardId, createdAt])
   @@index([reviewerUserId])
+}
+
+model ProcurementPackage {
+  id                   String                   @id @default(uuid())
+  organizationId       String
+  eventId              String
+  requirementSetId     String
+  name                 String
+  category             String
+  status               ProcurementPackageStatus @default(Draft)
+  policy               Json
+  createdByUserId      String
+  quotationRequestedAt DateTime?
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+  organization         Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event                Event                    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  requirementSet       RequirementSet           @relation(fields: [requirementSetId], references: [id], onDelete: Restrict)
+  createdBy            User                     @relation("ProcurementPackageCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  items                ProcurementPackageItem[]
+  analyses             ProcurementAnalysis[]
+  solutions            ProcurementSolution[]
+
+  @@index([organizationId])
+  @@index([eventId, status])
+  @@index([requirementSetId])
+  @@index([createdByUserId])
+}
+
+model ProcurementPackageItem {
+  procurementPackageId String
+  requirementItemId    String
+  procurementPackage   ProcurementPackage @relation(fields: [procurementPackageId], references: [id], onDelete: Cascade)
+  requirementItem      RequirementItem    @relation(fields: [requirementItemId], references: [id], onDelete: Restrict)
+
+  @@id([procurementPackageId, requirementItemId])
+  @@index([requirementItemId])
+}
+
+model ProcurementAnalysis {
+  id                    String                @id @default(uuid())
+  procurementPackageId  String
+  policySnapshot        Json
+  credibleSolutionCount Int
+  reasonFewerThanFive   String?
+  createdAt             DateTime              @default(now())
+  procurementPackage    ProcurementPackage    @relation(fields: [procurementPackageId], references: [id], onDelete: Cascade)
+  solutions             ProcurementSolution[]
+
+  @@index([procurementPackageId, createdAt])
+}
+
+model ProcurementSolution {
+  id                    String                          @id @default(uuid())
+  procurementPackageId  String
+  procurementAnalysisId String
+  rank                  Int
+  strategy              ProcurementSolutionStrategy
+  label                 String
+  estimatedTotalCost    Float?
+  currency              String?
+  confidenceScore       Float
+  riskScore             Float
+  supplierCount         Int
+  explanation           String
+  tradeOffs             Json
+  selectedByUserId      String?
+  selectedAt            DateTime?
+  createdAt             DateTime                        @default(now())
+  procurementPackage    ProcurementPackage              @relation(fields: [procurementPackageId], references: [id], onDelete: Cascade)
+  procurementAnalysis   ProcurementAnalysis             @relation(fields: [procurementAnalysisId], references: [id], onDelete: Cascade)
+  selectedBy            User?                           @relation("ProcurementSolutionSelectedBy", fields: [selectedByUserId], references: [id], onDelete: Restrict)
+  allocations           ProcurementSolutionAllocation[]
+
+  @@unique([procurementAnalysisId, rank])
+  @@index([procurementPackageId])
+  @@index([selectedByUserId])
+}
+
+model ProcurementSolutionAllocation {
+  id                    String              @id @default(uuid())
+  procurementSolutionId String
+  requirementItemId     String
+  supplierId            String
+  supplierName          String
+  quantity              Float
+  estimatedCost         Float?
+  confidenceScore       Float
+  riskScore             Float
+  deliveryCapability    String
+  procurementSolution   ProcurementSolution @relation(fields: [procurementSolutionId], references: [id], onDelete: Cascade)
+  requirementItem       RequirementItem     @relation(fields: [requirementItemId], references: [id], onDelete: Restrict)
+
+  @@unique([procurementSolutionId, requirementItemId])
+  @@index([requirementItemId])
+  @@index([supplierId])
 }
 
 model Quotation {
