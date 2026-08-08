@@ -95,7 +95,7 @@ export function EventLifecyclePanel(props: Props) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 id="lifecycle-title" className="text-lg font-semibold text-zinc-900">Event lifecycle</h2>
-          <p className="mt-1 text-sm text-zinc-600">Approved work and operational readiness across M004–M011.</p>
+          <p className="mt-1 text-sm text-zinc-600">Approved work and operational readiness across the event journey.</p>
         </div>
         <button
           type="button"
@@ -113,6 +113,22 @@ export function EventLifecyclePanel(props: Props) {
 
       {continuity ? (
         <>
+          <div className={`mt-5 rounded-xl border p-4 ${continuity.health === 'OnTrack' ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Current stage</p>
+                <p className="mt-1 text-lg font-semibold text-zinc-900">
+                  {continuity.currentStage.replace(/([a-z])([A-Z])/g, '$1 $2')}
+                </p>
+                <p className="mt-1 text-sm text-zinc-700">{continuity.nextAction.reason}</p>
+              </div>
+              {continuity.nextAction.actionType === 'OpenPlanningWorkspace' ? (
+                <a href={`/events/${eventId}/planning`} className="rounded-md bg-zinc-900 px-3 py-2 text-center text-sm font-medium text-white hover:bg-zinc-700">
+                  {continuity.nextAction.label}
+                </a>
+              ) : null}
+            </div>
+          </div>
           <ol className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {steps.map(([label, key], index) => {
               const summary = stepSummary(continuity.chain, key);

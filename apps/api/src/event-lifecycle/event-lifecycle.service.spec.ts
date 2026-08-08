@@ -88,6 +88,9 @@ describe('EventLifecycleService', () => {
     });
     const result = await service.continuity(userId, organizationId, eventId);
     expect(result.blockers).toEqual([]);
+    expect(result.health).toBe('OnTrack');
+    expect(result.currentStage).toBe('FinancialControl');
+    expect(result.nextAction.actionType).toBe('SynchronizeLifecycle');
     expect(result.sourceOwnership.statutoryAccounting).toBe(
       'ExternalAccountingSystem',
     );
@@ -101,6 +104,23 @@ describe('EventLifecycleService', () => {
       service.synchronize(userId, organizationId, eventId),
     ).rejects.toBeInstanceOf(ConflictException);
     expect(execution.createExecution).not.toHaveBeenCalled();
+  });
+
+  it('explains the current stage and next action when planning is incomplete', async () => {
+    prisma.requirementSet.findFirst.mockResolvedValue(null);
+    prisma.eventExecution.findUnique.mockResolvedValue(null);
+    prisma.eventFinanceWorkspace.findUnique.mockResolvedValue(null);
+
+    const result = await service.continuity(userId, organizationId, eventId);
+
+    expect(result.health).toBe('NeedsAttention');
+    expect(result.currentStage).toBe('Design');
+    expect(result.nextAction).toEqual(
+      expect.objectContaining({
+        actionType: 'OpenPlanningWorkspace',
+        reason: 'Approved Requirement Set missing',
+      }),
+    );
   });
 
   it('synchronizes draft financial evidence idempotently without automatic approval', async () => {

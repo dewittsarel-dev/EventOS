@@ -96,7 +96,7 @@ The repository now contains the verified backend architecture from M004 through 
 - Prioritise focused vertical slices and role-appropriate workflows.
 - ClientOS navigation alignment — COMPLETE: five calm primary destinations now separate user intent from supporting operational tools, and Marketplace is no longer presented as part of the private operating surface.
 - Decision-first Home experience — COMPLETE: server-owned priorities now explain what needs attention, why it matters and the direct action available without performing approvals automatically.
-- Contextual Event workspace — NEXT: bring lifecycle health, current stage and event actions into one calm event-oriented experience.
+- Contextual Event workspace — COMPLETE: each event now explains its lifecycle health, current stage, first blocker and next relevant action from server-owned continuity rules.
 - Event Lifecycle workspace — COMPLETE: event details now show M004–M011 continuity, blockers and controlled synchronization without automating approvals.
 - Event Design and Requirements foundation — COMPLETE: immutable Client Brief and Event Design versions, explicit approvals and initial Requirement Set creation are available from the event workspace.
 - Requirement authoring and impact controls — NEXT: multi-item authoring, dependencies, quantity overrides and impact-report decisions.

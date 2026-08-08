@@ -54,7 +54,12 @@ export default function EventDetailsPage() {
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        title="Event Details"
+        title={eventRecord?.title ?? 'Event workspace'}
+        description={
+          eventRecord
+            ? `${eventRecord.eventType} · ${new Date(eventRecord.eventDate).toLocaleDateString()} · ${eventRecord.venue ?? 'Venue not confirmed'}`
+            : 'Lifecycle health, current stage and the next relevant action.'
+        }
         actions={
           <>
             <Link
@@ -96,13 +101,18 @@ export default function EventDetailsPage() {
       ) : eventRecord ? (
         <>
           <div className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
-          <h2 className="text-xl font-semibold text-zinc-900">{eventRecord.title}</h2>
-          <p className="mt-1 text-sm text-zinc-600">Status: {eventRecord.status}</p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Event overview</p>
+              <h2 className="mt-1 text-xl font-semibold text-zinc-900">{eventRecord.contactName ?? eventRecord.contactId}</h2>
+            </div>
+            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">{eventRecord.status}</span>
+          </div>
 
           <dl className="mt-4 grid gap-3 text-sm md:grid-cols-2">
             <div>
-              <dt className="font-medium text-zinc-700">Client</dt>
-              <dd className="text-zinc-600">{eventRecord.contactName ?? eventRecord.contactId}</dd>
+              <dt className="font-medium text-zinc-700">Event owner</dt>
+              <dd className="text-zinc-600">{eventRecord.assignedUserName ?? 'Not assigned'}</dd>
             </div>
             <div>
               <dt className="font-medium text-zinc-700">Organization</dt>
@@ -129,8 +139,8 @@ export default function EventDetailsPage() {
               <dd className="text-zinc-600">{eventRecord.venue ?? '-'}</dd>
             </div>
             <div>
-              <dt className="font-medium text-zinc-700">Assigned User</dt>
-              <dd className="text-zinc-600">{eventRecord.assignedUserName ?? '-'}</dd>
+              <dt className="font-medium text-zinc-700">Lifecycle status</dt>
+              <dd className="text-zinc-600">{eventRecord.status}</dd>
             </div>
             <div>
               <dt className="font-medium text-zinc-700">Budget</dt>

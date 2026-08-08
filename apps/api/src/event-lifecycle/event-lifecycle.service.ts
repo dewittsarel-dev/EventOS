@@ -90,8 +90,39 @@ export class EventLifecycleService {
       )
     )
       blockers.push('Commercial Workspace not awarded');
+    const currentStage = this.currentStage({
+      brief,
+      design,
+      requirementSet,
+      moodBoard,
+      packages,
+      commercial,
+      assets,
+      execution,
+      finance,
+    });
     return {
       eventId,
+      health: blockers.length === 0 ? 'OnTrack' : 'NeedsAttention',
+      currentStage,
+      nextAction: blockers.length
+        ? {
+            label:
+              currentStage === 'Definition' || currentStage === 'Design'
+                ? 'Continue planning'
+                : 'Resolve lifecycle blockers',
+            reason: blockers[0],
+            actionType:
+              currentStage === 'Definition' || currentStage === 'Design'
+                ? 'OpenPlanningWorkspace'
+                : 'ReviewLifecycle',
+          }
+        : {
+            label: 'Synchronize approved work',
+            reason:
+              'The approved upstream chain is ready for controlled synchronization.',
+            actionType: 'SynchronizeLifecycle',
+          },
       chain: {
         brief,
         design,
@@ -116,6 +147,37 @@ export class EventLifecycleService {
         statutoryAccounting: 'ExternalAccountingSystem',
       },
     };
+  }
+
+  private currentStage(input: {
+    brief: { id: string } | null;
+    design: { status: string } | null;
+    requirementSet: { status: string } | null;
+    moodBoard: { status: string } | null;
+    packages: Array<{ solutions: Array<{ id: string }> }>;
+    commercial: Array<{ status: string }>;
+    assets: number;
+    execution: { id: string } | null;
+    finance: { id: string } | null;
+  }) {
+    if (!input.brief) return 'Definition';
+    if (
+      input.design?.status !== 'Approved' ||
+      input.requirementSet?.status !== 'Approved' ||
+      input.moodBoard?.status !== 'Approved'
+    )
+      return 'Design';
+    if (
+      input.packages.some((row) => row.solutions.length === 0) ||
+      input.commercial.some(
+        (row) => row.status !== 'Awarded' && row.status !== 'Closed',
+      )
+    )
+      return 'Procurement';
+    if (input.assets === 0) return 'ResourcePlanning';
+    if (!input.execution) return 'Readiness';
+    if (!input.finance) return 'Execution';
+    return 'FinancialControl';
   }
 
   async synchronize(userId: string, organizationId: string, eventId: string) {

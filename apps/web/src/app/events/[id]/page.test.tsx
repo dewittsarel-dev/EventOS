@@ -34,6 +34,13 @@ describe('EventDetailsPage', () => {
     getEventLifecycle.mockReset();
     getEventLifecycle.mockResolvedValue({
       eventId: 'event-1',
+      health: 'NeedsAttention',
+      currentStage: 'Design',
+      nextAction: {
+        label: 'Continue planning',
+        reason: 'Approved Requirement Set missing',
+        actionType: 'OpenPlanningWorkspace',
+      },
       chain: {
         brief: { id: 'brief-1', version: 1 },
         design: { id: 'design-1', version: 1, status: 'Approved' },
@@ -83,6 +90,11 @@ describe('EventDetailsPage', () => {
     expect(screen.getByText('Durban ICC')).toBeInTheDocument();
     expect(screen.getByText('Important')).toBeInTheDocument();
     expect(await screen.findByText('Event lifecycle')).toBeInTheDocument();
-    expect(screen.getByText('Approved Requirement Set missing')).toBeInTheDocument();
+    expect(await screen.findAllByText('Approved Requirement Set missing')).toHaveLength(2);
+    expect(screen.getByText('Current stage')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Continue planning' })).toHaveAttribute(
+      'href',
+      '/events/event-1/planning',
+    );
   });
 });

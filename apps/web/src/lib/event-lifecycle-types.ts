@@ -13,6 +13,23 @@ export type LifecycleCollectionItem = {
 
 export type EventLifecycleContinuity = {
   eventId: string;
+  health: 'OnTrack' | 'NeedsAttention';
+  currentStage:
+    | 'Definition'
+    | 'Design'
+    | 'Procurement'
+    | 'ResourcePlanning'
+    | 'Readiness'
+    | 'Execution'
+    | 'FinancialControl';
+  nextAction: {
+    label: string;
+    reason: string;
+    actionType:
+      | 'OpenPlanningWorkspace'
+      | 'ReviewLifecycle'
+      | 'SynchronizeLifecycle';
+  };
   chain: {
     brief: LifecycleVersion | null;
     design: LifecycleVersion | null;

@@ -13,6 +13,13 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — Contextual ClientOS Event Workspace
+
+- Added server-owned event health, current-stage and next-action guidance to lifecycle continuity.
+- Reframed Event Details as a contextual workspace around the event, client, owner, status and approved journey rather than internal module labels.
+- Directs incomplete definition and design work into the planning workspace while preserving controlled synchronization and human approvals.
+- Verification status: all 29 API suites and 157 tests passed; API build and lint passed; all 28 web test files and 81 tests passed; web lint and production build passed.
+
 ### 2026-08-08 — Decision-First ClientOS Home
 
 - Added a server-owned attention contract that prioritises overdue work, work due today, imminent events and open commercial review.
