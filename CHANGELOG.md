@@ -13,6 +13,13 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — Controlled Requirement Quantity Overrides
+
+- Added item-level quantity override controls to Requirement Set history.
+- Overrides require a planner reason and invoke the M005 versioning action rather than editing an existing approved record.
+- Requirement history now exposes item codes, quantities, sources and approval state with explicit approval controls.
+- Verification status: all 30 web test files and 83 tests passed; web lint passed; production web build passed; unchanged API regression checks remained green.
+
 ### 2026-08-08 — Multi-Item Requirement Set Authoring
 
 - Replaced single-item Requirement Set creation with a practical multi-item editor for products, services and resources.

@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { PageHeader } from '../../../../components/app-shell/page-header';
 import { useAppSession } from '../../../../components/app-shell/session-context';
 import { RequirementSetEditor } from '../../../../components/events/requirement-set-editor';
+import { RequirementHistory } from '../../../../components/events/requirement-history';
 import {
   approveEventDesign,
   approveRequirementSet,
@@ -50,7 +51,7 @@ export default function EventPlanningPage() {
     } finally {
       setLoading(false);
     }
-  }, [eventId, session.baseUrl, session.token]);
+  }, [eventId, session.baseUrl, session.token, setError]);
 
   useEffect(() => {
     // Remote planning state follows the selected event.
@@ -153,7 +154,17 @@ export default function EventPlanningPage() {
             await load();
           }}
         />
-        <VersionList title="Requirement history" empty="No Requirement Set versions yet.">{sets.map((set) => <VersionCard key={set.id} title={`Version ${set.version} · ${set.items.length} requirements`} detail={set.status} action={set.status !== 'Approved' ? <button onClick={() => void approve('requirements', set.id)} className="rounded border border-emerald-300 px-2 py-1 text-xs text-emerald-800">Approve</button> : undefined} />)}</VersionList>
+        <RequirementHistory
+          eventId={eventId}
+          token={session.token}
+          baseUrl={session.baseUrl}
+          sets={sets}
+          onError={setError}
+          onChanged={async (nextMessage) => {
+            setMessage(nextMessage);
+            await load();
+          }}
+        />
       </section>
     </div>
   );

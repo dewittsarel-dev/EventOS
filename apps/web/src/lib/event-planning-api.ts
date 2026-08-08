@@ -57,3 +57,14 @@ export const createRequirementSet = (options: Options, eventId: string, input: R
 
 export const approveRequirementSet = (options: Options, eventId: string, setId: string) =>
   request<RequirementSet>(options, `/events/${eventId}/requirement-sets/${setId}/approve`, { method: 'POST' });
+
+export const overrideRequirementQuantity = (
+  options: Options,
+  eventId: string,
+  setId: string,
+  input: { requirementCode: string; quantityRequired: number; reason: string },
+) => request<RequirementSet>(
+  options,
+  `/events/${eventId}/requirement-sets/${setId}/quantity-override`,
+  { method: 'POST', body: JSON.stringify(input) },
+);
