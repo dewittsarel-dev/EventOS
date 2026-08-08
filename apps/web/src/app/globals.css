@@ -3,6 +3,10 @@
 :root {
   --background: #f4f5f7;
   --foreground: #17171b;
+  --brand-ink: #15171c;
+  --brand-gold: #e6b94f;
+  --surface: #ffffff;
+  --surface-muted: #f7f7f8;
 }
 
 @theme inline {
@@ -21,4 +25,29 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+::selection {
+  background: #f4d98f;
+  color: #17171b;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a {
+  transition-duration: 160ms;
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+  transition-timing-function: ease-out;
+}
+
+:focus-visible {
+  outline: 2px solid #d4a72c;
+  outline-offset: 2px;
 }

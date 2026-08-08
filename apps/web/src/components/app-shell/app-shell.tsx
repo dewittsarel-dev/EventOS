@@ -283,10 +283,10 @@ export function AppShell({ children }: AppShellProps) {
           <Link
             key={item.href}
             href={item.href}
-            className={`group flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+            className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 ${
               isActive
-                ? 'bg-zinc-900 text-white'
-                : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+                ? 'bg-zinc-950 text-white shadow-sm'
+                : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-950'
             }`}
             onClick={() => setMobileMenuOpen(false)}
             aria-current={isActive ? 'page' : undefined}
@@ -302,7 +302,7 @@ export function AppShell({ children }: AppShellProps) {
   }
 
   const nav = (
-    <nav aria-label="Main navigation" className="mt-6 space-y-1">
+    <nav aria-label="Main navigation" className="mt-4 space-y-1">
       {navLinks(PRIMARY_NAV_ROUTES)}
       <div className="pb-1 pt-5">
         <p className={`px-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 ${isSidebarCollapsed ? 'md:hidden xl:block' : ''}`}>
@@ -326,14 +326,14 @@ export function AppShell({ children }: AppShellProps) {
           }`}
           aria-label="Sidebar"
         >
-          <div className="flex h-16 items-center justify-between border-b border-zinc-200 px-4">
+          <div className="flex h-[4.5rem] items-center justify-between border-b border-zinc-200 px-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900 text-xs font-semibold text-white">
-                EO
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-950 text-xs font-semibold text-white shadow-sm">
+                EO<span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-amber-400" />
               </div>
               <div className={isSidebarCollapsed ? 'hidden' : ''}>
-                <p className="text-sm font-semibold">ClientOS</p>
-                <p className="text-xs text-zinc-500">EventOS Workspace</p>
+                <p className="text-sm font-semibold tracking-tight">ClientOS</p>
+                <p className="text-[11px] text-zinc-500">by EventOS</p>
               </div>
             </div>
 
@@ -355,8 +355,8 @@ export function AppShell({ children }: AppShellProps) {
 
           <div className={`border-t border-zinc-200 p-3 text-xs text-zinc-500 ${isSidebarCollapsed ? 'hidden md:block md:text-center xl:block xl:text-left' : ''}`}>
             <p className={isSidebarCollapsed ? 'md:hidden xl:block' : ''}>
-              <Link className="underline hover:text-zinc-900" href="/marketplace" target="_blank">
-                Open customer Marketplace
+              <Link className="flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 font-medium text-zinc-700 hover:border-zinc-300 hover:bg-white hover:text-zinc-950" href="/marketplace" target="_blank">
+                <span>Open Marketplace</span><span aria-hidden="true">↗</span>
               </Link>
             </p>
             {isSidebarCollapsed ? <p className="md:block xl:hidden">Later</p> : null}
@@ -395,8 +395,8 @@ export function AppShell({ children }: AppShellProps) {
         ) : null}
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 border-b border-zinc-200 bg-white/90 shadow-sm backdrop-blur">
-            <div className="flex h-16 items-center gap-3 px-3 md:px-5">
+          <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-white/85 backdrop-blur-xl">
+            <div className="flex h-[4.5rem] items-center gap-3 px-3 md:px-5">
               <Link
                 href="/activity"
                 className="inline-flex rounded-md border border-zinc-200 p-2 text-zinc-600 hover:bg-zinc-100 md:hidden"
@@ -411,7 +411,7 @@ export function AppShell({ children }: AppShellProps) {
                 <input
                   ref={searchRef}
                   aria-label="Global search"
-                  className="h-10 w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 text-sm text-zinc-700 outline-none ring-zinc-900/20 placeholder:text-zinc-400 focus-visible:ring-2"
+                  className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-50/80 px-4 text-sm text-zinc-700 outline-none ring-amber-400/50 placeholder:text-zinc-400 hover:bg-white focus-visible:bg-white focus-visible:ring-2"
                   placeholder="Search across ClientOS (coming soon)"
                 />
               </div>
@@ -621,7 +621,7 @@ export function AppShell({ children }: AppShellProps) {
             </div>
           </header>
 
-          <main className="min-w-0 flex-1 overflow-x-clip px-3 py-4 md:px-6 md:py-6">
+          <main className="min-w-0 flex-1 overflow-x-clip px-3 py-5 md:px-7 md:py-7">
             <div className="mx-auto w-full max-w-7xl">
               {isSessionHydrated && enforceAuth && !isAuthenticated ? (
                 <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">

@@ -10,6 +10,19 @@ function money(value: number | null) {
   return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(value);
 }
 
+function ListingPlaceholder() {
+  return (
+    <div className="relative flex h-full items-center justify-center overflow-hidden bg-[linear-gradient(145deg,#ebe5da,#f8f5ef)] text-stone-500">
+      <div className="absolute -left-8 -top-8 h-28 w-28 rounded-full border border-stone-300/70" />
+      <div className="absolute -bottom-10 -right-4 h-32 w-32 rounded-full bg-amber-200/35" />
+      <div className="relative text-center">
+        <span className="mx-auto mb-2 block h-8 w-8 rounded-full border border-stone-400/60 bg-white/60" />
+        <span className="text-xs font-medium uppercase tracking-[0.16em]">EventOS supplier</span>
+      </div>
+    </div>
+  );
+}
+
 export default function MarketplacePage() {
   const [listings, setListings] = useState<MarketplaceListing[]>([]);
   const [search, setSearch] = useState('');
@@ -59,42 +72,75 @@ export default function MarketplacePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f6f2ea] text-stone-900">
-      <header className="border-b border-stone-300 bg-white/90 px-5 py-4 backdrop-blur md:px-10">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <div><p className="text-xl font-semibold tracking-tight">EventOS Marketplace</p><p className="text-xs text-stone-500">Discover trusted event suppliers</p></div>
-          <a href="/login" className="rounded-full border border-stone-300 px-4 py-2 text-sm hover:bg-stone-100">Supplier & planner sign in</a>
+    <main className="min-h-screen bg-[#f5f1e9] text-stone-950">
+      <header className="sticky top-0 z-30 border-b border-stone-200/80 bg-[#fffdf9]/90 px-5 backdrop-blur-xl md:px-10">
+        <div className="mx-auto flex h-[4.5rem] max-w-7xl items-center justify-between gap-4">
+          <a href="/marketplace" className="flex items-center gap-3" aria-label="EventOS Marketplace home">
+            <span className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-stone-950 text-xs font-semibold text-white">
+              EO<span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-amber-400" />
+            </span>
+            <span>
+              <span className="block text-base font-semibold tracking-tight">EventOS Marketplace</span>
+              <span className="hidden text-[11px] text-stone-500 sm:block">Find the right partners for your event</span>
+            </span>
+          </a>
+          <a href="/login" className="rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-medium hover:border-stone-950 hover:bg-stone-950 hover:text-white">
+            ClientOS sign in
+          </a>
         </div>
       </header>
 
-      <section className="bg-stone-950 px-5 py-16 text-white md:px-10 md:py-24">
-        <div className="mx-auto max-w-5xl text-center">
-          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.24em] text-amber-300">One marketplace. Many possibilities.</p>
-          <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">Build an event people remember.</h1>
-          <p className="mx-auto mt-5 max-w-2xl text-stone-300">Browse items published directly by event suppliers, then send an enquiry without exposing their private operating information.</p>
-          <form className="mx-auto mt-9 flex max-w-2xl gap-2" onSubmit={(event) => { event.preventDefault(); void load(search); }}>
-            <input aria-label="Search Marketplace" className="min-w-0 flex-1 rounded-full bg-white px-5 py-3 text-stone-900 outline-none ring-amber-400 focus:ring-2" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search chairs, flowers, tables, themes…" />
-            <button className="rounded-full bg-amber-300 px-6 py-3 font-medium text-stone-950 hover:bg-amber-200">Search</button>
+      <section className="relative overflow-hidden bg-stone-950 px-5 py-16 text-white md:px-10 md:py-24">
+        <div className="absolute inset-0 opacity-35 [background-image:radial-gradient(circle_at_15%_10%,#b48a34_0,transparent_25%),radial-gradient(circle_at_85%_70%,#625340_0,transparent_30%)]" />
+        <div className="relative mx-auto max-w-5xl text-center">
+          <p className="mb-4 text-xs font-semibold uppercase tracking-[0.24em] text-amber-300">Plan beautifully. Source confidently.</p>
+          <h1 className="text-4xl font-semibold tracking-[-0.035em] md:text-6xl lg:text-7xl">Build an event people remember.</h1>
+          <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-stone-300 md:text-lg">Discover items and services published directly by trusted event suppliers, then send your requirements straight to their team.</p>
+          <form className="mx-auto mt-9 flex max-w-2xl flex-col gap-2 rounded-2xl bg-white p-2 shadow-2xl shadow-black/20 sm:flex-row sm:rounded-full" onSubmit={(event) => { event.preventDefault(); void load(search); }}>
+            <input aria-label="Search Marketplace" className="min-w-0 flex-1 rounded-xl px-4 py-3 text-stone-950 outline-none placeholder:text-stone-400 sm:rounded-full" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search chairs, flowers, tables or themes…" />
+            <button className="rounded-xl bg-amber-300 px-7 py-3 font-semibold text-stone-950 hover:bg-amber-200 sm:rounded-full">Search</button>
           </form>
+          <div className="mt-7 flex flex-wrap justify-center gap-x-7 gap-y-2 text-xs text-stone-400">
+            <span>Supplier-managed listings</span><span>Direct enquiries</span><span>Live availability guidance</span>
+          </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-5 py-10 md:px-10">
-        <div className="mb-6 flex items-end justify-between"><div><p className="text-sm text-stone-500">Published supplier catalogue</p><h2 className="text-2xl font-semibold">Explore the Marketplace</h2></div><span className="text-sm text-stone-500">{listings.length} result{listings.length === 1 ? '' : 's'}</span></div>
-        {error ? <p role="alert" className="mb-5 rounded-xl bg-red-50 p-4 text-sm text-red-700">{error}</p> : null}
-        {loading ? <p className="py-16 text-center text-stone-500">Loading published listings…</p> : null}
-        {!loading && listings.length === 0 ? <div className="rounded-2xl border border-stone-300 bg-white p-12 text-center"><h3 className="text-lg font-medium">No published listings yet</h3><p className="mt-2 text-stone-500">Suppliers control what appears here from their private ClientOS workspace.</p></div> : null}
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {listings.map((item) => (
-            <article key={item.id} className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
-              <div className="aspect-[4/3] bg-stone-200">{item.primaryPhotoUrl || item.photoUrls[0] ? <img className="h-full w-full object-cover" src={item.primaryPhotoUrl || item.photoUrls[0]} alt={item.title || 'Marketplace item'} /> : <div className="flex h-full items-center justify-center text-sm text-stone-500">Supplier image coming soon</div>}</div>
-              <div className="p-5"><div className="flex items-center justify-between gap-2"><p className="text-xs font-medium uppercase tracking-wide text-stone-500">{item.categoryName}</p><span className={`rounded-full px-2 py-1 text-xs ${item.availabilityStatus === 'Available' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>{item.availabilityStatus}</span></div><h3 className="mt-1 text-lg font-semibold">{item.title || 'Untitled listing'}</h3><p className="mt-1 text-sm text-stone-500">by {item.supplierName}</p><p className="mt-3 line-clamp-2 text-sm text-stone-600">{item.description || 'Contact the supplier for details.'}</p><div className="mt-5 flex items-end justify-between"><div className="text-sm">{item.rentalPrice !== null ? <p><span className="font-semibold">{money(item.rentalPrice)}</span> / {item.unitOfMeasure}</p> : <p>Price on request</p>}</div><button onClick={() => { setSelected(item); setSentReference(''); }} className="rounded-full bg-stone-900 px-4 py-2 text-sm text-white hover:bg-stone-700">Enquire</button></div></div>
-            </article>
+      <section className="border-b border-stone-200 bg-[#fffdf9] px-5 py-5 md:px-10">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-2 md:justify-start">
+          <span className="mr-2 text-xs font-semibold uppercase tracking-[0.14em] text-stone-400">Explore</span>
+          {['Furniture', 'Décor', 'Florals', 'Venues', 'Catering', 'Production'].map((category) => (
+            <button key={category} type="button" onClick={() => { setSearch(category); void load(category); }} className="rounded-full border border-stone-200 bg-white px-4 py-2 text-sm text-stone-700 hover:border-stone-400 hover:text-stone-950">{category}</button>
           ))}
         </div>
       </section>
 
-      {selected ? <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 p-0 sm:items-center sm:p-5" role="dialog" aria-modal="true" aria-label={`Enquire about ${selected.title}`}><div className="max-h-[95vh] w-full max-w-xl overflow-y-auto rounded-t-2xl bg-white p-6 sm:rounded-2xl"><div className="flex justify-between gap-4"><div><p className="text-xs uppercase tracking-wide text-stone-500">Marketplace enquiry</p><h2 className="text-xl font-semibold">{selected.title}</h2><p className="text-sm text-stone-500">Your request goes directly into {selected.supplierName}&apos;s ClientOS workflow.</p></div><button aria-label="Close enquiry" onClick={() => setSelected(null)} className="h-9 w-9 rounded-full border text-lg">×</button></div>{sentReference ? <div className="mt-8 rounded-xl bg-emerald-50 p-5 text-emerald-800"><p className="font-semibold">Enquiry sent</p><p className="mt-1 text-sm">Reference: {sentReference}</p></div> : <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={submitEnquiry}><input required name="customerName" placeholder="Your name" className="rounded-lg border p-3" /><input required type="email" name="customerEmail" placeholder="Email address" className="rounded-lg border p-3" /><input name="customerPhone" placeholder="Phone (optional)" className="rounded-lg border p-3" /><input type="date" name="eventDate" className="rounded-lg border p-3" /><input name="eventLocation" placeholder="Event location" className="rounded-lg border p-3" /><input min="1" type="number" name="quantity" placeholder="Quantity" className="rounded-lg border p-3" /><textarea required name="message" placeholder="Tell the supplier what you need" className="min-h-28 rounded-lg border p-3 sm:col-span-2" /><button className="rounded-full bg-amber-300 px-5 py-3 font-medium text-stone-950 sm:col-span-2">Send enquiry</button></form>}</div></div> : null}
+      <section className="mx-auto max-w-7xl px-5 py-10 md:px-10 md:py-14">
+        <div className="mb-7 flex items-end justify-between gap-4">
+          <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">Published supplier catalogue</p><h2 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">Explore the Marketplace</h2></div>
+          <span className="shrink-0 text-sm text-stone-500">{listings.length} result{listings.length === 1 ? '' : 's'}</span>
+        </div>
+        {error ? <p role="alert" className="mb-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</p> : null}
+        {loading ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{[1, 2, 3, 4].map((item) => <div key={item} className="h-[26rem] animate-pulse rounded-3xl bg-white/70" />)}</div> : null}
+        {!loading && listings.length === 0 ? <div className="rounded-3xl border border-stone-200 bg-[#fffdf9] p-12 text-center shadow-sm"><p className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-stone-100 text-xl">⌕</p><h3 className="text-lg font-semibold">No published listings found</h3><p className="mx-auto mt-2 max-w-md text-sm leading-6 text-stone-500">Try a broader search. Suppliers control what appears here from their private ClientOS workspace.</p><button type="button" onClick={() => { setSearch(''); void load(); }} className="mt-5 rounded-full border border-stone-300 bg-white px-5 py-2 text-sm font-medium hover:border-stone-950">Clear search</button></div> : null}
+        {!loading ? <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {listings.map((item) => (
+            <article key={item.id} className="group overflow-hidden rounded-3xl border border-stone-200 bg-[#fffdf9] shadow-sm hover:-translate-y-1 hover:shadow-xl hover:shadow-stone-900/10">
+              <div className="aspect-[4/3] overflow-hidden bg-stone-200">{item.primaryPhotoUrl || item.photoUrls[0] ? <img className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" src={item.primaryPhotoUrl || item.photoUrls[0]} alt={item.title || 'Marketplace item'} /> : <ListingPlaceholder />}</div>
+              <div className="p-5">
+                <div className="flex items-center justify-between gap-2"><p className="truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">{item.categoryName}</p><span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium ${item.availabilityStatus === 'Available' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>{item.availabilityStatus}</span></div>
+                <h3 className="mt-2 text-lg font-semibold tracking-tight">{item.title || 'Untitled listing'}</h3><p className="mt-0.5 text-xs text-stone-500">by {item.supplierName}</p>
+                <p className="mt-3 line-clamp-2 min-h-10 text-sm leading-5 text-stone-600">{item.description || 'Contact the supplier for details.'}</p>
+                <div className="mt-5 flex items-end justify-between gap-3 border-t border-stone-100 pt-4"><div className="text-sm">{item.rentalPrice !== null ? <p><span className="font-semibold">{money(item.rentalPrice)}</span><span className="text-stone-500"> / {item.unitOfMeasure}</span></p> : <p className="font-medium">Price on request</p>}</div><button onClick={() => { setSelected(item); setSentReference(''); }} className="rounded-full bg-stone-950 px-4 py-2 text-sm font-medium text-white hover:bg-amber-300 hover:text-stone-950">Enquire</button></div>
+              </div>
+            </article>
+          ))}
+        </div> : null}
+      </section>
+
+      <footer className="border-t border-stone-800 bg-stone-950 px-5 py-10 text-stone-400 md:px-10"><div className="mx-auto flex max-w-7xl flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between"><p><span className="font-semibold text-white">EventOS Marketplace</span> · Customer discovery powered by supplier-managed ClientOS data.</p><a href="/login" className="text-stone-300 hover:text-amber-300">Manage your business in ClientOS →</a></div></footer>
+
+      {selected ? <div className="fixed inset-0 z-50 flex items-end justify-center bg-stone-950/70 p-0 backdrop-blur-sm sm:items-center sm:p-5" role="dialog" aria-modal="true" aria-label={`Enquire about ${selected.title}`}><div className="max-h-[95vh] w-full max-w-xl overflow-y-auto rounded-t-3xl bg-[#fffdf9] p-6 shadow-2xl sm:rounded-3xl sm:p-8"><div className="flex justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">Marketplace enquiry</p><h2 className="mt-1 text-2xl font-semibold tracking-tight">{selected.title}</h2><p className="mt-1 text-sm leading-5 text-stone-500">Your request goes directly into {selected.supplierName}&apos;s ClientOS workflow.</p></div><button aria-label="Close enquiry" onClick={() => setSelected(null)} className="h-10 w-10 shrink-0 rounded-full border border-stone-300 text-xl hover:border-stone-950 hover:bg-stone-950 hover:text-white">×</button></div>{sentReference ? <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-800"><p className="font-semibold">Enquiry sent successfully</p><p className="mt-1 text-sm">The supplier can now respond through ClientOS.</p><p className="mt-3 text-xs">Reference: {sentReference}</p></div> : <form className="mt-7 grid gap-3 sm:grid-cols-2" onSubmit={submitEnquiry}>{[['customerName', 'Your name'], ['customerEmail', 'Email address'], ['customerPhone', 'Phone (optional)'], ['eventLocation', 'Event location']].map(([name, placeholder]) => <input key={name} required={name === 'customerName' || name === 'customerEmail'} type={name === 'customerEmail' ? 'email' : 'text'} name={name} placeholder={placeholder} className="rounded-xl border border-stone-300 bg-white p-3 text-sm outline-none focus:border-amber-500" />)}<label className="text-xs text-stone-500">Event date<input type="date" name="eventDate" className="mt-1 block w-full rounded-xl border border-stone-300 bg-white p-3 text-sm text-stone-800" /></label><input min="1" type="number" name="quantity" placeholder="Quantity" className="self-end rounded-xl border border-stone-300 bg-white p-3 text-sm" /><textarea required name="message" placeholder="Tell the supplier what you need, including your event style and timing." className="min-h-28 rounded-xl border border-stone-300 bg-white p-3 text-sm outline-none focus:border-amber-500 sm:col-span-2" /><button className="mt-2 rounded-full bg-amber-300 px-5 py-3 font-semibold text-stone-950 hover:bg-amber-200 sm:col-span-2">Send enquiry to supplier</button></form>}</div></div> : null}
     </main>
   );
 }
