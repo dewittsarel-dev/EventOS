@@ -24,7 +24,7 @@ Earlier `MODULE-00X` labels found during design are historical working numbers a
 | M008 | Commercial Workspace | EC-001 — Event OS | Complete |
 | M009 | Asset Management | EC-001 / EC-002 | Complete |
 | M010 | Event Execution | EC-002 — EventOS Asset Management | Complete |
-| M011 | Finance and Event Financial Control | EC-002 — EventOS Asset Management | Pending extraction |
+| M011 | Finance and Event Financial Control | EC-002 — EventOS Asset Management | Complete |
 
 ---
 
@@ -120,5 +120,5 @@ Historical numbering must not be used for repository folder names.
 
 **Final numbering:** Verified  
 **Historical renumbering:** Recorded  
-**Current position:** M010 — Event Execution complete  
-**Next module:** M011 — Finance and Event Financial Control
+**Current position:** M011 — Finance and Event Financial Control complete  
+**Next module:** None — registered recovery sequence complete
