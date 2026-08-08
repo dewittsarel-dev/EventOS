@@ -13,6 +13,13 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — ClientOS Event Design and Requirements Foundation
+
+- Added an authenticated event-planning workspace for immutable Client Brief versions, Event Design versions and Requirement Sets.
+- Added explicit Event Design and Requirement Set approval controls while preserving the API as the owner of approval and versioning rules.
+- Added direct workspace coverage and an event-level route into the planning flow.
+- Verification status: all 28 web test files and 81 tests passed; web lint passed; production web build passed; API regression verification passed.
+
 ### 2026-08-08 — ClientOS Event Lifecycle Workspace
 
 - Added the first ClientOS vertical slice to the event details workspace.

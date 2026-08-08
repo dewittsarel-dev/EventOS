@@ -58,6 +58,12 @@ export default function EventDetailsPage() {
         actions={
           <>
             <Link
+              href={`/events/${eventId}/planning`}
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100"
+            >
+              Design & Requirements
+            </Link>
+            <Link
               href={`/tasks/timeline?eventId=${eventId}`}
               className="rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100"
             >
