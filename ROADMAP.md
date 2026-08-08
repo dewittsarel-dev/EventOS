@@ -10,7 +10,7 @@ The repository currently contains:
 - Prisma schema and migrations for a shared platform data model
 - a working Organization module with create, list, get, update and delete flows
 
-The current implementation is therefore already beyond a blank scaffold, but it does not yet implement the wider EventOS product surface.
+The repository now contains the verified backend architecture from M004 through M011, including the cross-module lifecycle integration layer. The next development stage is the ClientOS user interface, followed by the Marketplace surface, end-to-end validation and deployment readiness.
 
 ## Status legend
 
@@ -39,7 +39,7 @@ The current implementation is therefore already beyond a blank scaffold, but it 
 
 - Added organization update support and corresponding tests.
 
-### PP-005 Membership and Invitations — NEXT
+### PP-005 Membership and Invitations — PLANNED
 
 - Vertical slice 1: membership persistence and ownership.
 - Vertical slice 2: invite issuance and acceptance workflow.
@@ -50,7 +50,7 @@ The current implementation is therefore already beyond a blank scaffold, but it 
 - Added a reusable auth guard and current-user decorator for future private-operation authorization work.
 - Verification status: build passed, tests passed, lint passed.
 
-### PP-007 Event Core — PLANNED
+### PP-007 Event Core — COMPLETE
 
 - Vertical slice 1: event model and lifecycle state.
 - Vertical slice 2: event ownership and visibility rules.
@@ -70,15 +70,40 @@ The current implementation is therefore already beyond a blank scaffold, but it 
 - Vertical slice 1: audit log and approval concepts.
 - Vertical slice 2: governance policy enforcement.
 
-### PP-011 Finance — PLANNED
+### PP-011 Finance — COMPLETE
 
 - Vertical slice 1: budget and invoicing concepts.
 - Vertical slice 2: finance workflow integration.
 
-### PP-012 Command Center — PLANNED
+### PP-012 Command Center — COMPLETE
 
 - Vertical slice 1: command center data model.
 - Vertical slice 2: action-oriented operational views.
+
+## EventOS architecture delivery
+
+### M004–M011 Backend Chain — COMPLETE
+
+- Event Design Studio and Requirement Engine.
+- Mood Board Studio, Procurement Studio and Commercial Workspace.
+- Asset Management, Event Execution and Finance & Event Financial Control.
+- Event Lifecycle continuity reporting and controlled downstream synchronization.
+- Human approval boundaries, immutable audit evidence and source-of-truth ownership preserved.
+
+### ClientOS Product Interface — NEXT
+
+- Build the private operational experience over the verified M004–M011 APIs.
+- Prioritise focused vertical slices and role-appropriate workflows.
+
+### Marketplace Product Interface — PLANNED
+
+- Build public catalogue, enquiry and booking flows over explicitly published data.
+- Keep private operational records within ClientOS.
+
+### End-to-End and Deployment Readiness — PLANNED
+
+- Validate complete ClientOS and Marketplace journeys.
+- Apply migrations against an approved PostgreSQL environment and complete deployment and security checks.
 
 ## Future package guidance
 

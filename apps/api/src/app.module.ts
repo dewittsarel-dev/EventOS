@@ -9,6 +9,7 @@ import { CommercialWorkspacesModule } from './commercial-workspaces/commercial-w
 import { ContactsModule } from './contacts/contacts.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { EventExecutionModule } from './event-execution/event-execution.module';
+import { EventLifecycleModule } from './event-lifecycle/event-lifecycle.module';
 import { EventDesignModule } from './event-design/event-design.module';
 import { EventsModule } from './events/events.module';
 import { FinanceControlModule } from './finance-control/finance-control.module';
@@ -46,6 +47,7 @@ import { PrismaModule } from './prisma/prisma.module';
     MarketplaceModule,
     EventDesignModule,
     EventExecutionModule,
+    EventLifecycleModule,
     EventsModule,
     FinanceControlModule,
     InventoryModule,
