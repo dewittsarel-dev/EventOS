@@ -23,7 +23,7 @@ Earlier `MODULE-00X` labels found during design are historical working numbers a
 | M007 | Procurement Studio | EC-001 — Event OS | Complete |
 | M008 | Commercial Workspace | EC-001 — Event OS | Complete |
 | M009 | Asset Management | EC-001 / EC-002 | Complete |
-| M010 | Event Execution | EC-002 — EventOS Asset Management | Pending extraction |
+| M010 | Event Execution | EC-002 — EventOS Asset Management | Complete |
 | M011 | Finance and Event Financial Control | EC-002 — EventOS Asset Management | Pending extraction |
 
 ---
@@ -120,5 +120,5 @@ Historical numbering must not be used for repository folder names.
 
 **Final numbering:** Verified  
 **Historical renumbering:** Recorded  
-**Current position:** M009 — Asset Management complete  
-**Next module:** M010 — Event Execution
+**Current position:** M010 — Event Execution complete  
+**Next module:** M011 — Finance and Event Financial Control
