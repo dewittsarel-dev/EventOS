@@ -103,7 +103,9 @@ The repository now contains the verified backend architecture from M004 through 
 - Controlled quantity overrides — COMPLETE: planners can create a new auditable Requirement Set version for a changed quantity only when an explicit reason is supplied.
 - Requirement impact controls — COMPLETE: proposed quantities are compared with an approved baseline and every reported change requires an explicit planner apply-or-keep decision before a new version is created.
 - Mood Board Studio interface — COMPLETE: visual concepts remain linked to approved requirements and identified sources, with comments, change requests, locked objects and explicit visual approval that does not start procurement.
-- Procurement Studio interface — NEXT after the ClientOS visual checkpoint.
+- Procurement Studio interface — COMPLETE: approved requirements can be grouped into governed sourcing packages, analysed against transparent buyer policy, compared across explainable Marketplace solutions and explicitly selected before a non-sending M008 handoff.
+- Commercial Workspace interface — COMPLETE: selected procurement strategies now become governed RFQ drafts, separately approved and sent supplier conversations, immutable quote revisions, explainable comparisons, substitution review, explicit awards and unsent purchase-order drafts.
+- Asset Management interface — NEXT: connect awarded event requirements to governed asset availability, reservation, preparation, movement, deployment and return controls.
 
 ### Marketplace Product Interface — PLANNED
 

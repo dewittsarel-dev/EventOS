@@ -100,5 +100,13 @@ describe('EventDetailsPage', () => {
       'href',
       '/events/event-1/mood-board',
     );
+    expect(screen.getByRole('link', { name: 'Procurement' })).toHaveAttribute(
+      'href',
+      '/events/event-1/procurement',
+    );
+    expect(screen.getByRole('link', { name: 'Commercial' })).toHaveAttribute(
+      'href',
+      '/events/event-1/commercial',
+    );
   });
 });

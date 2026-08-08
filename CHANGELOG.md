@@ -13,6 +13,22 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — ClientOS Commercial Workspace
+
+- Added an event-context Commercial Workspace over the recovered M008 API and linked it from the Event workspace.
+- Generates supplier-specific RFQ drafts from the selected Procurement Solution while keeping generation, human approval and sending as separate controlled actions.
+- Added structured supplier quote revisions, requirement-level comparison, explainable AI recommendations, cross-module substitution review and explicit line awards.
+- Added governed purchase-order draft preparation and approval while confirming that draft approval does not silently send an order or create an uncontrolled commitment.
+- Verification status: all 36 web test files and 91 tests passed; web lint and production build passed; all 29 API suites and 157 tests passed; API build and lint passed.
+
+### 2026-08-08 — ClientOS Procurement Studio
+
+- Added an event-context Procurement Studio over the recovered M007 API and linked it from the Event workspace.
+- Groups approved requirements into sourcing packages with explicit buyer policies for cost, coordination, locality, reliability, sustainability, emerging-business support and Marketplace diversity.
+- Presents explainable ranked procurement solutions, supplier allocations, cost, confidence and risk without hiding credible alternatives or applying hidden AI objectives.
+- Requires explicit human solution selection and clearly separates that decision from the M008 quotation-workspace handoff; no RFQ, reservation, order or payment is created automatically.
+- Verification status: all 34 web test files and 88 tests passed; web lint and production build passed; all 29 API suites and 157 tests passed; API build and lint passed.
+
 ### 2026-08-08 — ClientOS Mood Board Studio
 
 - Added an event-context Mood Board Studio over the recovered M006 API.
