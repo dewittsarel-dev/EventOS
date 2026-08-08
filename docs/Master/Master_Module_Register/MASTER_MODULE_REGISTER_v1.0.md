@@ -22,7 +22,7 @@ Earlier `MODULE-00X` labels found during design are historical working numbers a
 | M006 | Mood Board Studio | EC-001 — Event OS | Complete |
 | M007 | Procurement Studio | EC-001 — Event OS | Complete |
 | M008 | Commercial Workspace | EC-001 — Event OS | Complete |
-| M009 | Asset Management | EC-001 / EC-002 | Pending extraction |
+| M009 | Asset Management | EC-001 / EC-002 | Complete |
 | M010 | Event Execution | EC-002 — EventOS Asset Management | Pending extraction |
 | M011 | Finance and Event Financial Control | EC-002 — EventOS Asset Management | Pending extraction |
 
@@ -120,5 +120,5 @@ Historical numbering must not be used for repository folder names.
 
 **Final numbering:** Verified  
 **Historical renumbering:** Recorded  
-**Current position:** M008 — Commercial Workspace complete  
-**Next module:** M009 — Asset Management
+**Current position:** M009 — Asset Management complete  
+**Next module:** M010 — Event Execution
