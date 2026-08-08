@@ -7,6 +7,7 @@ import { CapabilityModule } from './capabilities/capability.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { EventExecutionModule } from './event-execution/event-execution.module';
+import { EventDesignModule } from './event-design/event-design.module';
 import { EventsModule } from './events/events.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
@@ -35,6 +36,7 @@ import { PrismaModule } from './prisma/prisma.module';
     DashboardModule,
     ContactsModule,
     MarketplaceModule,
+    EventDesignModule,
     EventExecutionModule,
     EventsModule,
     InventoryModule,

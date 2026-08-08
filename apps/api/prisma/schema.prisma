@@ -17,6 +17,11 @@ enum EventStatus {
   Cancelled
 }
 
+enum EventDesignStatus {
+  Draft
+  Approved
+}
+
 enum QuotationStatus {
   Draft
   Sent
@@ -293,69 +298,74 @@ enum EventResourceOutstandingStatus {
 }
 
 model User {
-  id           String       @id @default(uuid())
-  email        String       @unique
-  passwordHash String?
-  name         String?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  memberships  Membership[]
-  assignedEvents Event[]    @relation("EventAssignedUser")
-  createdTasks Task[]       @relation("TaskCreatedBy")
-  assignedTasks Task[]      @relation("TaskAssignedUser")
-  meetingNotesCreated MeetingNote[]
-  meetingActionItemsAssigned MeetingActionItem[]
-  stockMovementsCreated StockMovement[]
-  purchaseOrdersCreated PurchaseOrder[] @relation("PurchaseOrderCreatedBy")
-  purchaseOrdersApproved PurchaseOrder[] @relation("PurchaseOrderApprovedBy")
-  goodsReceiptsReceived GoodsReceipt[] @relation("GoodsReceiptReceivedBy")
-  eventResourceAllocationsCreated EventResourceAllocation[] @relation("EventResourceAllocationCreatedBy")
-  eventResourceAllocationsUpdated EventResourceAllocation[] @relation("EventResourceAllocationUpdatedBy")
+  id                               String                     @id @default(uuid())
+  email                            String                     @unique
+  passwordHash                     String?
+  name                             String?
+  createdAt                        DateTime                   @default(now())
+  updatedAt                        DateTime                   @updatedAt
+  memberships                      Membership[]
+  assignedEvents                   Event[]                    @relation("EventAssignedUser")
+  createdTasks                     Task[]                     @relation("TaskCreatedBy")
+  assignedTasks                    Task[]                     @relation("TaskAssignedUser")
+  meetingNotesCreated              MeetingNote[]
+  meetingActionItemsAssigned       MeetingActionItem[]
+  stockMovementsCreated            StockMovement[]
+  purchaseOrdersCreated            PurchaseOrder[]            @relation("PurchaseOrderCreatedBy")
+  purchaseOrdersApproved           PurchaseOrder[]            @relation("PurchaseOrderApprovedBy")
+  goodsReceiptsReceived            GoodsReceipt[]             @relation("GoodsReceiptReceivedBy")
+  eventResourceAllocationsCreated  EventResourceAllocation[]  @relation("EventResourceAllocationCreatedBy")
+  eventResourceAllocationsUpdated  EventResourceAllocation[]  @relation("EventResourceAllocationUpdatedBy")
   eventResourceOutstandingsCreated EventResourceOutstanding[] @relation("EventResourceOutstandingCreatedBy")
-  aiDrafts     AiDraft[]    @relation("AiDraftCreatedBy")
-  auditLogs    AuditLog[]
-  outboxEvents OutboxEvent[]
+  aiDrafts                         AiDraft[]                  @relation("AiDraftCreatedBy")
+  auditLogs                        AuditLog[]
+  outboxEvents                     OutboxEvent[]
+  clientBriefVersionsCreated       ClientBriefVersion[]       @relation("ClientBriefVersionCreatedBy")
+  eventDesignVersionsCreated       EventDesignVersion[]       @relation("EventDesignVersionCreatedBy")
+  eventDesignVersionsApproved      EventDesignVersion[]       @relation("EventDesignVersionApprovedBy")
 
   @@index([email])
 }
 
 model Organization {
-  id           String       @id @default(uuid())
-  name         String
-  slug         String       @unique
-  tradingName  String?
-  vatNumber    String?
-  registrationNumber String?
-  email        String?
-  phone        String?
-  website      String?
-  physicalAddress String?
-  postalAddress String?
-  logoUrl      String?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  memberships  Membership[]
-  roles        Role[]
-  contacts     Contact[]
-  suppliers    Supplier[]
-  supplierProducts SupplierProduct[]
-  events       Event[]
-  meetingNotes MeetingNote[]
-  quotations   Quotation[]
-  tasks        Task[]
-  inventoryItems InventoryItem[]
-  inventoryCategories InventoryCategory[]
-  storageLocations StorageLocation[]
-  stockMovements StockMovement[]
-  purchaseOrders PurchaseOrder[]
-  goodsReceipts GoodsReceipt[]
-  aiDrafts     AiDraft[]
-  resources    Resource[]
-  resourceReservations ResourceReservation[]
-  eventResourceAllocations EventResourceAllocation[]
+  id                        String                     @id @default(uuid())
+  name                      String
+  slug                      String                     @unique
+  tradingName               String?
+  vatNumber                 String?
+  registrationNumber        String?
+  email                     String?
+  phone                     String?
+  website                   String?
+  physicalAddress           String?
+  postalAddress             String?
+  logoUrl                   String?
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  memberships               Membership[]
+  roles                     Role[]
+  contacts                  Contact[]
+  suppliers                 Supplier[]
+  supplierProducts          SupplierProduct[]
+  events                    Event[]
+  meetingNotes              MeetingNote[]
+  quotations                Quotation[]
+  tasks                     Task[]
+  inventoryItems            InventoryItem[]
+  inventoryCategories       InventoryCategory[]
+  storageLocations          StorageLocation[]
+  stockMovements            StockMovement[]
+  purchaseOrders            PurchaseOrder[]
+  goodsReceipts             GoodsReceipt[]
+  aiDrafts                  AiDraft[]
+  resources                 Resource[]
+  resourceReservations      ResourceReservation[]
+  eventResourceAllocations  EventResourceAllocation[]
   eventResourceOutstandings EventResourceOutstanding[]
-  auditLogs    AuditLog[]
-  outboxEvents OutboxEvent[]
+  auditLogs                 AuditLog[]
+  outboxEvents              OutboxEvent[]
+  clientBriefVersions       ClientBriefVersion[]
+  eventDesignVersions       EventDesignVersion[]
 
   @@index([slug])
 }
@@ -417,34 +427,36 @@ model Contact {
 }
 
 model Event {
-  id             String       @id @default(uuid())
-  organizationId String
-  contactId      String
-  assignedUserId String?
-  title          String
-  eventType      String
-  eventDate      DateTime
-  startTime      String
-  endTime        String
-  venue          String?
-  budgetCents    Int?
-  notes          String?
-  description    String?
-  startDateTime  DateTime
-  endDateTime    DateTime
-  location       String?
-  status         EventStatus
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  contact        Contact      @relation(fields: [contactId], references: [id], onDelete: Restrict)
-  assignedUser   User?        @relation("EventAssignedUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
-  quotations     Quotation[]
-  tasks          Task[]
-  meetingNotes   MeetingNote[]
-  supplierLinks  SupplierEvent[]
-  resourceAllocations EventResourceAllocation[]
+  id                   String                     @id @default(uuid())
+  organizationId       String
+  contactId            String
+  assignedUserId       String?
+  title                String
+  eventType            String
+  eventDate            DateTime
+  startTime            String
+  endTime              String
+  venue                String?
+  budgetCents          Int?
+  notes                String?
+  description          String?
+  startDateTime        DateTime
+  endDateTime          DateTime
+  location             String?
+  status               EventStatus
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
+  organization         Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact              Contact                    @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  assignedUser         User?                      @relation("EventAssignedUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  quotations           Quotation[]
+  tasks                Task[]
+  meetingNotes         MeetingNote[]
+  supplierLinks        SupplierEvent[]
+  resourceAllocations  EventResourceAllocation[]
   resourceOutstandings EventResourceOutstanding[]
+  clientBriefVersions  ClientBriefVersion[]
+  eventDesignVersions  EventDesignVersion[]
 
   @@index([organizationId])
   @@index([contactId])
@@ -456,28 +468,90 @@ model Event {
   @@index([title])
 }
 
+model ClientBriefVersion {
+  id                  String               @id @default(uuid())
+  organizationId      String
+  eventId             String
+  version             Int
+  clientName          String
+  eventName           String
+  eventDates          DateTime[]
+  venue               String?
+  expectedGuests      Int?
+  budgetCents         Int?
+  dressCode           String?
+  eventType           String
+  clientObjectives    String?
+  initialRequirements String?
+  notes               String?
+  attachments         Json?
+  createdByUserId     String
+  createdAt           DateTime             @default(now())
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event               Event                @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdBy           User                 @relation("ClientBriefVersionCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  eventDesignVersions EventDesignVersion[]
+
+  @@unique([eventId, version])
+  @@index([organizationId])
+  @@index([createdByUserId])
+}
+
+model EventDesignVersion {
+  id                   String             @id @default(uuid())
+  organizationId       String
+  eventId              String
+  clientBriefVersionId String
+  version              Int
+  status               EventDesignStatus  @default(Draft)
+  seating              Json?
+  decor                Json?
+  catering             Json?
+  entertainment        Json?
+  lightingAndAv        Json?
+  branding             Json?
+  infrastructure       Json?
+  staffing             Json?
+  createdByUserId      String
+  approvedByUserId     String?
+  approvedAt           DateTime?
+  createdAt            DateTime           @default(now())
+  organization         Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event                Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  clientBriefVersion   ClientBriefVersion @relation(fields: [clientBriefVersionId], references: [id], onDelete: Restrict)
+  createdBy            User               @relation("EventDesignVersionCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  approvedBy           User?              @relation("EventDesignVersionApprovedBy", fields: [approvedByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([eventId, version])
+  @@index([organizationId])
+  @@index([clientBriefVersionId])
+  @@index([createdByUserId])
+  @@index([approvedByUserId])
+  @@index([eventId, status])
+}
+
 model Quotation {
-  id             String          @id @default(uuid())
-  quoteNumber    String          @unique
+  id             String              @id @default(uuid())
+  quoteNumber    String              @unique
   organizationId String
   contactId      String
   eventId        String?
   title          String
   notes          String?
-  status         QuotationStatus @default(Draft)
-  issueDate      DateTime        @default(now())
+  status         QuotationStatus     @default(Draft)
+  issueDate      DateTime            @default(now())
   expiryDate     DateTime?
   subtotalCents  Int
-  discountCents  Int             @default(0)
-  taxRatePercent Int             @default(0)
-  taxCents       Int             @default(0)
+  discountCents  Int                 @default(0)
+  taxRatePercent Int                 @default(0)
+  taxCents       Int                 @default(0)
   totalCents     Int
   archivedAt     DateTime?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  contact        Contact         @relation(fields: [contactId], references: [id], onDelete: Restrict)
-  event          Event?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  contact        Contact             @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  event          Event?              @relation(fields: [eventId], references: [id], onDelete: SetNull)
   items          QuotationItem[]
   tasks          Task[]
   supplierLinks  SupplierQuotation[]
@@ -492,7 +566,7 @@ model Quotation {
 }
 
 model Task {
-  id                String       @id @default(uuid())
+  id                String             @id @default(uuid())
   organizationId    String
   eventId           String?
   assignedUserId    String?
@@ -501,17 +575,17 @@ model Task {
   title             String
   description       String?
   dueDate           DateTime?
-  priority          TaskPriority @default(Medium)
-  status            TaskStatus   @default(Todo)
+  priority          TaskPriority       @default(Medium)
+  status            TaskStatus         @default(Todo)
   completedAt       DateTime?
   archivedAt        DateTime?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  event             Event?       @relation(fields: [eventId], references: [id], onDelete: SetNull)
-  assignedUser      User?        @relation("TaskAssignedUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
-  createdBy         User         @relation("TaskCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  quotation         Quotation?   @relation(fields: [quotationId], references: [id], onDelete: SetNull)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  organization      Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event             Event?             @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  assignedUser      User?              @relation("TaskAssignedUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  createdBy         User               @relation("TaskCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  quotation         Quotation?         @relation(fields: [quotationId], references: [id], onDelete: SetNull)
   supplierLinks     SupplierTask[]
   meetingActionItem MeetingActionItem? @relation("MeetingActionItemLinkedTask")
 
@@ -527,7 +601,7 @@ model Task {
 }
 
 model MeetingNote {
-  id              String            @id @default(uuid())
+  id              String              @id @default(uuid())
   organizationId  String
   eventId         String
   title           String
@@ -541,11 +615,11 @@ model MeetingNote {
   decisions       String?
   nextMeetingDate DateTime?
   createdByUserId String
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  organization    Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  event           Event             @relation(fields: [eventId], references: [id], onDelete: Restrict)
-  createdBy       User              @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  organization    Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event           Event               @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  createdBy       User                @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
   attendees       MeetingAttendee[]
   actionItems     MeetingActionItem[]
 
@@ -557,15 +631,15 @@ model MeetingNote {
 }
 
 model MeetingAttendee {
-  id                 String                 @id @default(uuid())
+  id                 String                @id @default(uuid())
   meetingNoteId      String
   name               String
   email              String?
   roleOrOrganization String?
   attendanceStatus   MeetingAttendeeStatus
-  createdAt          DateTime               @default(now())
-  updatedAt          DateTime               @updatedAt
-  meetingNote        MeetingNote            @relation(fields: [meetingNoteId], references: [id], onDelete: Cascade)
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  meetingNote        MeetingNote           @relation(fields: [meetingNoteId], references: [id], onDelete: Cascade)
 
   @@index([meetingNoteId])
   @@index([email])
@@ -573,20 +647,20 @@ model MeetingAttendee {
 }
 
 model MeetingActionItem {
-  id                 String                       @id @default(uuid())
-  meetingNoteId      String
-  description        String
-  assignedUserId     String?
+  id                  String                    @id @default(uuid())
+  meetingNoteId       String
+  description         String
+  assignedUserId      String?
   assignedContactName String?
-  dueDate            DateTime?
-  priority           MeetingActionItemPriority
-  status             MeetingActionItemStatus
-  linkedTaskId       String?                      @unique
-  createdAt          DateTime                     @default(now())
-  updatedAt          DateTime                     @updatedAt
-  meetingNote        MeetingNote                  @relation(fields: [meetingNoteId], references: [id], onDelete: Cascade)
-  assignedUser       User?                        @relation(fields: [assignedUserId], references: [id], onDelete: SetNull)
-  linkedTask         Task?                        @relation("MeetingActionItemLinkedTask", fields: [linkedTaskId], references: [id], onDelete: SetNull)
+  dueDate             DateTime?
+  priority            MeetingActionItemPriority
+  status              MeetingActionItemStatus
+  linkedTaskId        String?                   @unique
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  meetingNote         MeetingNote               @relation(fields: [meetingNoteId], references: [id], onDelete: Cascade)
+  assignedUser        User?                     @relation(fields: [assignedUserId], references: [id], onDelete: SetNull)
+  linkedTask          Task?                     @relation("MeetingActionItemLinkedTask", fields: [linkedTaskId], references: [id], onDelete: SetNull)
 
   @@index([meetingNoteId])
   @@index([assignedUserId])
@@ -596,36 +670,36 @@ model MeetingActionItem {
 }
 
 model Supplier {
-  id                    String           @id @default(uuid())
-  organizationId        String
-  companyName           String
-  category              SupplierCategory
-  primaryContactName    String?
-  phone                 String?
-  mobile                String?
-  email                 String?
-  website               String?
-  physicalAddress       String?
-  city                  String?
-  province              String?
-  postalCode            String?
-  vatNumber             String?
-  registrationNumber    String?
-  preferredSupplier     Boolean          @default(false)
-  active                Boolean          @default(true)
-  preferredPaymentTerms String?
-  internalRating        Int?
-  notes                 String?
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-  organization          Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  id                      String              @id @default(uuid())
+  organizationId          String
+  companyName             String
+  category                SupplierCategory
+  primaryContactName      String?
+  phone                   String?
+  mobile                  String?
+  email                   String?
+  website                 String?
+  physicalAddress         String?
+  city                    String?
+  province                String?
+  postalCode              String?
+  vatNumber               String?
+  registrationNumber      String?
+  preferredSupplier       Boolean             @default(false)
+  active                  Boolean             @default(true)
+  preferredPaymentTerms   String?
+  internalRating          Int?
+  notes                   String?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  organization            Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   preferredInventoryItems InventoryItem[]
   purchaseOrders          PurchaseOrder[]
-  eventLinks            SupplierEvent[]
-  quotationLinks        SupplierQuotation[]
-  taskLinks             SupplierTask[]
-  products              SupplierProduct[]
-  resources             Resource[]
+  eventLinks              SupplierEvent[]
+  quotationLinks          SupplierQuotation[]
+  taskLinks               SupplierTask[]
+  products                SupplierProduct[]
+  resources               Resource[]
 
   @@index([organizationId])
   @@index([companyName])
@@ -636,27 +710,27 @@ model Supplier {
 }
 
 model SupplierProduct {
-  id                   String                  @id @default(uuid())
-  organizationId       String
-  supplierId           String
-  productName          String
-  sku                  String?
-  category             SupplierProductCategory
-  brand                String?
-  description          String?
-  unit                 SupplierProductUnit
-  costPrice            Float
-  sellingPrice         Float?
-  vatPercent           Float?
-  leadTimeDays         Int?
-  minimumOrderQuantity Float?
-  preferredProduct     Boolean                 @default(false)
-  active               Boolean                 @default(true)
-  notes                String?
-  createdAt            DateTime                @default(now())
-  updatedAt            DateTime                @updatedAt
-  organization         Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  supplier             Supplier                @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  id                     String                  @id @default(uuid())
+  organizationId         String
+  supplierId             String
+  productName            String
+  sku                    String?
+  category               SupplierProductCategory
+  brand                  String?
+  description            String?
+  unit                   SupplierProductUnit
+  costPrice              Float
+  sellingPrice           Float?
+  vatPercent             Float?
+  leadTimeDays           Int?
+  minimumOrderQuantity   Float?
+  preferredProduct       Boolean                 @default(false)
+  active                 Boolean                 @default(true)
+  notes                  String?
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  supplier               Supplier                @relation(fields: [supplierId], references: [id], onDelete: Cascade)
   purchaseOrderLineItems PurchaseOrderLineItem[]
 
   @@unique([organizationId, sku])
@@ -669,14 +743,14 @@ model SupplierProduct {
 }
 
 model InventoryCategory {
-  id             String       @id @default(uuid())
+  id             String          @id @default(uuid())
   organizationId String
   name           String
   description    String?
-  active         Boolean      @default(true)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   items          InventoryItem[]
 
   @@unique([organizationId, name])
@@ -685,7 +759,7 @@ model InventoryCategory {
 }
 
 model StorageLocation {
-  id              String       @id @default(uuid())
+  id              String          @id @default(uuid())
   organizationId  String
   name            String
   code            String
@@ -693,10 +767,10 @@ model StorageLocation {
   city            String?
   province        String?
   notes           String?
-  active          Boolean      @default(true)
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  active          Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   stockLevels     StockLevel[]
   stockMovements  StockMovement[]
   purchaseOrders  PurchaseOrder[] @relation("PurchaseOrderDeliveryLocation")
@@ -709,42 +783,42 @@ model StorageLocation {
 }
 
 model Resource {
-  id               String               @id @default(uuid())
-  organizationId   String
-  supplierId       String?
-  name             String
-  description      String?
-  category         String
-  tags             String[]             @default([])
-  keywords         String[]             @default([])
-  aiSummary        String?
-  searchPhrases    String[]             @default([])
-  imageUrls        String[]             @default([])
-  resourceType     ResourceType
-  quantityMode     ResourceQuantityMode
-  sku              String?
-  barcode          String?
-  status           ResourceStatus       @default(AVAILABLE)
-  visibility       ResourceVisibility   @default(PRIVATE)
-  unit             String
-  totalQuantity    Float?
-  condition        ResourceCondition    @default(UNKNOWN)
-  locationId       String?
-  purchaseValue    Float?
-  replacementValue Float?
-  rentalPrice      Float?
-  damagedQuantity  Float                @default(0)
-  maintenanceQuantity Float             @default(0)
-  notes            String?
-  createdAt        DateTime             @default(now())
-  updatedAt        DateTime             @updatedAt
-  archivedAt       DateTime?
-  organization     Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  supplier         Supplier?            @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  location         StorageLocation?     @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  reservations     ResourceReservation[]
-  allocations      EventResourceAllocation[]
-  outstandings     EventResourceOutstanding[]
+  id                  String                     @id @default(uuid())
+  organizationId      String
+  supplierId          String?
+  name                String
+  description         String?
+  category            String
+  tags                String[]                   @default([])
+  keywords            String[]                   @default([])
+  aiSummary           String?
+  searchPhrases       String[]                   @default([])
+  imageUrls           String[]                   @default([])
+  resourceType        ResourceType
+  quantityMode        ResourceQuantityMode
+  sku                 String?
+  barcode             String?
+  status              ResourceStatus             @default(AVAILABLE)
+  visibility          ResourceVisibility         @default(PRIVATE)
+  unit                String
+  totalQuantity       Float?
+  condition           ResourceCondition          @default(UNKNOWN)
+  locationId          String?
+  purchaseValue       Float?
+  replacementValue    Float?
+  rentalPrice         Float?
+  damagedQuantity     Float                      @default(0)
+  maintenanceQuantity Float                      @default(0)
+  notes               String?
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
+  archivedAt          DateTime?
+  organization        Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  supplier            Supplier?                  @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  location            StorageLocation?           @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  reservations        ResourceReservation[]
+  allocations         EventResourceAllocation[]
+  outstandings        EventResourceOutstanding[]
 
   @@unique([organizationId, sku])
   @@unique([organizationId, barcode])
@@ -759,21 +833,21 @@ model Resource {
 }
 
 model ResourceReservation {
-  id            String                        @id @default(uuid())
+  id             String                        @id @default(uuid())
   organizationId String
-  resourceId    String
-  sourceType    ResourceReservationSourceType
-  sourceId      String
-  quantity      Float                         @default(1)
-  startDateTime DateTime
-  endDateTime   DateTime
-  status        ResourceReservationStatus     @default(DRAFT)
-  notes         String?
-  createdAt     DateTime                      @default(now())
-  updatedAt     DateTime                      @updatedAt
-  organization  Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  resource      Resource                      @relation(fields: [resourceId], references: [id], onDelete: Cascade)
-  allocation    EventResourceAllocation?
+  resourceId     String
+  sourceType     ResourceReservationSourceType
+  sourceId       String
+  quantity       Float                         @default(1)
+  startDateTime  DateTime
+  endDateTime    DateTime
+  status         ResourceReservationStatus     @default(DRAFT)
+  notes          String?
+  createdAt      DateTime                      @default(now())
+  updatedAt      DateTime                      @updatedAt
+  organization   Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  resource       Resource                      @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  allocation     EventResourceAllocation?
 
   @@index([organizationId])
   @@index([resourceId])
@@ -783,32 +857,32 @@ model ResourceReservation {
 }
 
 model EventResourceAllocation {
-  id                 String                        @id @default(uuid())
-  organizationId     String
-  eventId            String
-  resourceId         String
-  resourceReservationId String?                    @unique
-  quantityRequested  Float
-  quantityReserved   Float
-  quantityReturned   Float                         @default(0)
-  quantityDamaged    Float                         @default(0)
-  quantityLost       Float                         @default(0)
-  reservedDate       DateTime
-  expectedReturnDate DateTime?
-  actualReturnDate   DateTime?
-  status             EventResourceAllocationStatus @default(Reserved)
-  createdByUserId    String
-  updatedByUserId    String
-  notes              String?
-  createdAt          DateTime                      @default(now())
-  updatedAt          DateTime                      @updatedAt
-  organization       Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  event              Event                         @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  resource           Resource                      @relation(fields: [resourceId], references: [id], onDelete: Restrict)
-  reservation        ResourceReservation?          @relation(fields: [resourceReservationId], references: [id], onDelete: SetNull)
-  createdBy          User                          @relation("EventResourceAllocationCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  updatedBy          User                          @relation("EventResourceAllocationUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: Restrict)
-  outstandings       EventResourceOutstanding[]
+  id                    String                        @id @default(uuid())
+  organizationId        String
+  eventId               String
+  resourceId            String
+  resourceReservationId String?                       @unique
+  quantityRequested     Float
+  quantityReserved      Float
+  quantityReturned      Float                         @default(0)
+  quantityDamaged       Float                         @default(0)
+  quantityLost          Float                         @default(0)
+  reservedDate          DateTime
+  expectedReturnDate    DateTime?
+  actualReturnDate      DateTime?
+  status                EventResourceAllocationStatus @default(Reserved)
+  createdByUserId       String
+  updatedByUserId       String
+  notes                 String?
+  createdAt             DateTime                      @default(now())
+  updatedAt             DateTime                      @updatedAt
+  organization          Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event                 Event                         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  resource              Resource                      @relation(fields: [resourceId], references: [id], onDelete: Restrict)
+  reservation           ResourceReservation?          @relation(fields: [resourceReservationId], references: [id], onDelete: SetNull)
+  createdBy             User                          @relation("EventResourceAllocationCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  updatedBy             User                          @relation("EventResourceAllocationUpdatedBy", fields: [updatedByUserId], references: [id], onDelete: Restrict)
+  outstandings          EventResourceOutstanding[]
 
   @@index([organizationId])
   @@index([eventId])
@@ -818,24 +892,24 @@ model EventResourceAllocation {
 }
 
 model EventResourceOutstanding {
-  id                 String                        @id @default(uuid())
-  organizationId     String
-  eventId            String
-  resourceId         String
-  allocationId       String?
-  requestedQuantity  Float
-  reservedQuantity   Float
+  id                  String                         @id @default(uuid())
+  organizationId      String
+  eventId             String
+  resourceId          String
+  allocationId        String?
+  requestedQuantity   Float
+  reservedQuantity    Float
   outstandingQuantity Float
-  status             EventResourceOutstandingStatus @default(Open)
-  createdByUserId    String
-  notes              String?
-  createdAt          DateTime                      @default(now())
-  updatedAt          DateTime                      @updatedAt
-  organization       Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  event              Event                         @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  resource           Resource                      @relation(fields: [resourceId], references: [id], onDelete: Restrict)
-  allocation         EventResourceAllocation?      @relation(fields: [allocationId], references: [id], onDelete: SetNull)
-  createdBy          User                          @relation("EventResourceOutstandingCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  status              EventResourceOutstandingStatus @default(Open)
+  createdByUserId     String
+  notes               String?
+  createdAt           DateTime                       @default(now())
+  updatedAt           DateTime                       @updatedAt
+  organization        Organization                   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event               Event                          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  resource            Resource                       @relation(fields: [resourceId], references: [id], onDelete: Restrict)
+  allocation          EventResourceAllocation?       @relation(fields: [allocationId], references: [id], onDelete: SetNull)
+  createdBy           User                           @relation("EventResourceOutstandingCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
 
   @@index([organizationId])
   @@index([eventId])
@@ -844,65 +918,65 @@ model EventResourceOutstanding {
 }
 
 model InventoryItem {
-  id                 String            @id @default(uuid())
-  organizationId     String
-  publicName         String?
-  internalName       String?
-  sku                String
-  barcode            String?
-  qrCode             String?
-  name               String
-  description        String?
-  shortDescription   String?
-  longDescription    String?
-  internalNotes      String?
-  marketplaceTitle   String?
+  id                     String                         @id @default(uuid())
+  organizationId         String
+  publicName             String?
+  internalName           String?
+  sku                    String
+  barcode                String?
+  qrCode                 String?
+  name                   String
+  description            String?
+  shortDescription       String?
+  longDescription        String?
+  internalNotes          String?
+  marketplaceTitle       String?
   marketplaceDescription String?
-  aiSummary          String?
-  aiKeywords         String[]          @default([])
-  aiTags             String[]          @default([])
-  aiConfidence       Float?
-  categoryId         String
-  subCategory        String?
-  brand              String?
-  preferredSupplierId String?
-  resourceStatus     InventoryResourceStatus      @default(Active)
-  itemType           InventoryItemType
-  unitOfMeasure      UnitOfMeasure
-  style              String?
-  theme              String?
-  colour             String?
-  material           String?
-  dimensions         String?
-  weight             String?
-  capacity           String?
-  indoorOutdoor      InventoryIndoorOutdoor       @default(Both)
-  suitableEventTypes String[]                    @default([])
-  manualTags         String[]                    @default([])
-  keywords           String[]                    @default([])
-  aiGeneratedTags    String[]                    @default([])
-  marketplaceVisibility InventoryMarketplaceVisibility @default(Private)
-  photoUrls          String[]                    @default([])
-  primaryPhotoUrl    String?
-  photoAssets        Json?
-  costPrice          Float?
-  replacementValue   Float?
-  rentalPrice        Float?
-  sellingPrice       Float?
-  taxable            Boolean           @default(false)
-  active             Boolean           @default(true)
-  trackQuantity      Boolean           @default(true)
-  trackSerialNumbers Boolean           @default(false)
-  minimumStock       Float?
-  reorderLevel       Float?
-  notes              String?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  category           InventoryCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  preferredSupplier  Supplier?         @relation(fields: [preferredSupplierId], references: [id], onDelete: SetNull)
-  stockLevels        StockLevel[]
-  stockMovements     StockMovement[]
+  aiSummary              String?
+  aiKeywords             String[]                       @default([])
+  aiTags                 String[]                       @default([])
+  aiConfidence           Float?
+  categoryId             String
+  subCategory            String?
+  brand                  String?
+  preferredSupplierId    String?
+  resourceStatus         InventoryResourceStatus        @default(Active)
+  itemType               InventoryItemType
+  unitOfMeasure          UnitOfMeasure
+  style                  String?
+  theme                  String?
+  colour                 String?
+  material               String?
+  dimensions             String?
+  weight                 String?
+  capacity               String?
+  indoorOutdoor          InventoryIndoorOutdoor         @default(Both)
+  suitableEventTypes     String[]                       @default([])
+  manualTags             String[]                       @default([])
+  keywords               String[]                       @default([])
+  aiGeneratedTags        String[]                       @default([])
+  marketplaceVisibility  InventoryMarketplaceVisibility @default(Private)
+  photoUrls              String[]                       @default([])
+  primaryPhotoUrl        String?
+  photoAssets            Json?
+  costPrice              Float?
+  replacementValue       Float?
+  rentalPrice            Float?
+  sellingPrice           Float?
+  taxable                Boolean                        @default(false)
+  active                 Boolean                        @default(true)
+  trackQuantity          Boolean                        @default(true)
+  trackSerialNumbers     Boolean                        @default(false)
+  minimumStock           Float?
+  reorderLevel           Float?
+  notes                  String?
+  createdAt              DateTime                       @default(now())
+  updatedAt              DateTime                       @updatedAt
+  organization           Organization                   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category               InventoryCategory              @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  preferredSupplier      Supplier?                      @relation(fields: [preferredSupplierId], references: [id], onDelete: SetNull)
+  stockLevels            StockLevel[]
+  stockMovements         StockMovement[]
   purchaseOrderLineItems PurchaseOrderLineItem[]
   goodsReceiptLines      GoodsReceiptLine[]
 
@@ -925,9 +999,9 @@ model InventoryItem {
 model StockLevel {
   inventoryItemId   String
   storageLocationId String
-  quantityOnHand    Float     @default(0)
-  quantityReserved  Float     @default(0)
-  updatedAt         DateTime  @updatedAt
+  quantityOnHand    Float           @default(0)
+  quantityReserved  Float           @default(0)
+  updatedAt         DateTime        @updatedAt
   inventoryItem     InventoryItem   @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
   storageLocation   StorageLocation @relation(fields: [storageLocationId], references: [id], onDelete: Cascade)
 
@@ -960,7 +1034,7 @@ model StockMovement {
 }
 
 model PurchaseOrder {
-  id                   String              @id @default(uuid())
+  id                   String                  @id @default(uuid())
   organizationId       String
   purchaseOrderNumber  String
   supplierId           String
@@ -969,13 +1043,13 @@ model PurchaseOrder {
   validUntilDate       DateTime?
   expectedDeliveryDate DateTime?
   deliveryLocationId   String
-  status               PurchaseOrderStatus @default(Draft)
-  currency             String              @default("ZAR")
-  subtotal             Float               @default(0)
-  taxAmount            Float               @default(0)
-  discountAmount       Float               @default(0)
-  deliveryFee          Float               @default(0)
-  totalAmount          Float               @default(0)
+  status               PurchaseOrderStatus     @default(Draft)
+  currency             String                  @default("ZAR")
+  subtotal             Float                   @default(0)
+  taxAmount            Float                   @default(0)
+  discountAmount       Float                   @default(0)
+  deliveryFee          Float                   @default(0)
+  totalAmount          Float                   @default(0)
   supplierReference    String?
   internalReference    String?
   paymentTerms         String?
@@ -988,13 +1062,13 @@ model PurchaseOrder {
   sentAt               DateTime?
   cancelledAt          DateTime?
   archivedAt           DateTime?
-  createdAt            DateTime            @default(now())
-  updatedAt            DateTime            @updatedAt
-  organization         Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  supplier             Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  deliveryLocation     StorageLocation     @relation("PurchaseOrderDeliveryLocation", fields: [deliveryLocationId], references: [id], onDelete: Restrict)
-  createdBy            User                @relation("PurchaseOrderCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  approvedBy           User?               @relation("PurchaseOrderApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  organization         Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  supplier             Supplier                @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  deliveryLocation     StorageLocation         @relation("PurchaseOrderDeliveryLocation", fields: [deliveryLocationId], references: [id], onDelete: Restrict)
+  createdBy            User                    @relation("PurchaseOrderCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  approvedBy           User?                   @relation("PurchaseOrderApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
   lineItems            PurchaseOrderLineItem[]
   goodsReceipts        GoodsReceipt[]
 
@@ -1008,7 +1082,7 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderLineItem {
-  id                   String        @id @default(uuid())
+  id                   String             @id @default(uuid())
   purchaseOrderId      String
   supplierProductId    String
   inventoryItemId      String?
@@ -1018,20 +1092,20 @@ model PurchaseOrderLineItem {
   productCostSnapshot  Float
   productVatSnapshot   Float?
   quantityOrdered      Float
-  quantityReceived     Float         @default(0)
+  quantityReceived     Float              @default(0)
   unitPrice            Float
-  taxRate              Float         @default(0)
-  discountRate         Float         @default(0)
+  taxRate              Float              @default(0)
+  discountRate         Float              @default(0)
   lineSubtotal         Float
   lineDiscount         Float
   lineTax              Float
   lineTotal            Float
   notes                String?
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
-  purchaseOrder        PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  supplierProduct      SupplierProduct @relation(fields: [supplierProductId], references: [id], onDelete: Restrict)
-  inventoryItem        InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  purchaseOrder        PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  supplierProduct      SupplierProduct    @relation(fields: [supplierProductId], references: [id], onDelete: Restrict)
+  inventoryItem        InventoryItem?     @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
   goodsReceiptLines    GoodsReceiptLine[]
 
   @@unique([purchaseOrderId, supplierProductId])
@@ -1041,10 +1115,10 @@ model PurchaseOrderLineItem {
 }
 
 model AiDraft {
-  id                String            @id @default(uuid())
+  id                String                  @id @default(uuid())
   capability        AiDraftCapability
   organizationId    String
-  status            AiDraftStatus     @default(ReviewPending)
+  status            AiDraftStatus           @default(ReviewPending)
   extractionAdapter String
   draftPayload      Json
   approvedPayload   Json?
@@ -1052,10 +1126,10 @@ model AiDraft {
   committedTargetId String?
   committedAt       DateTime?
   createdByUserId   String
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  organization      Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdBy         User              @relation("AiDraftCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  organization      Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy         User                    @relation("AiDraftCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
   sourceDocuments   AiDraftSourceDocument[]
   extractedFields   AiDraftExtractedField[]
 
@@ -1102,22 +1176,22 @@ model AiDraftExtractedField {
 }
 
 model GoodsReceipt {
-  id                 String            @id @default(uuid())
-  organizationId     String
-  purchaseOrderId    String
-  receiptNumber      String
-  receivedDate       DateTime
-  storageLocationId  String
+  id                   String             @id @default(uuid())
+  organizationId       String
+  purchaseOrderId      String
+  receiptNumber        String
+  receivedDate         DateTime
+  storageLocationId    String
   supplierDeliveryNote String?
-  receivedByUserId   String
-  notes              String?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  purchaseOrder      PurchaseOrder     @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
-  storageLocation    StorageLocation   @relation(fields: [storageLocationId], references: [id], onDelete: Restrict)
-  receivedBy         User              @relation("GoodsReceiptReceivedBy", fields: [receivedByUserId], references: [id], onDelete: Restrict)
-  lines              GoodsReceiptLine[]
+  receivedByUserId     String
+  notes                String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  organization         Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  purchaseOrder        PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id], onDelete: Restrict)
+  storageLocation      StorageLocation    @relation(fields: [storageLocationId], references: [id], onDelete: Restrict)
+  receivedBy           User               @relation("GoodsReceiptReceivedBy", fields: [receivedByUserId], references: [id], onDelete: Restrict)
+  lines                GoodsReceiptLine[]
 
   @@unique([organizationId, receiptNumber])
   @@index([organizationId])
@@ -1186,31 +1260,31 @@ model SupplierTask {
 }
 
 model QuotationItem {
-  id            String    @id @default(uuid())
-  quotationId   String
-  description   String
-  quantity      Int
-  unitPriceCents Int
-  discountPercent Int     @default(0)
-  discountCents Int       @default(0)
-  lineTotalCents Int
-  sortOrder     Int       @default(0)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  quotation     Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  id              String    @id @default(uuid())
+  quotationId     String
+  description     String
+  quantity        Int
+  unitPriceCents  Int
+  discountPercent Int       @default(0)
+  discountCents   Int       @default(0)
+  lineTotalCents  Int
+  sortOrder       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  quotation       Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
 
   @@index([quotationId])
   @@index([sortOrder])
 }
 
 model AuditLog {
-  id             String       @id @default(uuid())
+  id             String        @id @default(uuid())
   action         String
   details        String?
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime      @default(now())
   userId         String?
   organizationId String?
-  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
@@ -1219,14 +1293,14 @@ model AuditLog {
 }
 
 model OutboxEvent {
-  id             String       @id @default(uuid())
+  id             String        @id @default(uuid())
   eventType      String
   payload        String
-  createdAt      DateTime     @default(now())
+  createdAt      DateTime      @default(now())
   processedAt    DateTime?
   userId         String?
   organizationId String?
-  user           User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
   organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
   @@index([eventType])
