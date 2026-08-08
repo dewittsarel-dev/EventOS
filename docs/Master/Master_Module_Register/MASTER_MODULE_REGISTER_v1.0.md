@@ -17,8 +17,8 @@ Earlier `MODULE-00X` labels found during design are historical working numbers a
 | M001 | Core Principles | EC-001 — Event OS | Complete |
 | M002 | Business Rules | EC-001 — Event OS | Complete |
 | M003 | Marketplace Philosophy | EC-001 — Event OS | Complete |
-| M004 | Event Design Studio | EC-001 — Event OS | Recovered — awaiting repository approval |
-| M005 | Requirement Engine | EC-001 — Event OS | Pending extraction |
+| M004 | Event Design Studio | EC-001 — Event OS | Complete |
+| M005 | Requirement Engine | EC-001 — Event OS | Complete |
 | M006 | Mood Board Studio | EC-001 — Event OS | Pending extraction |
 | M007 | Procurement Studio | EC-001 — Event OS | Pending extraction |
 | M008 | Commercial Workspace | EC-001 — Event OS | Pending extraction |
@@ -120,4 +120,5 @@ Historical numbering must not be used for repository folder names.
 
 **Final numbering:** Verified  
 **Historical renumbering:** Recorded  
-**Next task:** M005 — Requirement Engine
+**Current position:** M005 — Requirement Engine complete  
+**Next module:** M006 — Mood Board Studio
