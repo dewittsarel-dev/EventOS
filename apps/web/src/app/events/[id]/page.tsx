@@ -69,6 +69,12 @@ export default function EventDetailsPage() {
               Design & Requirements
             </Link>
             <Link
+              href={`/events/${eventId}/mood-board`}
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100"
+            >
+              Mood Board
+            </Link>
+            <Link
               href={`/tasks/timeline?eventId=${eventId}`}
               className="rounded-md border border-zinc-300 px-3 py-2 text-sm hover:bg-zinc-100"
             >

@@ -102,7 +102,8 @@ The repository now contains the verified backend architecture from M004 through 
 - Multi-item Requirement Set authoring — COMPLETE: planners can author multiple products, services and resources together with explicit direct, calculated or design dependencies.
 - Controlled quantity overrides — COMPLETE: planners can create a new auditable Requirement Set version for a changed quantity only when an explicit reason is supplied.
 - Requirement impact controls — COMPLETE: proposed quantities are compared with an approved baseline and every reported change requires an explicit planner apply-or-keep decision before a new version is created.
-- Mood Board Studio interface — NEXT: visual concept creation, governed asset sourcing, collaboration and explicit approval over the recovered M006 API.
+- Mood Board Studio interface — COMPLETE: visual concepts remain linked to approved requirements and identified sources, with comments, change requests, locked objects and explicit visual approval that does not start procurement.
+- Procurement Studio interface — NEXT after the ClientOS visual checkpoint.
 
 ### Marketplace Product Interface — PLANNED
 

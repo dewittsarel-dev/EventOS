@@ -96,5 +96,9 @@ describe('EventDetailsPage', () => {
       'href',
       '/events/event-1/planning',
     );
+    expect(screen.getByRole('link', { name: 'Mood Board' })).toHaveAttribute(
+      'href',
+      '/events/event-1/mood-board',
+    );
   });
 });

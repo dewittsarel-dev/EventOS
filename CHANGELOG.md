@@ -13,6 +13,14 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — ClientOS Mood Board Studio
+
+- Added an event-context Mood Board Studio over the recovered M006 API.
+- Creates sourced visual objects linked to approved requirement items, including governed Marketplace supplier/listing references and optional locked-object protection.
+- Added client-review submission, immutable comments, change requests and explicit visual approval while confirming that approval does not start procurement.
+- Added event-workspace navigation and responsive visual cards for board versions and review history.
+- Verification status: all 32 web test files and 85 tests passed; web lint and production build passed; API regression verification passed.
+
 ### 2026-08-08 — Requirement Impact Review
 
 - Added approved-baseline quantity comparison through M005 Requirement Impact Reports.
