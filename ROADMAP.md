@@ -105,7 +105,8 @@ The repository now contains the verified backend architecture from M004 through 
 - Mood Board Studio interface — COMPLETE: visual concepts remain linked to approved requirements and identified sources, with comments, change requests, locked objects and explicit visual approval that does not start procurement.
 - Procurement Studio interface — COMPLETE: approved requirements can be grouped into governed sourcing packages, analysed against transparent buyer policy, compared across explainable Marketplace solutions and explicitly selected before a non-sending M008 handoff.
 - Commercial Workspace interface — COMPLETE: selected procurement strategies now become governed RFQ drafts, separately approved and sent supplier conversations, immutable quote revisions, explainable comparisons, substitution review, explicit awards and unsent purchase-order drafts.
-- Asset Management interface — NEXT: connect awarded event requirements to governed asset availability, reservation, preparation, movement, deployment and return controls.
+- Asset Management interface — COMPLETE: event requirements now connect to governed asset search, system-calculated availability, reservations, preparation operations, deployment evidence, return inspections, incidents and organization-level exception visibility.
+- Event Execution interface — NEXT: turn approved event scope and prepared assets into the live operational plan, readiness gates, run of show, command log, incidents and controlled closeout.
 
 ### Marketplace Product Interface — PLANNED
 

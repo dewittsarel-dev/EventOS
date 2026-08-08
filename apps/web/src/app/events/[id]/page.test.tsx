@@ -108,5 +108,6 @@ describe('EventDetailsPage', () => {
       'href',
       '/events/event-1/commercial',
     );
+    expect(screen.getByRole('link', { name: 'Assets' })).toHaveAttribute('href', '/events/event-1/assets');
   });
 });
