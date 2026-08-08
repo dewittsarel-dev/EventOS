@@ -88,6 +88,26 @@ enum RequirementImpactDecision {
   KeepCurrent
 }
 
+enum MoodBoardStatus {
+  Draft
+  InClientReview
+  ChangesRequested
+  Approved
+}
+
+enum MoodBoardObjectSource {
+  Marketplace
+  PlannerLibrary
+  ClientUpload
+  AiConcept
+}
+
+enum MoodBoardReviewType {
+  Comment
+  ChangeRequest
+  Approval
+}
+
 enum QuotationStatus {
   Draft
   Sent
@@ -394,6 +414,9 @@ model User {
   requirementItemChanges           RequirementItemChange[]
   requirementImpactReportsCreated  RequirementImpactReport[]  @relation("RequirementImpactReportCreatedBy")
   requirementImpactReportsResolved RequirementImpactReport[]  @relation("RequirementImpactReportResolvedBy")
+  moodBoardsCreated                MoodBoard[]                @relation("MoodBoardCreatedBy")
+  moodBoardsApproved               MoodBoard[]                @relation("MoodBoardApprovedBy")
+  moodBoardReviews                 MoodBoardReview[]
 
   @@index([email])
 }
@@ -439,6 +462,7 @@ model Organization {
   eventDesignVersions       EventDesignVersion[]
   requirementSets           RequirementSet[]
   requirementImpactReports  RequirementImpactReport[]
+  moodBoards                MoodBoard[]
 
   @@index([slug])
 }
@@ -532,6 +556,7 @@ model Event {
   eventDesignVersions      EventDesignVersion[]
   requirementSets          RequirementSet[]
   requirementImpactReports RequirementImpactReport[]
+  moodBoards               MoodBoard[]
 
   @@index([organizationId])
   @@index([contactId])
@@ -597,6 +622,7 @@ model EventDesignVersion {
   createdBy            User               @relation("EventDesignVersionCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
   approvedBy           User?              @relation("EventDesignVersionApprovedBy", fields: [approvedByUserId], references: [id], onDelete: Restrict)
   requirementSets      RequirementSet[]
+  moodBoards           MoodBoard[]
 
   @@unique([eventId, version])
   @@index([organizationId])
@@ -626,6 +652,7 @@ model RequirementSet {
   dependencies         RequirementDependency[]
   changes              RequirementItemChange[]
   impactReports        RequirementImpactReport[]
+  moodBoards           MoodBoard[]
 
   @@unique([eventId, version])
   @@index([organizationId])
@@ -677,6 +704,7 @@ model RequirementItem {
   dependenciesFrom        RequirementDependency[]       @relation("RequirementDependencySource")
   dependenciesTo          RequirementDependency[]       @relation("RequirementDependencyTarget")
   changes                 RequirementItemChange[]
+  moodBoardObjects        MoodBoardObject[]
 
   @@unique([requirementSetId, requirementCode])
   @@index([requirementSetId, category])
@@ -762,6 +790,94 @@ model RequirementImpactChange {
 
   @@unique([impactReportId, requirementCode])
   @@index([impactReportId, decision])
+}
+
+model MoodBoard {
+  id                   String             @id @default(uuid())
+  organizationId       String
+  eventId              String
+  eventDesignVersionId String
+  requirementSetId     String
+  basedOnMoodBoardId   String?
+  version              Int
+  title                String
+  status               MoodBoardStatus    @default(Draft)
+  createdByUserId      String
+  submittedAt          DateTime?
+  approvedByUserId     String?
+  approvedAt           DateTime?
+  createdAt            DateTime           @default(now())
+  organization         Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event                Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventDesignVersion   EventDesignVersion @relation(fields: [eventDesignVersionId], references: [id], onDelete: Restrict)
+  requirementSet       RequirementSet     @relation(fields: [requirementSetId], references: [id], onDelete: Restrict)
+  basedOnMoodBoard     MoodBoard?         @relation("MoodBoardRevisions", fields: [basedOnMoodBoardId], references: [id], onDelete: Restrict)
+  revisions            MoodBoard[]        @relation("MoodBoardRevisions")
+  createdBy            User               @relation("MoodBoardCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  approvedBy           User?              @relation("MoodBoardApprovedBy", fields: [approvedByUserId], references: [id], onDelete: Restrict)
+  scenes               MoodBoardScene[]
+  reviews              MoodBoardReview[]
+
+  @@unique([eventId, version])
+  @@index([organizationId])
+  @@index([eventDesignVersionId])
+  @@index([requirementSetId])
+  @@index([basedOnMoodBoardId])
+  @@index([createdByUserId])
+  @@index([approvedByUserId])
+  @@index([eventId, status])
+}
+
+model MoodBoardScene {
+  id          String            @id @default(uuid())
+  moodBoardId String
+  sceneKey    String
+  name        String
+  description String?
+  sortOrder   Int               @default(0)
+  createdAt   DateTime          @default(now())
+  moodBoard   MoodBoard         @relation(fields: [moodBoardId], references: [id], onDelete: Cascade)
+  objects     MoodBoardObject[]
+
+  @@unique([moodBoardId, sceneKey])
+  @@index([moodBoardId, sortOrder])
+}
+
+model MoodBoardObject {
+  id                   String                @id @default(uuid())
+  moodBoardSceneId     String
+  requirementItemId    String
+  objectKey            String
+  name                 String
+  source               MoodBoardObjectSource
+  sourceReferenceId    String
+  supplierName         String?
+  marketplaceListingId String?
+  imageUrl             String
+  locked               Boolean               @default(false)
+  presentation         Json?
+  sortOrder            Int                   @default(0)
+  createdAt            DateTime              @default(now())
+  moodBoardScene       MoodBoardScene        @relation(fields: [moodBoardSceneId], references: [id], onDelete: Cascade)
+  requirementItem      RequirementItem       @relation(fields: [requirementItemId], references: [id], onDelete: Restrict)
+
+  @@unique([moodBoardSceneId, objectKey])
+  @@index([requirementItemId])
+  @@index([source, sourceReferenceId])
+}
+
+model MoodBoardReview {
+  id             String              @id @default(uuid())
+  moodBoardId    String
+  reviewerUserId String
+  type           MoodBoardReviewType
+  comment        String?
+  createdAt      DateTime            @default(now())
+  moodBoard      MoodBoard           @relation(fields: [moodBoardId], references: [id], onDelete: Cascade)
+  reviewer       User                @relation(fields: [reviewerUserId], references: [id], onDelete: Restrict)
+
+  @@index([moodBoardId, createdAt])
+  @@index([reviewerUserId])
 }
 
 model Quotation {

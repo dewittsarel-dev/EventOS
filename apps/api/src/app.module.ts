@@ -12,6 +12,7 @@ import { EventsModule } from './events/events.module';
 import { InventoryModule } from './inventory/inventory.module';
 import { MarketplaceModule } from './marketplace/marketplace.module';
 import { MeetingNotesModule } from './meeting-notes/meeting-notes.module';
+import { MoodBoardsModule } from './mood-boards/mood-boards.module';
 import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { QuotationsModule } from './quotations/quotations.module';
 import { RequirementsModule } from './requirements/requirements.module';
@@ -44,6 +45,7 @@ import { PrismaModule } from './prisma/prisma.module';
     ResourcesModule,
     PurchaseOrdersModule,
     MeetingNotesModule,
+    MoodBoardsModule,
     SuppliersModule,
     SupplierProductsModule,
     QuotationsModule,
