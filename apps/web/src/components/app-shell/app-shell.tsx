@@ -45,6 +45,7 @@ import {
 } from './shell-icons';
 import { seedDevelopmentWorkspace } from '../../lib/auth-api';
 import { useAppSession } from './session-context';
+import { WorkspaceSearch } from './workspace-search';
 
 type AppShellProps = {
   children: ReactNode;
@@ -140,17 +141,19 @@ export function AppShell({ children }: AppShellProps) {
   const [savedHint, setSavedHint] = useState('');
   const [demoSignInBusy, setDemoSignInBusy] = useState(false);
   const [demoSignInError, setDemoSignInError] = useState('');
+  const [isSearchOpen, setSearchOpen] = useState(false);
 
   const isPublicMarketplace = pathname === '/marketplace' || pathname.startsWith('/marketplace/');
 
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
-  const searchRef = useRef<HTMLInputElement | null>(null);
+  const searchRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     function onEscape(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         setMobileMenuOpen(false);
         setProfileOpen(false);
+        setSearchOpen(false);
       }
 
       if (
@@ -163,7 +166,7 @@ export function AppShell({ children }: AppShellProps) {
         event.target.tagName !== 'TEXTAREA'
       ) {
         event.preventDefault();
-        searchRef.current?.focus();
+        setSearchOpen(true);
       }
     }
 
@@ -319,6 +322,11 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_#ffffff_0%,_#f4f5f7_38%,_#eceef2_100%)] text-zinc-900">
+      <WorkspaceSearch
+        open={isSearchOpen}
+        onClose={() => setSearchOpen(false)}
+        onNavigate={navigateToPath}
+      />
       <div className="flex min-h-screen w-full overflow-x-hidden">
         <aside
           className={`hidden border-r border-zinc-200/80 bg-white/95 shadow-[inset_-1px_0_0_rgba(0,0,0,0.02)] backdrop-blur md:flex md:flex-col ${
@@ -408,19 +416,23 @@ export function AppShell({ children }: AppShellProps) {
 
               <div className="hidden min-w-0 flex-1 items-center gap-2 md:flex">
                 <SearchIcon className="h-4 w-4 text-zinc-500" />
-                <input
+                <button
                   ref={searchRef}
                   aria-label="Global search"
-                  className="h-11 w-full rounded-xl border border-zinc-200 bg-zinc-50/80 px-4 text-sm text-zinc-700 outline-none ring-amber-400/50 placeholder:text-zinc-400 hover:bg-white focus-visible:bg-white focus-visible:ring-2"
-                  placeholder="Search across ClientOS (coming soon)"
-                />
+                  className="flex h-11 w-full items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50/80 px-4 text-left text-sm text-zinc-400 outline-none ring-amber-400/50 hover:bg-white focus-visible:bg-white focus-visible:ring-2"
+                  onClick={() => setSearchOpen(true)}
+                >
+                  <span>Search ClientOS workspaces and actions</span>
+                  <span className="rounded border border-zinc-200 bg-white px-1.5 py-0.5 text-[10px] text-zinc-500">/</span>
+                </button>
               </div>
 
               <button
                 type="button"
                 className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-100 md:hidden"
-                aria-label="Global search coming soon"
-                title="Global search coming soon"
+                aria-label="Open ClientOS search"
+                title="Search ClientOS"
+                onClick={() => setSearchOpen(true)}
               >
                 <SearchIcon className="h-4 w-4" />
               </button>

@@ -13,6 +13,14 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-08 — ClientOS Workspace Search
+
+- Replaced the persistent non-functional search placeholder with a command-style workspace and action finder.
+- Added direct access to primary workspaces, operational tools, settings and common creation actions.
+- Added `/` keyboard access, mobile-header access, Enter-to-open behavior and clear no-result guidance.
+- Kept the scope honest: this slice searches ClientOS destinations and actions, not record contents.
+- Verification status: all 47 web test files and 106 tests passed; web build and lint passed; all 30 API suites and 161 tests passed; API build and lint passed.
+
 ### 2026-08-08 — Marketplace Resource Engine Alignment
 
 - Corrected the Marketplace publication source from legacy Inventory Item flags to `Resource.visibility = MARKETPLACE`, preserving the Resource Engine as the live availability and reservation authority.

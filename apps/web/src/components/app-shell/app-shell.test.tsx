@@ -81,6 +81,22 @@ describe('AppShell', () => {
     expect(screen.getByLabelText('Close navigation menu')).toBeInTheDocument();
   });
 
+  it('opens workspace search and navigates to a matched action', () => {
+    render(
+      <AppSessionProvider>
+        <AppShell><div>Content</div></AppShell>
+      </AppSessionProvider>,
+    );
+
+    fireEvent.click(screen.getByLabelText('Global search'));
+    fireEvent.change(screen.getByLabelText('Find a workspace or action'), {
+      target: { value: 'create task' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Create task/ }));
+
+    expect(navigateToPath).toHaveBeenCalledWith('/tasks/new');
+  });
+
   it('redirects unauthenticated users away from protected routes and hides page content', async () => {
     render(
       <AppSessionProvider>
