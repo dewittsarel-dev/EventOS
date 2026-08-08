@@ -296,6 +296,54 @@ enum AssetDisposalStatus {
   Cancelled
 }
 
+enum ExecutionStatus {
+  Created
+  Planning
+  ResourcesReserved
+  ProcurementPrepared
+  StaffAssigned
+  DispatchScheduled
+  InProgress
+  CollectionScheduled
+  Completed
+  Closed
+  Cancelled
+  Archived
+}
+
+enum ExecutionControlStatus {
+  Pending
+  Ready
+  Blocked
+  InProgress
+  Completed
+  Waived
+  Cancelled
+}
+
+enum ExecutionGateDecision {
+  Pending
+  Passed
+  Failed
+  Waived
+}
+
+enum ExecutionIncidentSeverity {
+  Low
+  Medium
+  High
+  Critical
+  Emergency
+}
+
+enum ExecutionIncidentStatus {
+  Open
+  Responding
+  Contained
+  Resolved
+  Closed
+}
+
 enum QuotationStatus {
   Draft
   Sent
@@ -612,6 +660,7 @@ model User {
   commercialMessagesAuthored       CommercialMessage[]
   assetDefinitionsCreated          AssetDefinition[]          @relation("AssetDefinitionCreatedBy")
   assetInstancesCreated            AssetInstance[]            @relation("AssetInstanceCreatedBy")
+  eventExecutionsCreated           EventExecution[]           @relation("EventExecutionCreatedBy")
 
   @@index([email])
 }
@@ -664,6 +713,7 @@ model Organization {
   assetInstances            AssetInstance[]
   assetBatches              AssetBatch[]
   assetKits                 AssetKit[]
+  eventExecutions           EventExecution[]
 
   @@index([slug])
 }
@@ -760,6 +810,7 @@ model Event {
   moodBoards               MoodBoard[]
   procurementPackages      ProcurementPackage[]
   commercialWorkspaces     CommercialWorkspace[]
+  eventExecution           EventExecution?
 
   @@index([organizationId])
   @@index([contactId])
@@ -1865,6 +1916,270 @@ model AssetGovernanceException {
 
   @@index([organizationId, resolvedAt, severity])
   @@index([entityType, entityId])
+}
+
+model EventExecution {
+  id                     String                        @id @default(uuid())
+  systemNumber           Int                           @unique @default(autoincrement())
+  organizationId         String
+  eventId                String                        @unique
+  status                 ExecutionStatus               @default(Created)
+  executionPlanVersion   Int                           @default(0)
+  summary                String?
+  commandCenterActive    Boolean                       @default(false)
+  goLiveApprovedByUserId String?
+  goLiveApprovedAt       DateTime?
+  completedAt            DateTime?
+  closedAt               DateTime?
+  cancelledAt            DateTime?
+  cancellationReason     String?
+  archivedAt             DateTime?
+  createdByUserId        String
+  createdAt              DateTime                      @default(now())
+  updatedAt              DateTime                      @updatedAt
+  organization           Organization                  @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  event                  Event                         @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  createdBy              User                          @relation("EventExecutionCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  workstreams            ExecutionWorkstream[]
+  milestones             ExecutionMilestone[]
+  tasks                  ExecutionTask[]
+  gates                  ExecutionReadinessGate[]
+  siteControls           ExecutionSiteControl[]
+  commissioningChecks    ExecutionCommissioningCheck[]
+  acceptances            ExecutionAcceptance[]
+  runOfShowItems         ExecutionRunOfShowItem[]
+  commandLogs            ExecutionCommandLog[]
+  incidents              ExecutionIncident[]
+  closeoutItems          ExecutionCloseoutItem[]
+
+  @@index([organizationId, status])
+  @@index([createdByUserId])
+}
+
+model ExecutionWorkstream {
+  id               String                 @id @default(uuid())
+  eventExecutionId String
+  key              String
+  name             String
+  objective        String?
+  ownerUserId      String?
+  status           ExecutionControlStatus @default(Pending)
+  sequence         Int                    @default(0)
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+  eventExecution   EventExecution         @relation(fields: [eventExecutionId], references: [id], onDelete: Cascade)
+  milestones       ExecutionMilestone[]
+  tasks            ExecutionTask[]
+
+  @@unique([eventExecutionId, key])
+  @@index([eventExecutionId, sequence])
+}
+
+model ExecutionMilestone {
+  id               String                 @id @default(uuid())
+  eventExecutionId String
+  workstreamId     String?
+  key              String
+  label            String
+  status           ExecutionControlStatus @default(Pending)
+  dueAt            DateTime?
+  completedAt      DateTime?
+  evidence         Json?
+  eventExecution   EventExecution         @relation(fields: [eventExecutionId], references: [id], onDelete: Cascade)
+  workstream       ExecutionWorkstream?   @relation(fields: [workstreamId], references: [id], onDelete: SetNull)
+
+  @@unique([eventExecutionId, key])
+  @@index([workstreamId])
+  @@index([eventExecutionId, status, dueAt])
+}
+
+model ExecutionTask {
+  id                 String                 @id @default(uuid())
+  eventExecutionId   String
+  workstreamId       String?
+  requirementItemId  String?
+  assetOperationId   String?
+  title              String
+  description        String?
+  completionCriteria String
+  assignedUserId     String?
+  assignedSupplierId String?
+  status             ExecutionControlStatus @default(Pending)
+  priority           String                 @default("Normal")
+  plannedStart       DateTime?
+  plannedEnd         DateTime?
+  actualStart        DateTime?
+  actualEnd          DateTime?
+  completionEvidence Json?
+  blockedReason      String?
+  sequence           Int                    @default(0)
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  eventExecution     EventExecution         @relation(fields: [eventExecutionId], references: [id], onDelete: Cascade)
+  workstream         ExecutionWorkstream?   @relation(fields: [workstreamId], references: [id], onDelete: SetNull)
+
+  @@index([eventExecutionId, status])
+  @@index([workstreamId, sequence])
+  @@index([requirementItemId])
+  @@index([assignedUserId])
+}
+
+model ExecutionReadinessGate {
+  id               String                @id @default(uuid())
+  eventExecutionId String
+  key              String
+  name             String
+  category         String
+  decision         ExecutionGateDecision @default(Pending)
+  required         Boolean               @default(true)
+  criteria         Json?
+  evidence         Json?
+  blockerSummary   String?
+  assessedByUserId String?
+  assessedAt       DateTime?
+  waivedByUserId   String?
+  waivedAt         DateTime?
+  waiverReason     String?
+  eventExecution   EventExecution        @relation(fields: [eventExecutionId], references: [id], onDelete: Cascade)
+
+  @@unique([eventExecutionId, key])
+  @@index([eventExecutionId, decision, required])
+}
+
+model ExecutionSiteControl {
+  id               String                 @id @default(uuid())
+  eventExecutionId String
+  controlType      String
+  area             String?
+  partyType        String?
+  partyId          String?
+  status           ExecutionControlStatus @default(Pending)
+  scheduledAt      DateTime?
+  completedAt      DateTime?
+  permitReference  String?
+  evidence         Json?
+  notes            String?
+  eventExecution   EventExecution         @relation(fields: [eventExecutionId], references: [id], onDelete: Cascade)
+
+  @@index([eventExecutionId, controlType, status])
+}
+
+model ExecutionCommissioningCheck {
+  id                String                 @id @default(uuid())
+  eventExecutionId  String
+  systemType        String
+  systemReference   String?
+  testName          String
+  criteria          String
+  status            ExecutionControlStatus @default(Pending)
+  result            String?
+  evidence          Json?
+  testedByUserId    String?
+  witnessedByUserId String?
+  testedAt          DateTime?
+  eventExecution    EventExecution         @relation(fields: [eventExecutionId], references: [id], onDelete: Cascade)
+
+  @@index([eventExecutionId, status])
+  @@index([systemType])
+}
+
+model ExecutionAcceptance {
+  id                String                @id @default(uuid())
+  eventExecutionId  String
+  acceptanceType    String
+  acceptedPartyType String
+  acceptedPartyId   String?
+  decision          ExecutionGateDecision @default(Pending)
+  notes             String?
+  evidence          Json?
+  acceptedByUserId  String?
+  acceptedAt        DateTime?
+  eventExecution    EventExecution        @relation(fields: [eventExecutionId], references: [id], onDelete: Cascade)
+
+  @@index([eventExecutionId, acceptanceType, decision])
+}
+
+model ExecutionRunOfShowItem {
+  id               String                 @id @default(uuid())
+  eventExecutionId String
+  sequence         Int
+  title            String
+  scheduledAt      DateTime
+  durationMinutes  Int?
+  ownerUserId      String?
+  supplierId       String?
+  cueType          String?
+  dependencyItemId String?
+  status           ExecutionControlStatus @default(Pending)
+  actualAt         DateTime?
+  varianceMinutes  Int?
+  notes            String?
+  eventExecution   EventExecution         @relation(fields: [eventExecutionId], references: [id], onDelete: Cascade)
+
+  @@unique([eventExecutionId, sequence])
+  @@index([eventExecutionId, scheduledAt])
+  @@index([status])
+}
+
+model ExecutionCommandLog {
+  id               String         @id @default(uuid())
+  eventExecutionId String
+  logType          String
+  severity         String
+  message          String
+  relatedType      String?
+  relatedId        String?
+  metadata         Json?
+  recordedByUserId String
+  occurredAt       DateTime       @default(now())
+  recordedAt       DateTime       @default(now())
+  eventExecution   EventExecution @relation(fields: [eventExecutionId], references: [id], onDelete: Cascade)
+
+  @@index([eventExecutionId, occurredAt])
+  @@index([logType, severity])
+}
+
+model ExecutionIncident {
+  id                  String                    @id @default(uuid())
+  systemNumber        Int                       @unique @default(autoincrement())
+  eventExecutionId    String
+  incidentType        String
+  severity            ExecutionIncidentSeverity
+  status              ExecutionIncidentStatus   @default(Open)
+  title               String
+  description         String
+  location            String?
+  peopleAtRisk        Int?
+  responseOwnerUserId String?
+  immediateActions    Json?
+  evidence            Json?
+  escalatedAt         DateTime?
+  containedAt         DateTime?
+  resolvedAt          DateTime?
+  closedAt            DateTime?
+  reportedByUserId    String
+  reportedAt          DateTime                  @default(now())
+  eventExecution      EventExecution            @relation(fields: [eventExecutionId], references: [id], onDelete: Cascade)
+
+  @@index([eventExecutionId, status, severity])
+  @@index([reportedAt])
+}
+
+model ExecutionCloseoutItem {
+  id                String                 @id @default(uuid())
+  eventExecutionId  String
+  closeoutType      String
+  referenceType     String?
+  referenceId       String?
+  status            ExecutionControlStatus @default(Pending)
+  criteria          String
+  evidence          Json?
+  completedByUserId String?
+  completedAt       DateTime?
+  eventExecution    EventExecution         @relation(fields: [eventExecutionId], references: [id], onDelete: Cascade)
+
+  @@index([eventExecutionId, status])
+  @@index([closeoutType])
 }
 
 model Quotation {
