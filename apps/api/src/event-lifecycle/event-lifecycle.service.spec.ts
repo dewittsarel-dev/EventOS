@@ -96,6 +96,32 @@ describe('EventLifecycleService', () => {
     );
   });
 
+  it('marks the lifecycle complete and blocks further synchronization after Financial Close', async () => {
+    prisma.eventExecution.findUnique.mockResolvedValue({
+      id: 'execution-1',
+      status: 'Completed',
+      executionPlanVersion: 1,
+    });
+    prisma.eventFinanceWorkspace.findUnique.mockResolvedValue({
+      id: 'finance-1',
+      status: 'Closed',
+    });
+
+    const result = await service.continuity(userId, organizationId, eventId);
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        currentStage: 'Closed',
+        lifecycleComplete: true,
+        executionReady: false,
+      }),
+    );
+    expect(result.nextAction.actionType).toBe('LifecycleComplete');
+    await expect(
+      service.synchronize(userId, organizationId, eventId),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
   it('blocks synchronization when approved upstream context is absent', async () => {
     prisma.requirementSet.findFirst.mockResolvedValue(null);
     prisma.eventExecution.findUnique.mockResolvedValue(null);
@@ -121,6 +147,34 @@ describe('EventLifecycleService', () => {
         reason: 'Approved Requirement Set missing',
       }),
     );
+  });
+
+  it.each([
+    ['Approved Mood Board missing', 'OpenMoodBoard', 'Open Mood Board'],
+    [
+      'Procurement Package without selected solution',
+      'OpenProcurement',
+      'Open Procurement',
+    ],
+    ['Commercial Workspace not awarded', 'OpenCommercial', 'Open Commercial'],
+  ])('provides a direct action for %s', async (reason, actionType, label) => {
+    if (reason === 'Approved Mood Board missing') {
+      prisma.moodBoard.findFirst.mockResolvedValue(null);
+    } else if (reason === 'Procurement Package without selected solution') {
+      prisma.procurementPackage.findMany.mockResolvedValue([
+        { id: 'package-1', status: 'Draft', solutions: [] },
+      ]);
+    } else {
+      prisma.commercialWorkspace.findMany.mockResolvedValue([
+        { id: 'commercial-1', status: 'Draft', awards: [] },
+      ]);
+    }
+    prisma.eventExecution.findUnique.mockResolvedValue(null);
+    prisma.eventFinanceWorkspace.findUnique.mockResolvedValue(null);
+
+    const result = await service.continuity(userId, organizationId, eventId);
+
+    expect(result.nextAction).toEqual({ reason, actionType, label });
   });
 
   it('synchronizes draft financial evidence idempotently without automatic approval', async () => {

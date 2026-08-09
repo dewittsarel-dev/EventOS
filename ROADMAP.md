@@ -113,6 +113,7 @@ The repository now contains the verified backend architecture from M004 through 
 - ClientOS workspace search — COMPLETE: the persistent shell search now finds major workspaces, settings and common creation actions with keyboard and mobile access instead of displaying a non-functional placeholder.
 - Marketplace Product Interface — COMPLETE for the first draft: the public surface browses explicitly published Resource Engine records with availability state, accepts customer enquiries into dedicated intake records, and returns those enquiries to a private ClientOS management inbox. Private costs, exact stock counts, notes and operating records remain outside the public contract.
 - Product-wide usability Phase 1 — COMPLETE: shared navigation, account context, notification routing, access guidance, workflow labels, Marketplace customer states and primary responsive routes have been audited and refined without changing EventOS architecture.
+- End-to-end business journey Phase 2 — COMPLETE: authenticated Marketplace enquiry and messaging, explicit qualified Draft Event creation, governed M004–M011 continuity, direct blocker routing, controlled synchronization, operational and financial close gates, and terminal lifecycle completion are connected and verified.
 
 ### Marketplace Product Interface — COMPLETE FOR FIRST DRAFT
 
@@ -129,6 +130,7 @@ The repository now contains the verified backend architecture from M004 through 
 ### End-to-End and Deployment Readiness — IN PROGRESS
 
 - Automated package verification and public Marketplace integration coverage are active.
+- The provider-neutral first-draft business journey is complete from Marketplace enquiry through governed Event creation, planning, delivery and financial close; see `docs/PHASE_2_LIFECYCLE_CHECKPOINT.md`.
 - The Marketplace enquiry migration has been applied to the local approved development database.
 - Responsive foundation refinement is complete for the shared shell, action-heavy page headers, ClientOS search, public Marketplace header and key event operations; key desktop routes were rechecked for horizontal overflow.
 - Marketplace customer account, enquiry and comparison flows include responsive layouts, accessible feedback and strict record-ownership enforcement; a full independent accessibility and penetration audit remains a production gate.

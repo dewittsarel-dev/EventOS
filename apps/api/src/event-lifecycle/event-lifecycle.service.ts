@@ -101,28 +101,25 @@ export class EventLifecycleService {
       execution,
       finance,
     });
+    const lifecycleComplete = finance?.status === 'Closed';
     return {
       eventId,
       health: blockers.length === 0 ? 'OnTrack' : 'NeedsAttention',
       currentStage,
-      nextAction: blockers.length
+      nextAction: lifecycleComplete
         ? {
-            label:
-              currentStage === 'Definition' || currentStage === 'Design'
-                ? 'Continue planning'
-                : 'Resolve lifecycle blockers',
-            reason: blockers[0],
-            actionType:
-              currentStage === 'Definition' || currentStage === 'Design'
-                ? 'OpenPlanningWorkspace'
-                : 'ReviewLifecycle',
+            label: 'Lifecycle complete',
+            reason: 'Operational execution and event finance are closed.',
+            actionType: 'LifecycleComplete',
           }
-        : {
-            label: 'Synchronize approved work',
-            reason:
-              'The approved upstream chain is ready for controlled synchronization.',
-            actionType: 'SynchronizeLifecycle',
-          },
+        : blockers.length
+          ? this.blockerAction(blockers[0])
+          : {
+              label: 'Synchronize approved work',
+              reason:
+                'The approved upstream chain is ready for controlled synchronization.',
+              actionType: 'SynchronizeLifecycle',
+            },
       chain: {
         brief,
         design,
@@ -135,7 +132,8 @@ export class EventLifecycleService {
         finance,
       },
       blockers,
-      executionReady: blockers.length === 0,
+      executionReady: blockers.length === 0 && !lifecycleComplete,
+      lifecycleComplete,
       sourceOwnership: {
         design: 'EventDesign',
         requirements: 'RequirementEngine',
@@ -149,6 +147,27 @@ export class EventLifecycleService {
     };
   }
 
+  private blockerAction(reason: string) {
+    if (reason === 'Approved Mood Board missing') {
+      return { label: 'Open Mood Board', reason, actionType: 'OpenMoodBoard' };
+    }
+    if (reason === 'Procurement Package without selected solution') {
+      return {
+        label: 'Open Procurement',
+        reason,
+        actionType: 'OpenProcurement',
+      };
+    }
+    if (reason === 'Commercial Workspace not awarded') {
+      return { label: 'Open Commercial', reason, actionType: 'OpenCommercial' };
+    }
+    return {
+      label: 'Continue planning',
+      reason,
+      actionType: 'OpenPlanningWorkspace',
+    };
+  }
+
   private currentStage(input: {
     brief: { id: string } | null;
     design: { status: string } | null;
@@ -158,8 +177,9 @@ export class EventLifecycleService {
     commercial: Array<{ status: string }>;
     assets: number;
     execution: { id: string } | null;
-    finance: { id: string } | null;
+    finance: { id: string; status: string } | null;
   }) {
+    if (input.finance?.status === 'Closed') return 'Closed';
     if (!input.brief) return 'Definition';
     if (
       input.design?.status !== 'Approved' ||
@@ -182,6 +202,8 @@ export class EventLifecycleService {
 
   async synchronize(userId: string, organizationId: string, eventId: string) {
     const continuity = await this.continuity(userId, organizationId, eventId);
+    if (continuity.lifecycleComplete)
+      throw new ConflictException('Event lifecycle is already closed');
     if (continuity.blockers.length > 0)
       throw new ConflictException({
         message: 'Approved upstream architecture is incomplete',

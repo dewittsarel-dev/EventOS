@@ -21,14 +21,19 @@ export type EventLifecycleContinuity = {
     | 'ResourcePlanning'
     | 'Readiness'
     | 'Execution'
-    | 'FinancialControl';
+    | 'FinancialControl'
+    | 'Closed';
   nextAction: {
     label: string;
     reason: string;
     actionType:
       | 'OpenPlanningWorkspace'
+      | 'OpenMoodBoard'
+      | 'OpenProcurement'
+      | 'OpenCommercial'
       | 'ReviewLifecycle'
-      | 'SynchronizeLifecycle';
+      | 'SynchronizeLifecycle'
+      | 'LifecycleComplete';
   };
   chain: {
     brief: LifecycleVersion | null;
@@ -47,6 +52,7 @@ export type EventLifecycleContinuity = {
   };
   blockers: string[];
   executionReady: boolean;
+  lifecycleComplete: boolean;
   sourceOwnership: Record<string, string>;
 };
 

@@ -26,6 +26,13 @@ const steps = [
   ['Finance', 'finance'],
 ] as const;
 
+const actionRoutes: Partial<Record<EventLifecycleContinuity['nextAction']['actionType'], string>> = {
+  OpenPlanningWorkspace: 'planning',
+  OpenMoodBoard: 'mood-board',
+  OpenProcurement: 'procurement',
+  OpenCommercial: 'commercial',
+};
+
 function stepSummary(
   chain: EventLifecycleContinuity['chain'],
   key: (typeof steps)[number][1],
@@ -97,14 +104,14 @@ export function EventLifecyclePanel(props: Props) {
           <h2 id="lifecycle-title" className="text-lg font-semibold text-zinc-900">Event lifecycle</h2>
           <p className="mt-1 text-sm text-zinc-600">Approved work and operational readiness across the event journey.</p>
         </div>
-        <button
+        {!continuity?.lifecycleComplete ? <button
           type="button"
           disabled={!continuity?.executionReady || synchronizing}
           onClick={() => void synchronize()}
           className="rounded-md bg-zinc-900 px-3 py-2 text-sm text-white hover:bg-zinc-700 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {synchronizing ? 'Synchronizing…' : 'Synchronize approved work'}
-        </button>
+        </button> : <span className="rounded-full bg-emerald-100 px-3 py-2 text-sm font-medium text-emerald-800">Lifecycle complete</span>}
       </div>
 
       {loading ? <p className="mt-4 text-sm text-zinc-600">Loading lifecycle…</p> : null}
@@ -122,8 +129,8 @@ export function EventLifecyclePanel(props: Props) {
                 </p>
                 <p className="mt-1 text-sm text-zinc-700">{continuity.nextAction.reason}</p>
               </div>
-              {continuity.nextAction.actionType === 'OpenPlanningWorkspace' ? (
-                <a href={`/events/${eventId}/planning`} className="rounded-md bg-zinc-900 px-3 py-2 text-center text-sm font-medium text-white hover:bg-zinc-700">
+              {actionRoutes[continuity.nextAction.actionType] ? (
+                <a href={`/events/${eventId}/${actionRoutes[continuity.nextAction.actionType]}`} className="rounded-md bg-zinc-900 px-3 py-2 text-center text-sm font-medium text-white hover:bg-zinc-700">
                   {continuity.nextAction.label}
                 </a>
               ) : null}
@@ -145,9 +152,9 @@ export function EventLifecyclePanel(props: Props) {
             })}
           </ol>
 
-          <div className={`mt-5 rounded-lg p-4 ${continuity.executionReady ? 'bg-emerald-50' : 'bg-amber-50'}`}>
-            <p className={`font-medium ${continuity.executionReady ? 'text-emerald-900' : 'text-amber-900'}`}>
-              {continuity.executionReady ? 'Approved upstream work is ready for controlled synchronization.' : 'Action is required before execution can proceed.'}
+          <div className={`mt-5 rounded-lg p-4 ${continuity.executionReady || continuity.lifecycleComplete ? 'bg-emerald-50' : 'bg-amber-50'}`}>
+            <p className={`font-medium ${continuity.executionReady || continuity.lifecycleComplete ? 'text-emerald-900' : 'text-amber-900'}`}>
+              {continuity.lifecycleComplete ? 'Operational execution and event finance are closed. The lifecycle is complete.' : continuity.executionReady ? 'Approved upstream work is ready for controlled synchronization.' : 'Action is required before execution can proceed.'}
             </p>
             {continuity.blockers.length ? (
               <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-800">

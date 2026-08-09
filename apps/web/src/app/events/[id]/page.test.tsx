@@ -112,4 +112,31 @@ describe('EventDetailsPage', () => {
     expect(screen.getByRole('link', { name: 'Execution' })).toHaveAttribute('href', '/events/event-1/execution');
     expect(screen.getByRole('link', { name: 'Finance' })).toHaveAttribute('href', '/events/event-1/finance');
   });
+
+  it('routes procurement blockers directly to Procurement Studio', async () => {
+    getEventLifecycle.mockResolvedValue({
+      eventId: 'event-1', health: 'NeedsAttention', currentStage: 'Procurement',
+      nextAction: { label: 'Open Procurement', reason: 'Procurement Package without selected solution', actionType: 'OpenProcurement' },
+      chain: { brief: { id: 'brief-1', version: 1 }, design: { id: 'design-1', version: 1, status: 'Approved' }, requirementSet: { id: 'set-1', version: 1, status: 'Approved' }, moodBoard: { id: 'board-1', version: 1, status: 'Approved' }, procurementPackages: [{ id: 'package-1', status: 'Draft', solutions: [] }], commercialWorkspaces: [], assetReservations: 0, execution: null, finance: null },
+      blockers: ['Procurement Package without selected solution'], executionReady: false, sourceOwnership: {},
+    });
+
+    render(<EventDetailsPage />);
+
+    expect(await screen.findByRole('link', { name: 'Open Procurement' })).toHaveAttribute('href', '/events/event-1/procurement');
+  });
+
+  it('shows a completed lifecycle without offering further synchronization', async () => {
+    getEventLifecycle.mockResolvedValue({
+      eventId: 'event-1', health: 'OnTrack', currentStage: 'Closed',
+      nextAction: { label: 'Lifecycle complete', reason: 'Operational execution and event finance are closed.', actionType: 'LifecycleComplete' },
+      chain: { brief: { id: 'brief-1', version: 1 }, design: { id: 'design-1', version: 1, status: 'Approved' }, requirementSet: { id: 'set-1', version: 1, status: 'Approved' }, moodBoard: { id: 'board-1', version: 1, status: 'Approved' }, procurementPackages: [], commercialWorkspaces: [], assetReservations: 1, execution: { id: 'execution-1', status: 'Completed', executionPlanVersion: 1 }, finance: { id: 'finance-1', status: 'Closed' } },
+      blockers: [], executionReady: false, lifecycleComplete: true, sourceOwnership: {},
+    });
+
+    render(<EventDetailsPage />);
+
+    expect(await screen.findByText('Operational execution and event finance are closed. The lifecycle is complete.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Synchronize approved work' })).not.toBeInTheDocument();
+  });
 });

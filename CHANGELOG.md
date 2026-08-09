@@ -13,6 +13,15 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-09 — End-to-End Business Journey Phase 2
+
+- Extended Marketplace HTTP coverage across customer registration, authenticated enquiry creation and customer follow-up messaging while retaining the server-owned identity boundary.
+- Replaced generic lifecycle blockers with direct actions into Mood Board, Procurement and Commercial workspaces.
+- Added an explicit terminal lifecycle state after operational completion and Financial Close.
+- Prevented downstream synchronization after the event lifecycle has closed.
+- Documented the verified Marketplace-to-close journey, preserved approval boundaries and remaining production-environment gates.
+- Verification status: API build passed; all 32 API suites and 179 tests passed; API lint passed; all 14 API end-to-end suites and 49 HTTP tests passed; all 55 web test files and 123 tests passed; web lint and production build passed.
+
 ### 2026-08-09 — Product-Wide Usability Phase 1
 
 - Corrected the ClientOS mobile navigation button so it opens the drawer without navigating to Activity.
