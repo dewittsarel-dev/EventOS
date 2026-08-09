@@ -13,6 +13,15 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-09 — Provider-Neutral Mood Board AI Render Packages
+
+- Added an auditable render-request lifecycle for draft Mood Board scenes without selecting or contacting an external AI provider.
+- Captured the exact board version, scene instructions, supplier images, source references, linked requirements, object presentation data and lock state in each immutable render input package.
+- Added explicit governance flags confirming that locked objects must be preserved and that neither provider submission nor commercial commitment is authorised.
+- Added ClientOS controls to prepare, review and cancel render packages; client-review and approved boards require a new draft revision before further rendering.
+- Applied the reversible render-request migration to the approved local development database.
+- Verification status: all 52 web test files and 116 tests passed; web lint and production build passed; all 30 API suites and 167 tests passed; all 14 API end-to-end suites and 48 HTTP tests passed; API build and lint passed.
+
 ### 2026-08-08 — Event Workspace Decision Guidance and Mood Board Revisions
 
 - Added immutable Mood Board revision creation from an existing version while preserving locked objects and all untouched scenes.

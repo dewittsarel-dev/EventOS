@@ -8,6 +8,7 @@ import {
 import {
   MoodBoardObjectSource,
   MoodBoardReviewType,
+  MoodBoardRenderStatus,
   MoodBoardStatus,
   Prisma,
   RequirementSetStatus,
@@ -18,6 +19,7 @@ import {
   MoodBoardObjectDto,
   MoodBoardReviewDto,
 } from './dto/mood-board.dto';
+import { PrepareMoodBoardRenderDto } from './dto/mood-board-render.dto';
 
 const FULL_BOARD_INCLUDE = {
   scenes: {
@@ -186,6 +188,135 @@ export class MoodBoardsService {
       where: { eventId },
       orderBy: { version: 'desc' },
       include: FULL_BOARD_INCLUDE,
+    });
+  }
+
+  async prepareRenderRequest(
+    userId: string,
+    eventId: string,
+    boardId: string,
+    dto: PrepareMoodBoardRenderDto,
+  ) {
+    const event = await this.requireEventAccess(userId, eventId);
+    const board = await this.prisma.moodBoard.findUnique({
+      where: { id: boardId },
+      include: {
+        scenes: {
+          include: {
+            objects: {
+              orderBy: { sortOrder: 'asc' },
+              include: {
+                requirementItem: {
+                  select: {
+                    id: true,
+                    requirementCode: true,
+                    name: true,
+                    quantityRequired: true,
+                    unit: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+    if (!board || board.eventId !== eventId)
+      throw new NotFoundException('Mood Board not found');
+    if (
+      board.status !== MoodBoardStatus.Draft &&
+      board.status !== MoodBoardStatus.ChangesRequested
+    ) {
+      throw new ConflictException(
+        'AI rendering can only be prepared for a draft or changes-requested Mood Board',
+      );
+    }
+    const scene = board.scenes.find((row) => row.id === dto.sceneId);
+    if (!scene)
+      throw new BadRequestException('Scene does not belong to this Mood Board');
+    if (!scene.objects.length)
+      throw new ConflictException(
+        'AI rendering requires at least one traceable scene object',
+      );
+
+    const inputPayload = {
+      schemaVersion: 1,
+      eventId,
+      moodBoardId: board.id,
+      moodBoardVersion: board.version,
+      scene: {
+        id: scene.id,
+        key: scene.sceneKey,
+        name: scene.name,
+        layoutInstructions: scene.description,
+      },
+      objects: scene.objects.map((object) => ({
+        objectKey: object.objectKey,
+        name: object.name,
+        locked: object.locked,
+        source: object.source,
+        sourceReferenceId: object.sourceReferenceId,
+        supplierName: object.supplierName,
+        marketplaceListingId: object.marketplaceListingId,
+        imageUrl: object.imageUrl,
+        presentation: object.presentation,
+        requirement: object.requirementItem,
+      })),
+      governance: {
+        preserveLockedObjects: true,
+        providerSubmissionAuthorised: false,
+        commercialCommitmentAuthorised: false,
+      },
+    };
+
+    return this.prisma.moodBoardRenderRequest.create({
+      data: {
+        organizationId: event.organizationId,
+        moodBoardId: board.id,
+        sceneId: scene.id,
+        prompt: dto.prompt,
+        inputPayload,
+        createdByUserId: userId,
+      },
+      include: { scene: { select: { id: true, name: true, sceneKey: true } } },
+    });
+  }
+
+  async listRenderRequests(userId: string, eventId: string, boardId: string) {
+    await this.requireEventAccess(userId, eventId);
+    await this.requireBoard(eventId, boardId);
+    return this.prisma.moodBoardRenderRequest.findMany({
+      where: { moodBoardId: boardId },
+      orderBy: { createdAt: 'desc' },
+      include: { scene: { select: { id: true, name: true, sceneKey: true } } },
+    });
+  }
+
+  async cancelRenderRequest(
+    userId: string,
+    eventId: string,
+    boardId: string,
+    requestId: string,
+  ) {
+    await this.requireEventAccess(userId, eventId);
+    await this.requireBoard(eventId, boardId);
+    const request = await this.prisma.moodBoardRenderRequest.findUnique({
+      where: { id: requestId },
+    });
+    if (!request || request.moodBoardId !== boardId)
+      throw new NotFoundException('Mood Board render request not found');
+    if (request.status !== MoodBoardRenderStatus.Prepared) {
+      throw new ConflictException(
+        'Only a prepared render request can be cancelled',
+      );
+    }
+    return this.prisma.moodBoardRenderRequest.update({
+      where: { id: requestId },
+      data: {
+        status: MoodBoardRenderStatus.Cancelled,
+        cancelledAt: new Date(),
+      },
+      include: { scene: { select: { id: true, name: true, sceneKey: true } } },
     });
   }
 

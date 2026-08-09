@@ -31,6 +31,12 @@ describe('MoodBoardsService', () => {
     moodBoardScene: { create: jest.fn() },
     moodBoardObject: { create: jest.fn() },
     moodBoardReview: { create: jest.fn() },
+    moodBoardRenderRequest: {
+      create: jest.fn(),
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      update: jest.fn(),
+    },
     $transaction: jest.fn(),
   };
 
@@ -251,5 +257,78 @@ describe('MoodBoardsService', () => {
     expect(result.affectedRequirementItemIds).toEqual([itemId]);
     expect(result.requiresRequirementImpactReview).toBe(true);
     expect(result.procurementUpdated).toBe(false);
+  });
+
+  it('prepares a provider-neutral scene render request with locked-object governance', async () => {
+    const sceneId = '88888888-8888-8888-8888-888888888888';
+    prisma.moodBoard.findUnique.mockResolvedValue({
+      id: boardId,
+      eventId,
+      version: 2,
+      status: MoodBoardStatus.Draft,
+      scenes: [
+        {
+          id: sceneId,
+          sceneKey: 'main-hall',
+          name: 'Main Hall',
+          description: 'Three long rows',
+          objects: [
+            {
+              ...marketplaceObject,
+              objectKey: 'OBJ-001',
+              presentation: { placementInstructions: 'Ten per table' },
+              requirementItem: {
+                id: itemId,
+                requirementCode: 'R-001',
+                name: 'Chairs',
+                quantityRequired: 100,
+                unit: 'Each',
+              },
+            },
+          ],
+        },
+      ],
+    });
+    prisma.moodBoardRenderRequest.create.mockResolvedValue({
+      id: 'render-1',
+      status: 'Prepared',
+    });
+
+    await service.prepareRenderRequest(userId, eventId, boardId, {
+      sceneId,
+      prompt: 'Create a realistic reception layout',
+    });
+
+    expect(prisma.moodBoardRenderRequest.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          moodBoardId: boardId,
+          sceneId,
+          inputPayload: expect.objectContaining({
+            governance: {
+              preserveLockedObjects: true,
+              providerSubmissionAuthorised: false,
+              commercialCommitmentAuthorised: false,
+            },
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('blocks render preparation while a board is in client review', async () => {
+    prisma.moodBoard.findUnique.mockResolvedValue({
+      id: boardId,
+      eventId,
+      status: MoodBoardStatus.InClientReview,
+      scenes: [],
+    });
+    await expect(
+      service.prepareRenderRequest(userId, eventId, boardId, {
+        sceneId: '88888888-8888-8888-8888-888888888888',
+        prompt: 'Change the flowers',
+      }),
+    ).rejects.toBeInstanceOf(ConflictException);
+    expect(prisma.moodBoardRenderRequest.create).not.toHaveBeenCalled();
   });
 });

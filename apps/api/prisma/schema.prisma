@@ -108,6 +108,15 @@ enum MoodBoardReviewType {
   Approval
 }
 
+enum MoodBoardRenderStatus {
+  Prepared
+  Submitted
+  Rendering
+  Completed
+  Failed
+  Cancelled
+}
+
 enum ProcurementPackageStatus {
   Draft
   Analysed
@@ -761,6 +770,7 @@ model User {
   moodBoardsCreated                MoodBoard[]                @relation("MoodBoardCreatedBy")
   moodBoardsApproved               MoodBoard[]                @relation("MoodBoardApprovedBy")
   moodBoardReviews                 MoodBoardReview[]
+  moodBoardRenderRequestsCreated   MoodBoardRenderRequest[]   @relation("MoodBoardRenderRequestCreatedBy")
   procurementPackagesCreated       ProcurementPackage[]       @relation("ProcurementPackageCreatedBy")
   procurementSolutionsSelected     ProcurementSolution[]      @relation("ProcurementSolutionSelectedBy")
   commercialWorkspacesCreated      CommercialWorkspace[]      @relation("CommercialWorkspaceCreatedBy")
@@ -816,6 +826,7 @@ model Organization {
   requirementSets           RequirementSet[]
   requirementImpactReports  RequirementImpactReport[]
   moodBoards                MoodBoard[]
+  moodBoardRenderRequests   MoodBoardRenderRequest[]
   procurementPackages       ProcurementPackage[]
   commercialWorkspaces      CommercialWorkspace[]
   assetDefinitions          AssetDefinition[]
@@ -863,23 +874,23 @@ model Membership {
 }
 
 model Contact {
-  id             String       @id @default(uuid())
-  organizationId String
-  firstName      String
-  lastName       String?
-  email          String?
-  phone          String?
-  mobile         String?
-  companyName    String?
-  contactType    String?
-  address        String?
-  notes          String?
-  archivedAt     DateTime?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  events         Event[]
-  quotations     Quotation[]
+  id                 String             @id @default(uuid())
+  organizationId     String
+  firstName          String
+  lastName           String?
+  email              String?
+  phone              String?
+  mobile             String?
+  companyName        String?
+  contactType        String?
+  address            String?
+  notes              String?
+  archivedAt         DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  organization       Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  events             Event[]
+  quotations         Quotation[]
   salesOpportunities SalesOpportunity[]
 
   @@index([organizationId])
@@ -1166,7 +1177,7 @@ model RequirementImpactChange {
 }
 
 model MoodBoard {
-  id                   String             @id @default(uuid())
+  id                   String                   @id @default(uuid())
   organizationId       String
   eventId              String
   eventDesignVersionId String
@@ -1174,22 +1185,23 @@ model MoodBoard {
   basedOnMoodBoardId   String?
   version              Int
   title                String
-  status               MoodBoardStatus    @default(Draft)
+  status               MoodBoardStatus          @default(Draft)
   createdByUserId      String
   submittedAt          DateTime?
   approvedByUserId     String?
   approvedAt           DateTime?
-  createdAt            DateTime           @default(now())
-  organization         Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  event                Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  eventDesignVersion   EventDesignVersion @relation(fields: [eventDesignVersionId], references: [id], onDelete: Restrict)
-  requirementSet       RequirementSet     @relation(fields: [requirementSetId], references: [id], onDelete: Restrict)
-  basedOnMoodBoard     MoodBoard?         @relation("MoodBoardRevisions", fields: [basedOnMoodBoardId], references: [id], onDelete: Restrict)
-  revisions            MoodBoard[]        @relation("MoodBoardRevisions")
-  createdBy            User               @relation("MoodBoardCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
-  approvedBy           User?              @relation("MoodBoardApprovedBy", fields: [approvedByUserId], references: [id], onDelete: Restrict)
+  createdAt            DateTime                 @default(now())
+  organization         Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event                Event                    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventDesignVersion   EventDesignVersion       @relation(fields: [eventDesignVersionId], references: [id], onDelete: Restrict)
+  requirementSet       RequirementSet           @relation(fields: [requirementSetId], references: [id], onDelete: Restrict)
+  basedOnMoodBoard     MoodBoard?               @relation("MoodBoardRevisions", fields: [basedOnMoodBoardId], references: [id], onDelete: Restrict)
+  revisions            MoodBoard[]              @relation("MoodBoardRevisions")
+  createdBy            User                     @relation("MoodBoardCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  approvedBy           User?                    @relation("MoodBoardApprovedBy", fields: [approvedByUserId], references: [id], onDelete: Restrict)
   scenes               MoodBoardScene[]
   reviews              MoodBoardReview[]
+  renderRequests       MoodBoardRenderRequest[]
 
   @@unique([eventId, version])
   @@index([organizationId])
@@ -1201,16 +1213,46 @@ model MoodBoard {
   @@index([eventId, status])
 }
 
+model MoodBoardRenderRequest {
+  id              String                @id @default(uuid())
+  organizationId  String
+  moodBoardId     String
+  sceneId         String
+  status          MoodBoardRenderStatus @default(Prepared)
+  prompt          String
+  inputPayload    Json
+  provider        String?
+  providerJobId   String?
+  resultImageUrl  String?
+  failureReason   String?
+  createdByUserId String
+  submittedAt     DateTime?
+  completedAt     DateTime?
+  cancelledAt     DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  organization    Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  moodBoard       MoodBoard             @relation(fields: [moodBoardId], references: [id], onDelete: Cascade)
+  scene           MoodBoardScene        @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  createdBy       User                  @relation("MoodBoardRenderRequestCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@index([organizationId])
+  @@index([moodBoardId, createdAt])
+  @@index([sceneId, status])
+  @@index([createdByUserId])
+}
+
 model MoodBoardScene {
-  id          String            @id @default(uuid())
-  moodBoardId String
-  sceneKey    String
-  name        String
-  description String?
-  sortOrder   Int               @default(0)
-  createdAt   DateTime          @default(now())
-  moodBoard   MoodBoard         @relation(fields: [moodBoardId], references: [id], onDelete: Cascade)
-  objects     MoodBoardObject[]
+  id             String                   @id @default(uuid())
+  moodBoardId    String
+  sceneKey       String
+  name           String
+  description    String?
+  sortOrder      Int                      @default(0)
+  createdAt      DateTime                 @default(now())
+  moodBoard      MoodBoard                @relation(fields: [moodBoardId], references: [id], onDelete: Cascade)
+  objects        MoodBoardObject[]
+  renderRequests MoodBoardRenderRequest[]
 
   @@unique([moodBoardId, sceneKey])
   @@index([moodBoardId, sortOrder])
@@ -2892,42 +2934,42 @@ model StorageLocation {
 }
 
 model Resource {
-  id                  String                     @id @default(uuid())
-  organizationId      String
-  supplierId          String?
-  name                String
-  description         String?
-  category            String
-  tags                String[]                   @default([])
-  keywords            String[]                   @default([])
-  aiSummary           String?
-  searchPhrases       String[]                   @default([])
-  imageUrls           String[]                   @default([])
-  resourceType        ResourceType
-  quantityMode        ResourceQuantityMode
-  sku                 String?
-  barcode             String?
-  status              ResourceStatus             @default(AVAILABLE)
-  visibility          ResourceVisibility         @default(PRIVATE)
-  unit                String
-  totalQuantity       Float?
-  condition           ResourceCondition          @default(UNKNOWN)
-  locationId          String?
-  purchaseValue       Float?
-  replacementValue    Float?
-  rentalPrice         Float?
-  damagedQuantity     Float                      @default(0)
-  maintenanceQuantity Float                      @default(0)
-  notes               String?
-  createdAt           DateTime                   @default(now())
-  updatedAt           DateTime                   @updatedAt
-  archivedAt          DateTime?
-  organization        Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  supplier            Supplier?                  @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  location            StorageLocation?           @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  reservations        ResourceReservation[]
-  allocations         EventResourceAllocation[]
-  outstandings        EventResourceOutstanding[]
+  id                   String                     @id @default(uuid())
+  organizationId       String
+  supplierId           String?
+  name                 String
+  description          String?
+  category             String
+  tags                 String[]                   @default([])
+  keywords             String[]                   @default([])
+  aiSummary            String?
+  searchPhrases        String[]                   @default([])
+  imageUrls            String[]                   @default([])
+  resourceType         ResourceType
+  quantityMode         ResourceQuantityMode
+  sku                  String?
+  barcode              String?
+  status               ResourceStatus             @default(AVAILABLE)
+  visibility           ResourceVisibility         @default(PRIVATE)
+  unit                 String
+  totalQuantity        Float?
+  condition            ResourceCondition          @default(UNKNOWN)
+  locationId           String?
+  purchaseValue        Float?
+  replacementValue     Float?
+  rentalPrice          Float?
+  damagedQuantity      Float                      @default(0)
+  maintenanceQuantity  Float                      @default(0)
+  notes                String?
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
+  archivedAt           DateTime?
+  organization         Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  supplier             Supplier?                  @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  location             StorageLocation?           @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  reservations         ResourceReservation[]
+  allocations          EventResourceAllocation[]
+  outstandings         EventResourceOutstanding[]
   marketplaceEnquiries MarketplaceEnquiry[]
 
   @@unique([organizationId, sku])
@@ -3108,23 +3150,23 @@ model InventoryItem {
 }
 
 model MarketplaceEnquiry {
-  id              String                   @id @default(uuid())
-  organizationId  String
-  inventoryItemId String?
-  resourceId      String?
-  status          MarketplaceEnquiryStatus @default(New)
-  customerName    String
-  customerEmail   String
-  customerPhone   String?
-  eventDate       DateTime?
-  eventLocation   String?
-  quantity        Float?
-  message         String
-  createdAt       DateTime                 @default(now())
-  updatedAt       DateTime                 @updatedAt
-  organization    Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  inventoryItem   InventoryItem?           @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
-  resource        Resource?                @relation(fields: [resourceId], references: [id], onDelete: Restrict)
+  id               String                   @id @default(uuid())
+  organizationId   String
+  inventoryItemId  String?
+  resourceId       String?
+  status           MarketplaceEnquiryStatus @default(New)
+  customerName     String
+  customerEmail    String
+  customerPhone    String?
+  eventDate        DateTime?
+  eventLocation    String?
+  quantity         Float?
+  message          String
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  organization     Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inventoryItem    InventoryItem?           @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  resource         Resource?                @relation(fields: [resourceId], references: [id], onDelete: Restrict)
   salesOpportunity SalesOpportunity?
 
   @@index([organizationId])

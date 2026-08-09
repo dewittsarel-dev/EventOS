@@ -48,3 +48,17 @@ export type MoodBoardComparison = {
   requiresRequirementImpactReview: boolean;
   procurementUpdated: false;
 };
+
+export type MoodBoardRenderRequest = {
+  id: string;
+  moodBoardId: string;
+  sceneId: string;
+  status: 'Prepared' | 'Submitted' | 'Rendering' | 'Completed' | 'Failed' | 'Cancelled';
+  prompt: string;
+  provider: string | null;
+  resultImageUrl: string | null;
+  failureReason: string | null;
+  createdAt: string;
+  cancelledAt: string | null;
+  scene: { id: string; name: string; sceneKey: string };
+};

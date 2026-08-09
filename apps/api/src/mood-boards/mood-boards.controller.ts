@@ -13,6 +13,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserResponseDto } from '../auth/dto/auth-response.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateMoodBoardDto, MoodBoardReviewDto } from './dto/mood-board.dto';
+import { PrepareMoodBoardRenderDto } from './dto/mood-board-render.dto';
 import { MoodBoardsService } from './mood-boards.service';
 
 @ApiTags('mood-boards')
@@ -40,6 +41,54 @@ export class MoodBoardsController {
     @Param('eventId') eventId: string,
   ) {
     return this.moodBoardsService.list(user.id, eventId);
+  }
+
+  @Post(':boardId/render-requests')
+  @ApiOperation({
+    summary: 'Prepare a provider-neutral AI scene render request',
+  })
+  prepareRender(
+    @CurrentUser() user: UserResponseDto,
+    @Param('eventId') eventId: string,
+    @Param('boardId') boardId: string,
+    @Body() dto: PrepareMoodBoardRenderDto,
+  ) {
+    return this.moodBoardsService.prepareRenderRequest(
+      user.id,
+      eventId,
+      boardId,
+      dto,
+    );
+  }
+
+  @Get(':boardId/render-requests')
+  @ApiOperation({
+    summary: 'List prepared and historical AI scene render requests',
+  })
+  listRenderRequests(
+    @CurrentUser() user: UserResponseDto,
+    @Param('eventId') eventId: string,
+    @Param('boardId') boardId: string,
+  ) {
+    return this.moodBoardsService.listRenderRequests(user.id, eventId, boardId);
+  }
+
+  @Post(':boardId/render-requests/:requestId/cancel')
+  @ApiOperation({
+    summary: 'Cancel a render request before provider submission',
+  })
+  cancelRenderRequest(
+    @CurrentUser() user: UserResponseDto,
+    @Param('eventId') eventId: string,
+    @Param('boardId') boardId: string,
+    @Param('requestId') requestId: string,
+  ) {
+    return this.moodBoardsService.cancelRenderRequest(
+      user.id,
+      eventId,
+      boardId,
+      requestId,
+    );
   }
 
   @Post(':boardId/submit-review')
