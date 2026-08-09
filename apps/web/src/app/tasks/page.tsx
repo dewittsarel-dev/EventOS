@@ -23,6 +23,7 @@ import {
 } from '../../lib/tasks-types';
 import { ConfirmDeleteTaskDialog } from './components/confirm-delete-task-dialog';
 import { TaskDialogForm } from './components/task-dialog-form';
+import { humanizeLabel } from '../../lib/ui-labels';
 
 function priorityClass(priority: TaskPriority) {
   if (priority === 'Critical') {
@@ -374,8 +375,7 @@ export default function TasksPage() {
 
       {!canLoad ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
-          Save your bearer token and selected organization in the user menu to manage
-          tasks.
+          Sign in and select an organization to manage tasks.
         </div>
       ) : null}
 
@@ -395,7 +395,7 @@ export default function TasksPage() {
           <option value="ALL">All statuses</option>
           {TASK_STATUSES.map((item) => (
             <option key={item} value={item}>
-              {item}
+              {humanizeLabel(item)}
             </option>
           ))}
         </select>
@@ -505,7 +505,7 @@ export default function TasksPage() {
                         <td className="px-4 py-3 text-zinc-700">{task.description || '-'}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex rounded-full px-2 py-0.5 text-xs ${statusClass(task.status)}`}>
-                            {task.status}
+                            {humanizeLabel(task.status)}
                           </span>
                         </td>
                         <td className="px-4 py-3">
@@ -588,7 +588,7 @@ export default function TasksPage() {
                       <p className="mt-1 text-sm text-zinc-600">{task.description || '-'}</p>
                     </div>
                     <span className={`inline-flex rounded-full px-2 py-0.5 text-xs ${statusClass(task.status)}`}>
-                      {task.status}
+                      {humanizeLabel(task.status)}
                     </span>
                   </div>
 

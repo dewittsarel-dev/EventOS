@@ -23,6 +23,7 @@ import {
 } from '../../lib/purchase-orders-types';
 import { listSuppliers } from '../../lib/suppliers-api';
 import type { SupplierRecord } from '../../lib/suppliers-types';
+import { humanizeLabel } from '../../lib/ui-labels';
 
 function formatCurrency(amount: number, currency: string) {
   return new Intl.NumberFormat('en-ZA', {
@@ -442,7 +443,7 @@ export default function PurchaseOrdersPage() {
           <option value="ALL">All statuses</option>
           {PURCHASE_ORDER_STATUSES.map((entry) => (
             <option key={entry} value={entry}>
-              {entry}
+              {humanizeLabel(entry)}
             </option>
           ))}
         </select>
@@ -518,7 +519,7 @@ export default function PurchaseOrdersPage() {
                     <span
                       className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${statusClass(row.status)}`}
                     >
-                      {row.status}
+                      {humanizeLabel(row.status)}
                     </span>
                   </td>
                   <td className="px-3 py-2 text-zinc-700">

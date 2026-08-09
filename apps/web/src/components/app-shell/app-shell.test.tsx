@@ -79,6 +79,17 @@ describe('AppShell', () => {
     fireEvent.click(screen.getByLabelText('Open navigation menu'));
 
     expect(screen.getByLabelText('Close navigation menu')).toBeInTheDocument();
+    expect(window.location.pathname).toBe('/events');
+  });
+
+  it('connects the notification control to the actionable activity stream', () => {
+    render(
+      <AppSessionProvider>
+        <AppShell><div>Content</div></AppShell>
+      </AppSessionProvider>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Open notifications and activity' })).toHaveAttribute('href', '/activity');
   });
 
   it('opens workspace search and navigates to a matched action', () => {

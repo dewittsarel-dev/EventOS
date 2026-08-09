@@ -405,14 +405,14 @@ export function AppShell({ children }: AppShellProps) {
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-white/85 backdrop-blur-xl">
             <div className="flex h-[4.5rem] items-center gap-3 px-3 md:px-5">
-              <Link
-                href="/activity"
+              <button
+                type="button"
                 className="inline-flex rounded-md border border-zinc-200 p-2 text-zinc-600 hover:bg-zinc-100 md:hidden"
                 onClick={() => setMobileMenuOpen(true)}
                 aria-label="Open navigation menu"
               >
                 <MenuIcon className="h-4 w-4" />
-              </Link>
+              </button>
 
               <div className="hidden min-w-0 flex-1 items-center gap-2 md:flex">
                 <SearchIcon className="h-4 w-4 text-zinc-500" />
@@ -459,14 +459,14 @@ export function AppShell({ children }: AppShellProps) {
                 </select>
               </label>
 
-              <button
-                type="button"
+              <Link
+                href="/activity"
                 className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-200 text-zinc-600 hover:bg-zinc-100"
-                aria-label="Open notifications"
-                title="Notifications"
+                aria-label="Open notifications and activity"
+                title="Notifications and activity"
               >
                 <NotificationIcon className="h-4 w-4" />
-              </button>
+              </Link>
 
               <div className="relative" ref={profileMenuRef}>
                 <button
@@ -495,29 +495,22 @@ export function AppShell({ children }: AppShellProps) {
                     role="menu"
                     className="absolute right-0 z-50 mt-2 w-[min(20rem,calc(100vw-1.5rem))] rounded-xl border border-zinc-200 bg-white p-3 shadow-2xl"
                   >
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                      Workspace Session
-                    </p>
+                    <p className="text-sm font-semibold text-zinc-900">Account</p>
+                    <p className="mb-3 text-xs text-zinc-500">{activeOrganization?.name ?? 'Select an organization to begin'}</p>
 
-                    <label className="mb-2 block text-xs text-zinc-600">
-                      API Base URL
-                      <input
-                        className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
-                        value={baseUrlInput}
-                        onChange={(event) => setBaseUrlInput(event.target.value)}
-                        placeholder="http://localhost:3001"
-                      />
-                    </label>
-
-                    <label className="mb-2 block text-xs text-zinc-600">
-                      Bearer Token
-                      <input
-                        className="mt-1 w-full rounded-md border border-zinc-300 px-2 py-1.5 text-sm"
-                        value={tokenInput}
-                        onChange={(event) => setTokenInput(event.target.value)}
-                        placeholder="eyJhbGciOi..."
-                      />
-                    </label>
+                    {developmentAuthBypassEnabled ? (
+                      <details className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-zinc-700">
+                        <summary className="cursor-pointer font-medium">Developer connection</summary>
+                        <label className="mt-2 block text-zinc-600">
+                          API address
+                          <input className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm" value={baseUrlInput} onChange={(event) => setBaseUrlInput(event.target.value)} placeholder="http://localhost:3001" />
+                        </label>
+                        <label className="mt-2 block text-zinc-600">
+                          Development access token
+                          <input type="password" className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-2 py-1.5 text-sm" value={tokenInput} onChange={(event) => setTokenInput(event.target.value)} placeholder="Development token" />
+                        </label>
+                      </details>
+                    ) : null}
 
                     {organizations.length > 0 ? (
                       <label className="mb-2 block text-xs text-zinc-600">
@@ -535,7 +528,7 @@ export function AppShell({ children }: AppShellProps) {
                           ))}
                         </select>
                       </label>
-                    ) : (
+                    ) : developmentAuthBypassEnabled ? (
                       <label className="mb-2 block text-xs text-zinc-600">
                         Organization ID
                         <input
@@ -547,16 +540,12 @@ export function AppShell({ children }: AppShellProps) {
                           placeholder="organization uuid"
                         />
                       </label>
+                    ) : (
+                      <p className="mb-3 rounded-lg bg-zinc-50 p-3 text-xs text-zinc-600">No organization memberships are available for this account.</p>
                     )}
 
                     <div className="mt-2 flex items-center justify-between gap-2">
-                      <button
-                        type="button"
-                        className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-700"
-                        onClick={onSaveSession}
-                      >
-                        Save
-                      </button>
+                      {developmentAuthBypassEnabled ? <button type="button" className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-zinc-700" onClick={onSaveSession}>Save connection</button> : <Link href="/settings/organization" onClick={() => setProfileOpen(false)} className="text-xs font-medium text-zinc-700 underline">Organization settings</Link>}
 
                       <button
                         type="button"
@@ -588,7 +577,7 @@ export function AppShell({ children }: AppShellProps) {
                   <UserIcon className="h-3.5 w-3.5" />
                   <span className="max-w-52 truncate">
                     {loadingMeta
-                      ? 'Loading workspace context...'
+                      ? 'Loading organization...'
                       : activeOrganization
                         ? `${activeOrganization.name}`
                         : session.organizationId

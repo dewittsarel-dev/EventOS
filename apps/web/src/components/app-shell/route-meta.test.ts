@@ -32,6 +32,14 @@ describe('route meta', () => {
     ]);
   });
 
+  it('uses a human label instead of exposing record identifiers', () => {
+    expect(buildBreadcrumbs('/events/123e4567-e89b-12d3-a456-426614174000')).toEqual([
+      { href: '/', label: 'Home' },
+      { href: '/events', label: 'Events' },
+      { href: '/events/123e4567-e89b-12d3-a456-426614174000', label: 'Details' },
+    ]);
+  });
+
   it('resolves titles from nested paths', () => {
     expect(routeTitle('/events/123')).toBe('Events');
     expect(routeTitle('/suppliers/123')).toBe('Suppliers');

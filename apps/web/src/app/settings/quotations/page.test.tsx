@@ -202,7 +202,7 @@ describe('QuotationsSettingsPage', () => {
 
     expect(
       await screen.findByText(
-        'Save your bearer token and selected organization in the user menu to manage quotations.',
+        'Sign in and select an organization to manage quotations.',
       ),
     ).toBeInTheDocument();
     expect(listQuotations).not.toHaveBeenCalled();

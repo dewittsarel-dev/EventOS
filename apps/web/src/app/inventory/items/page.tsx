@@ -203,7 +203,7 @@ export default function InventoryItemsPage() {
 
   async function onDelete(id: string) {
     if (!session.token) {
-      setError('Please save Bearer token first.');
+      setError('Please sign in before changing a resource.');
       return;
     }
 
@@ -231,7 +231,7 @@ export default function InventoryItemsPage() {
 
   async function onArchiveToggle(item: InventoryItemRecord) {
     if (!session.token) {
-      setError('Please save Bearer token first.');
+      setError('Please sign in before changing a resource.');
       return;
     }
 

@@ -160,7 +160,7 @@ export default function EditMeetingNotePage() {
     setSuccess('');
 
     if (!session.token) {
-      setError('Please save a Bearer token first.');
+      setError('Please sign in before editing this meeting note.');
       return;
     }
 

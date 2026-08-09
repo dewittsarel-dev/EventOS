@@ -112,6 +112,7 @@ The repository now contains the verified backend architecture from M004 through 
 - Shared ClientOS capabilities — COMPLETE for the first draft: Documents now indexes source-owned evidence by relationship, Activity consolidates server-owned priorities, assigned work and recent changes, the notification bell opens that actionable stream, and full task management remains available.
 - ClientOS workspace search — COMPLETE: the persistent shell search now finds major workspaces, settings and common creation actions with keyboard and mobile access instead of displaying a non-functional placeholder.
 - Marketplace Product Interface — COMPLETE for the first draft: the public surface browses explicitly published Resource Engine records with availability state, accepts customer enquiries into dedicated intake records, and returns those enquiries to a private ClientOS management inbox. Private costs, exact stock counts, notes and operating records remain outside the public contract.
+- Product-wide usability Phase 1 — COMPLETE: shared navigation, account context, notification routing, access guidance, workflow labels, Marketplace customer states and primary responsive routes have been audited and refined without changing EventOS architecture.
 
 ### Marketplace Product Interface — COMPLETE FOR FIRST DRAFT
 

@@ -11,6 +11,7 @@ import {
   type SupplierRecord,
   type SupplierSortBy,
 } from '../../lib/suppliers-types';
+import { humanizeLabel } from '../../lib/ui-labels';
 
 type BooleanFilter = 'ALL' | 'true' | 'false';
 type CategoryFilter = 'ALL' | (typeof SUPPLIER_CATEGORIES)[number];
@@ -113,7 +114,7 @@ export default function SuppliersPage() {
 
   async function onArchive(id: string) {
     if (!session.token) {
-      setError('Please save Bearer token first.');
+      setError('Please sign in before changing a supplier.');
       return;
     }
 
@@ -182,7 +183,7 @@ export default function SuppliersPage() {
           <option value="ALL">All categories</option>
           {SUPPLIER_CATEGORIES.map((item) => (
             <option key={item} value={item}>
-              {item}
+              {humanizeLabel(item)}
             </option>
           ))}
         </select>

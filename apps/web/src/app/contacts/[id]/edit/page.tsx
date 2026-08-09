@@ -96,7 +96,7 @@ export default function EditContactPage() {
     setSuccess('');
 
     if (!session.token) {
-      setError('Please save Bearer token first.');
+      setError('Please sign in before editing this contact.');
       return;
     }
 

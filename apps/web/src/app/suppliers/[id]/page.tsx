@@ -97,7 +97,7 @@ export default function SupplierDetailsPage() {
 
   async function onArchive() {
     if (!session.token) {
-      setError('Please save a Bearer token first.');
+      setError('Please sign in before changing this supplier.');
       return;
     }
 
@@ -137,7 +137,7 @@ export default function SupplierDetailsPage() {
 
   async function onRestore() {
     if (!session.token) {
-      setError('Please save a Bearer token first.');
+      setError('Please sign in before changing this supplier.');
       return;
     }
 

@@ -205,7 +205,7 @@ export default function EditInventoryItemPage() {
     setSuccess('');
 
     if (!session.token) {
-      setError('Please save Bearer token first.');
+      setError('Please sign in before editing this resource.');
       return;
     }
 

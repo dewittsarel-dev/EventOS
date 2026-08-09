@@ -9,14 +9,20 @@ const field = 'rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm o
 
 export default function MarketplaceAccountPage() {
   const [session, setSession] = useState<MarketplaceCustomerSession | null>(() => readMarketplaceCustomerSession());
+  const [loading, setLoading] = useState(Boolean(session));
   const [enquiries, setEnquiries] = useState<MarketplaceCustomerEnquiry[]>([]);
   const [shortlist, setShortlist] = useState<MarketplaceShortlistItem[]>([]);
   const [registering, setRegistering] = useState(false);
   const [error, setError] = useState('');
   const load = useCallback(async (current: MarketplaceCustomerSession) => {
-    const [enquiryRows, shortlistRows] = await Promise.all([listCustomerEnquiries(current.accessToken), listCustomerShortlist(current.accessToken)]);
-    setEnquiries(enquiryRows);
-    setShortlist(shortlistRows);
+    setLoading(true);
+    try {
+      const [enquiryRows, shortlistRows] = await Promise.all([listCustomerEnquiries(current.accessToken), listCustomerShortlist(current.accessToken)]);
+      setEnquiries(enquiryRows);
+      setShortlist(shortlistRows);
+    } finally {
+      setLoading(false);
+    }
   }, []);
   useEffect(() => {
     const current = session;
@@ -60,12 +66,12 @@ export default function MarketplaceAccountPage() {
           <form onSubmit={authenticate} className="mt-6 grid gap-3">
             {registering ? (
               <>
-                <input required name="name" placeholder="Your name" className={field} />
-                <input name="phone" placeholder="Phone (optional)" className={field} />
+                <input required aria-label="Your name" autoComplete="name" name="name" placeholder="Your name" className={field} />
+                <input aria-label="Phone" autoComplete="tel" name="phone" placeholder="Phone (optional)" className={field} />
               </>
             ) : null}
-            <input required type="email" name="email" placeholder="Email" className={field} />
-            <input required minLength={10} type="password" name="password" placeholder="Password (minimum 10 characters)" className={field} />
+            <input required aria-label="Email" autoComplete="email" type="email" name="email" placeholder="Email" className={field} />
+            <input required aria-label="Password" autoComplete={registering ? 'new-password' : 'current-password'} minLength={10} type="password" name="password" placeholder="Password (minimum 10 characters)" className={field} />
             <button className="rounded-full bg-stone-950 px-5 py-3 font-medium text-white">{registering ? 'Create account' : 'Sign in'}</button>
           </form>
           <button onClick={() => setRegistering((value) => !value)} className="mt-4 text-sm underline">
@@ -92,6 +98,7 @@ export default function MarketplaceAccountPage() {
           Sign out
         </button>
       </div>
+      {loading ? <p role="status" className="mt-6 rounded-2xl bg-white p-4 text-sm text-stone-600">Loading your planning workspace…</p> : null}
       <section className="mt-8">
         <h2 className="text-xl font-semibold">Enquiries</h2>
         <div className="mt-3 grid gap-4">
@@ -130,7 +137,7 @@ export default function MarketplaceAccountPage() {
               </form>
             </article>
           ))}
-          {!enquiries.length ? <p className="rounded-2xl bg-white p-5 text-sm text-stone-600">No account-linked enquiries yet.</p> : null}
+          {!loading && !enquiries.length ? <p className="rounded-2xl bg-white p-5 text-sm text-stone-600">No enquiries yet. Browse the Marketplace and enquire about a listing to start planning.</p> : null}
         </div>
       </section>
       <section className="mt-8">
@@ -168,7 +175,7 @@ export default function MarketplaceAccountPage() {
               ))}
             </tbody>
           </table>
-          {!shortlist.length ? <p className="p-5 text-sm text-stone-600">Save products from the Marketplace to compare them here.</p> : null}
+          {!loading && !shortlist.length ? <p className="p-5 text-sm text-stone-600">Save products from the Marketplace to compare them here.</p> : null}
         </div>
       </section>
     </MarketplaceFrame>

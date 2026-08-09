@@ -196,7 +196,7 @@ describe('TasksPage', () => {
 
     expect(
       await screen.findByText(
-        'Save your bearer token and selected organization in the user menu to manage tasks.',
+        'Sign in and select an organization to manage tasks.',
       ),
     ).toBeInTheDocument();
     expect(listTasks).not.toHaveBeenCalled();

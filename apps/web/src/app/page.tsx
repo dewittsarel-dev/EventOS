@@ -169,9 +169,9 @@ export default function DashboardPage() {
 
       {!session.organizationId ? (
         <section className="rounded-2xl border border-zinc-200 bg-white p-6">
-          <h2 className="text-lg font-semibold text-zinc-900">Connect Workspace Context</h2>
+          <h2 className="text-lg font-semibold text-zinc-900">Choose your organization</h2>
           <p className="mt-2 text-sm text-zinc-600">
-            Select an organization in the header to load real dashboard insights.
+            Select the organization you want to work in to see its events, tasks and priorities.
           </p>
         </section>
       ) : (

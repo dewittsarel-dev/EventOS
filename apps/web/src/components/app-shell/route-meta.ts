@@ -30,7 +30,7 @@ export const APP_NAV_ROUTES = [
 ];
 
 function prettifySegment(segment: string) {
-  if (segment === '[id]') {
+  if (segment === '[id]' || /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(segment)) {
     return 'Details';
   }
 

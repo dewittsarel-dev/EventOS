@@ -263,8 +263,7 @@ export default function UsersPage() {
 
       {!canLoad ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
-          Save your bearer token and selected organization in the user menu to manage
-          users.
+          Sign in and select an organization to manage users.
         </div>
       ) : null}
 

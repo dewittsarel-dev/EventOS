@@ -128,7 +128,7 @@ export default function EditEventPage() {
     setSuccess('');
 
     if (!session.token) {
-      setError('Please save a Bearer token first.');
+      setError('Please sign in before editing this event.');
       return;
     }
 

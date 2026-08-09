@@ -13,6 +13,17 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-09 — Product-Wide Usability Phase 1
+
+- Corrected the ClientOS mobile navigation button so it opens the drawer without navigating to Activity.
+- Connected the notification control to the actionable Activity workspace and replaced exposed record identifiers in breadcrumbs with human-readable detail labels.
+- Simplified account, organization, Home, Documents and sign-in language while keeping development connection controls available only in explicit development mode.
+- Replaced technical bearer-token and organization-ID instructions across event, contact, supplier, quotation, task, meeting-note, resource and settings workflows.
+- Added readable labels for internal task, purchase-order and supplier-category values.
+- Improved Marketplace account loading, empty states, accessible labels and browser autocomplete behavior.
+- Verified primary ClientOS and Marketplace routes at 390px mobile and 768px tablet widths with no horizontal page overflow.
+- Verification status: all 55 web test files and 121 tests passed; web lint and production build passed; all 32 API suites and 175 tests passed; all 14 API end-to-end suites and 48 HTTP tests passed; API build and lint passed.
+
 ### 2026-08-09 — Marketplace Customer Experience and Public API Hardening
 
 - Removed duplicate contact-detail entry for signed-in Marketplace customers; enquiries now clearly use the authenticated customer identity owned by the server.

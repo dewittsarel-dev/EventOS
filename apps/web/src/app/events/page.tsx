@@ -41,7 +41,7 @@ export default function EventsPage() {
     setSuccess('');
 
     if (!session.token || !session.organizationId) {
-      setError('Please save Bearer token and Organization ID first.');
+      setError('Please sign in and select an organization to load events.');
       return;
     }
 
@@ -96,7 +96,7 @@ export default function EventsPage() {
 
   async function onDelete(id: string) {
     if (!session.token) {
-      setError('Please save Bearer token first.');
+      setError('Please sign in before changing an event.');
       return;
     }
 

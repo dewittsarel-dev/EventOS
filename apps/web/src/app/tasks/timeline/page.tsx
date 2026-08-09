@@ -88,7 +88,7 @@ export default function TasksTimelinePage() {
     setError('');
 
     if (!session.token || !session.organizationId) {
-      setError('Please save Bearer token and Organization ID first.');
+      setError('Please sign in and select an organization to load the task timeline.');
       return;
     }
 

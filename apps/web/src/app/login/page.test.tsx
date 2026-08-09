@@ -92,7 +92,7 @@ describe('LoginPage', () => {
       target: { value: 'secure1234' },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'Sign In' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
 
     await waitFor(() => {
       expect(loginWithPassword).toHaveBeenCalledWith('http://localhost:3001', {

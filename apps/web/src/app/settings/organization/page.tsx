@@ -115,7 +115,7 @@ export default function OrganizationSettingsPage() {
     setSuccess('');
 
     if (!canLoad) {
-      setError('Save your bearer token and organization first.');
+      setError('Please sign in and select an organization before saving settings.');
       return;
     }
 
@@ -197,8 +197,7 @@ export default function OrganizationSettingsPage() {
 
       {!canLoad ? (
         <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
-          Save your bearer token and selected organization in the user menu to configure
-          organization settings.
+          Sign in and select an organization to configure organization settings.
         </div>
       ) : null}
 

@@ -108,7 +108,7 @@ export default function NewMeetingNotePage() {
     setSuccess('');
 
     if (!session.token || !session.organizationId) {
-      setError('Please save Bearer token and Organization ID first.');
+      setError('Please sign in and select an organization before creating a meeting note.');
       return;
     }
 

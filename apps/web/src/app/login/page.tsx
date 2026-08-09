@@ -18,6 +18,7 @@ function LoginPageContent() {
   const [password, setPassword] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const developmentMode = isDevelopmentAuthBypassEnabled();
 
   useEffect(() => {
     if (session.token) {
@@ -81,28 +82,20 @@ function LoginPageContent() {
     <div className="mx-auto w-full max-w-xl">
       <PageHeader
         title="Sign In"
-        description="Use your existing EventOS account to restore workspace context."
+        description="Use your EventOS account to open your private ClientOS workspace."
       />
 
       <form
         onSubmit={onSubmit}
         className="mt-4 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm"
       >
-        <label className="block text-sm text-zinc-700">
-          API Base URL
-          <input
-            className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
-            value={baseUrl}
-            onChange={(event) => setBaseUrl(event.target.value)}
-            placeholder="http://localhost:3001"
-            required
-          />
-        </label>
+        {developmentMode ? <details className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-zinc-700"><summary className="cursor-pointer font-medium">Developer connection</summary><label className="mt-3 block">API address<input className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2" value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="http://localhost:3001" required /></label></details> : null}
 
         <label className="mt-4 block text-sm text-zinc-700">
           Email
           <input
             type="email"
+            autoComplete="email"
             className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
@@ -114,6 +107,7 @@ function LoginPageContent() {
           Password
           <input
             type="password"
+            autoComplete="current-password"
             className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
@@ -121,7 +115,7 @@ function LoginPageContent() {
           />
         </label>
 
-        {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
+        {error ? <p role="alert" className="mt-3 text-sm text-red-600">{error}</p> : null}
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <button
@@ -129,10 +123,10 @@ function LoginPageContent() {
             disabled={saving}
             className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-60"
           >
-            {saving ? 'Signing in...' : 'Sign In'}
+            {saving ? 'Signing in...' : 'Sign in'}
           </button>
 
-          {isDevelopmentAuthBypassEnabled() ? (
+          {developmentMode ? (
             <button
               type="button"
               disabled={saving}
