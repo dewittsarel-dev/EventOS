@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "marketplace.eventosnetwork.com"
+        }
+      ],
+      "destination": "/marketplace",
+      "permanent": false
+    }
+  ]
+}

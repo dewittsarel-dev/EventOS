@@ -13,6 +13,15 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-09 — Cloudflare, Vercel and Railway Deployment Foundation
+
+- Selected Cloudflare DNS, Vercel web hosting and Railway API/PostgreSQL without introducing provider-specific business logic.
+- Added a multi-stage Node.js production container for the NestJS API with Prisma support.
+- Added Railway configuration for pre-release Prisma migrations, database readiness health checks and controlled restart behavior.
+- Added Vercel host routing from the Marketplace domain root to the public Marketplace surface while retaining the shared verified web package.
+- Recorded the exact production domains, provider project settings, environment-variable boundaries and sequencing in the deployment runbook.
+- Verification status: clean API production container build passed; API build and lint passed; all 32 API suites and 179 tests passed; all 55 web test files and 123 tests passed; web lint and production build passed.
+
 ### 2026-08-09 — End-to-End Business Journey Phase 2
 
 - Extended Marketplace HTTP coverage across customer registration, authenticated enquiry creation and customer follow-up messaging while retaining the server-owned identity boundary.

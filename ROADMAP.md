@@ -131,12 +131,13 @@ The repository now contains the verified backend architecture from M004 through 
 
 - Automated package verification and public Marketplace integration coverage are active.
 - The provider-neutral first-draft business journey is complete from Marketplace enquiry through governed Event creation, planning, delivery and financial close; see `docs/PHASE_2_LIFECYCLE_CHECKPOINT.md`.
+- Provider deployment foundation — COMPLETE: Cloudflare DNS, Vercel web hosting and Railway API/PostgreSQL are selected; the repository contains a verified API production container, migration/health-gated Railway configuration, Marketplace host routing and an exact deployment runbook.
 - The Marketplace enquiry migration has been applied to the local approved development database.
 - Responsive foundation refinement is complete for the shared shell, action-heavy page headers, ClientOS search, public Marketplace header and key event operations; key desktop routes were rechecked for horizontal overflow.
 - Marketplace customer account, enquiry and comparison flows include responsive layouts, accessible feedback and strict record-ownership enforcement; a full independent accessibility and penetration audit remains a production gate.
 - Public API hardening — COMPLETE for the provider-neutral baseline: standard security headers, input constraints and route-specific abuse limits protect Marketplace account and enquiry flows.
 - Provider-neutral liveness/readiness endpoints, environment requirements, migration policy, backup expectations and rollback guidance are documented in `docs/DEPLOYMENT_READINESS.md`.
-- Production hosting, managed PostgreSQL, secrets, observability and deployment verification require the chosen production environment and credentials.
+- Production provisioning, secrets, backups, observability and live deployment verification are the next controlled steps in the selected Cloudflare/Vercel/Railway environment.
 
 ## Future package guidance
 

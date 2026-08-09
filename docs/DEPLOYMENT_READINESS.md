@@ -1,14 +1,37 @@
 # Deployment Readiness
 
-EventOS remains provider-neutral. This runbook prepares ClientOS, Marketplace and PostgreSQL for production without choosing or provisioning paid services.
+EventOS uses Cloudflare for the `eventosnetwork.com` domain and DNS, Vercel for the Next.js web application, and Railway for the NestJS API and managed PostgreSQL. The application architecture remains portable and does not depend on provider-specific business logic.
 
-## Required decisions before deployment
+## Approved production topology
 
-- Hosting provider and region for the API and web application.
-- Managed PostgreSQL provider, region, backup retention and recovery-point objective.
-- ClientOS and Marketplace domains.
-- Monthly infrastructure budget.
+- `app.eventosnetwork.com`: private ClientOS application on Vercel.
+- `marketplace.eventosnetwork.com`: public Marketplace on the same verified Next.js deployment.
+- `api.eventosnetwork.com`: NestJS API on Railway.
+- Railway PostgreSQL: authoritative production database, reachable only by the API.
+- `www.eventosnetwork.com`: reserved for the later public marketing website and must not be attached to ClientOS.
 - AI image-generation and payment providers remain separate decisions.
+
+ClientOS and Marketplace currently share one Next.js package. A host-specific redirect sends the Marketplace domain root to `/marketplace`; all private and public data boundaries continue to be enforced by the API.
+
+## Provider project settings
+
+### Railway API and PostgreSQL
+
+1. Create one Railway project named `EventOS Production`.
+2. Add PostgreSQL and retain Railway's generated `DATABASE_URL` reference.
+3. Add the GitHub repository as a service named `eventos-api`.
+4. Keep the repository root as the build root. `railway.json` selects `Dockerfile.api`, applies migrations before release and checks `/health/ready` before accepting traffic.
+5. Generate a Railway service domain temporarily, then attach `api.eventosnetwork.com` after the first healthy deployment.
+6. Enable a paid plan, automated backups and an appropriate restore window before accepting real customer data.
+
+### Vercel web application
+
+1. Import the GitHub repository into the `EventOS` Vercel team.
+2. Name the project `eventos-web` and set its Root Directory to `apps/web`.
+3. Keep Framework Preset `Next.js`; use the repository's pnpm version and standard `pnpm build` command.
+4. Configure the production environment variables below before deploying.
+5. Attach `app.eventosnetwork.com` and `marketplace.eventosnetwork.com` only after the Railway API is healthy.
+6. Do not attach `www.eventosnetwork.com` until the public marketing surface exists.
 
 ## Required production configuration
 
@@ -20,6 +43,25 @@ EventOS remains provider-neutral. This runbook prepares ClientOS, Marketplace an
 - `NEXT_PUBLIC_API_BASE_URL` pointing at the production API origin.
 - `NEXT_PUBLIC_DEV_AUTH_BYPASS=false`
 
+Railway API variables:
+
+```text
+NODE_ENV=production
+DATABASE_URL=${{Postgres.DATABASE_URL}}
+JWT_SECRET=<generated high-entropy secret>
+JWT_ACCESS_TOKEN_TTL=15m
+CORS_ALLOWED_ORIGINS=https://app.eventosnetwork.com,https://marketplace.eventosnetwork.com
+```
+
+Railway provides `PORT` automatically; do not override it.
+
+Vercel production variables:
+
+```text
+NEXT_PUBLIC_API_BASE_URL=https://api.eventosnetwork.com
+NEXT_PUBLIC_DEV_AUTH_BYPASS=false
+```
+
 Never commit production values, database credentials or provider tokens.
 
 ## Health and deployment gates
@@ -28,6 +70,7 @@ Never commit production values, database credentials or provider tokens.
 - `GET /health/ready` confirms database connectivity before traffic is routed to the API.
 - Run API and web build, lint and test suites before deployment.
 - Apply pending Prisma migrations as a separate controlled release step before switching application traffic.
+- Railway executes `prisma migrate deploy` as a pre-deploy command; a failed migration prevents the new API release from receiving traffic.
 - Verify ClientOS authentication and Marketplace customer authentication independently after deployment.
 
 ## Database protection
