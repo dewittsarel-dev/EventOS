@@ -17,11 +17,15 @@ export class AppService {
       };
     } catch {
       return {
-        status: 'ok',
+        status: 'degraded',
         service: 'eventos-api',
         version: '0.1.0',
         database: 'disconnected',
       };
     }
+  }
+
+  getLiveness() {
+    return { status: 'alive', service: 'eventos-api', version: '0.1.0' };
   }
 }

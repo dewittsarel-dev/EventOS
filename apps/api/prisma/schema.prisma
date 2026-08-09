@@ -613,6 +613,12 @@ enum MarketplaceEnquiryStatus {
   Closed
 }
 
+enum MarketplaceMessageAuthorRole {
+  Customer
+  Supplier
+  System
+}
+
 enum SalesOpportunityStatus {
   New
   Qualifying
@@ -737,57 +743,58 @@ enum EventResourceOutstandingStatus {
 }
 
 model User {
-  id                               String                     @id @default(uuid())
-  email                            String                     @unique
+  id                               String                      @id @default(uuid())
+  email                            String                      @unique
   passwordHash                     String?
   name                             String?
-  createdAt                        DateTime                   @default(now())
-  updatedAt                        DateTime                   @updatedAt
+  createdAt                        DateTime                    @default(now())
+  updatedAt                        DateTime                    @updatedAt
   memberships                      Membership[]
-  assignedEvents                   Event[]                    @relation("EventAssignedUser")
-  createdTasks                     Task[]                     @relation("TaskCreatedBy")
-  assignedTasks                    Task[]                     @relation("TaskAssignedUser")
+  assignedEvents                   Event[]                     @relation("EventAssignedUser")
+  createdTasks                     Task[]                      @relation("TaskCreatedBy")
+  assignedTasks                    Task[]                      @relation("TaskAssignedUser")
   meetingNotesCreated              MeetingNote[]
   meetingActionItemsAssigned       MeetingActionItem[]
   stockMovementsCreated            StockMovement[]
-  purchaseOrdersCreated            PurchaseOrder[]            @relation("PurchaseOrderCreatedBy")
-  purchaseOrdersApproved           PurchaseOrder[]            @relation("PurchaseOrderApprovedBy")
-  goodsReceiptsReceived            GoodsReceipt[]             @relation("GoodsReceiptReceivedBy")
-  eventResourceAllocationsCreated  EventResourceAllocation[]  @relation("EventResourceAllocationCreatedBy")
-  eventResourceAllocationsUpdated  EventResourceAllocation[]  @relation("EventResourceAllocationUpdatedBy")
-  eventResourceOutstandingsCreated EventResourceOutstanding[] @relation("EventResourceOutstandingCreatedBy")
-  aiDrafts                         AiDraft[]                  @relation("AiDraftCreatedBy")
+  purchaseOrdersCreated            PurchaseOrder[]             @relation("PurchaseOrderCreatedBy")
+  purchaseOrdersApproved           PurchaseOrder[]             @relation("PurchaseOrderApprovedBy")
+  goodsReceiptsReceived            GoodsReceipt[]              @relation("GoodsReceiptReceivedBy")
+  eventResourceAllocationsCreated  EventResourceAllocation[]   @relation("EventResourceAllocationCreatedBy")
+  eventResourceAllocationsUpdated  EventResourceAllocation[]   @relation("EventResourceAllocationUpdatedBy")
+  eventResourceOutstandingsCreated EventResourceOutstanding[]  @relation("EventResourceOutstandingCreatedBy")
+  aiDrafts                         AiDraft[]                   @relation("AiDraftCreatedBy")
   auditLogs                        AuditLog[]
   outboxEvents                     OutboxEvent[]
-  clientBriefVersionsCreated       ClientBriefVersion[]       @relation("ClientBriefVersionCreatedBy")
-  eventDesignVersionsCreated       EventDesignVersion[]       @relation("EventDesignVersionCreatedBy")
-  eventDesignVersionsApproved      EventDesignVersion[]       @relation("EventDesignVersionApprovedBy")
-  requirementSetsCreated           RequirementSet[]           @relation("RequirementSetCreatedBy")
-  requirementSetsApproved          RequirementSet[]           @relation("RequirementSetApprovedBy")
+  clientBriefVersionsCreated       ClientBriefVersion[]        @relation("ClientBriefVersionCreatedBy")
+  eventDesignVersionsCreated       EventDesignVersion[]        @relation("EventDesignVersionCreatedBy")
+  eventDesignVersionsApproved      EventDesignVersion[]        @relation("EventDesignVersionApprovedBy")
+  requirementSetsCreated           RequirementSet[]            @relation("RequirementSetCreatedBy")
+  requirementSetsApproved          RequirementSet[]            @relation("RequirementSetApprovedBy")
   requirementItemChanges           RequirementItemChange[]
-  requirementImpactReportsCreated  RequirementImpactReport[]  @relation("RequirementImpactReportCreatedBy")
-  requirementImpactReportsResolved RequirementImpactReport[]  @relation("RequirementImpactReportResolvedBy")
-  moodBoardsCreated                MoodBoard[]                @relation("MoodBoardCreatedBy")
-  moodBoardsApproved               MoodBoard[]                @relation("MoodBoardApprovedBy")
+  requirementImpactReportsCreated  RequirementImpactReport[]   @relation("RequirementImpactReportCreatedBy")
+  requirementImpactReportsResolved RequirementImpactReport[]   @relation("RequirementImpactReportResolvedBy")
+  moodBoardsCreated                MoodBoard[]                 @relation("MoodBoardCreatedBy")
+  moodBoardsApproved               MoodBoard[]                 @relation("MoodBoardApprovedBy")
   moodBoardReviews                 MoodBoardReview[]
-  moodBoardRenderRequestsCreated   MoodBoardRenderRequest[]   @relation("MoodBoardRenderRequestCreatedBy")
-  procurementPackagesCreated       ProcurementPackage[]       @relation("ProcurementPackageCreatedBy")
-  procurementSolutionsSelected     ProcurementSolution[]      @relation("ProcurementSolutionSelectedBy")
-  commercialWorkspacesCreated      CommercialWorkspace[]      @relation("CommercialWorkspaceCreatedBy")
-  commercialRfqsApproved           CommercialRfq[]            @relation("CommercialRfqApprovedBy")
+  moodBoardRenderRequestsCreated   MoodBoardRenderRequest[]    @relation("MoodBoardRenderRequestCreatedBy")
+  marketplaceMessagesAuthored      MarketplaceEnquiryMessage[] @relation("MarketplaceMessageAuthoredByUser")
+  procurementPackagesCreated       ProcurementPackage[]        @relation("ProcurementPackageCreatedBy")
+  procurementSolutionsSelected     ProcurementSolution[]       @relation("ProcurementSolutionSelectedBy")
+  commercialWorkspacesCreated      CommercialWorkspace[]       @relation("CommercialWorkspaceCreatedBy")
+  commercialRfqsApproved           CommercialRfq[]             @relation("CommercialRfqApprovedBy")
   commercialMessagesAuthored       CommercialMessage[]
-  assetDefinitionsCreated          AssetDefinition[]          @relation("AssetDefinitionCreatedBy")
-  assetInstancesCreated            AssetInstance[]            @relation("AssetInstanceCreatedBy")
-  eventExecutionsCreated           EventExecution[]           @relation("EventExecutionCreatedBy")
-  financeWorkspacesCreated         EventFinanceWorkspace[]    @relation("EventFinanceWorkspaceCreatedBy")
+  assetDefinitionsCreated          AssetDefinition[]           @relation("AssetDefinitionCreatedBy")
+  assetInstancesCreated            AssetInstance[]             @relation("AssetInstanceCreatedBy")
+  eventExecutionsCreated           EventExecution[]            @relation("EventExecutionCreatedBy")
+  financeWorkspacesCreated         EventFinanceWorkspace[]     @relation("EventFinanceWorkspaceCreatedBy")
 
   @@index([email])
 }
 
 model Organization {
-  id                        String                     @id @default(uuid())
+  id                        String                      @id @default(uuid())
   name                      String
-  slug                      String                     @unique
+  slug                      String                      @unique
   tradingName               String?
   vatNumber                 String?
   registrationNumber        String?
@@ -797,8 +804,8 @@ model Organization {
   physicalAddress           String?
   postalAddress             String?
   logoUrl                   String?
-  createdAt                 DateTime                   @default(now())
-  updatedAt                 DateTime                   @updatedAt
+  createdAt                 DateTime                    @default(now())
+  updatedAt                 DateTime                    @updatedAt
   memberships               Membership[]
   roles                     Role[]
   contacts                  Contact[]
@@ -837,6 +844,7 @@ model Organization {
   financeWorkspaces         EventFinanceWorkspace[]
   marketplaceEnquiries      MarketplaceEnquiry[]
   salesOpportunities        SalesOpportunity[]
+  marketplaceMessages       MarketplaceEnquiryMessage[]
 
   @@index([slug])
 }
@@ -2934,43 +2942,44 @@ model StorageLocation {
 }
 
 model Resource {
-  id                   String                     @id @default(uuid())
-  organizationId       String
-  supplierId           String?
-  name                 String
-  description          String?
-  category             String
-  tags                 String[]                   @default([])
-  keywords             String[]                   @default([])
-  aiSummary            String?
-  searchPhrases        String[]                   @default([])
-  imageUrls            String[]                   @default([])
-  resourceType         ResourceType
-  quantityMode         ResourceQuantityMode
-  sku                  String?
-  barcode              String?
-  status               ResourceStatus             @default(AVAILABLE)
-  visibility           ResourceVisibility         @default(PRIVATE)
-  unit                 String
-  totalQuantity        Float?
-  condition            ResourceCondition          @default(UNKNOWN)
-  locationId           String?
-  purchaseValue        Float?
-  replacementValue     Float?
-  rentalPrice          Float?
-  damagedQuantity      Float                      @default(0)
-  maintenanceQuantity  Float                      @default(0)
-  notes                String?
-  createdAt            DateTime                   @default(now())
-  updatedAt            DateTime                   @updatedAt
-  archivedAt           DateTime?
-  organization         Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  supplier             Supplier?                  @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  location             StorageLocation?           @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  reservations         ResourceReservation[]
-  allocations          EventResourceAllocation[]
-  outstandings         EventResourceOutstanding[]
-  marketplaceEnquiries MarketplaceEnquiry[]
+  id                    String                             @id @default(uuid())
+  organizationId        String
+  supplierId            String?
+  name                  String
+  description           String?
+  category              String
+  tags                  String[]                           @default([])
+  keywords              String[]                           @default([])
+  aiSummary             String?
+  searchPhrases         String[]                           @default([])
+  imageUrls             String[]                           @default([])
+  resourceType          ResourceType
+  quantityMode          ResourceQuantityMode
+  sku                   String?
+  barcode               String?
+  status                ResourceStatus                     @default(AVAILABLE)
+  visibility            ResourceVisibility                 @default(PRIVATE)
+  unit                  String
+  totalQuantity         Float?
+  condition             ResourceCondition                  @default(UNKNOWN)
+  locationId            String?
+  purchaseValue         Float?
+  replacementValue      Float?
+  rentalPrice           Float?
+  damagedQuantity       Float                              @default(0)
+  maintenanceQuantity   Float                              @default(0)
+  notes                 String?
+  createdAt             DateTime                           @default(now())
+  updatedAt             DateTime                           @updatedAt
+  archivedAt            DateTime?
+  organization          Organization                       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  supplier              Supplier?                          @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  location              StorageLocation?                   @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  reservations          ResourceReservation[]
+  allocations           EventResourceAllocation[]
+  outstandings          EventResourceOutstanding[]
+  marketplaceEnquiries  MarketplaceEnquiry[]
+  marketplaceShortlists MarketplaceCustomerShortlistItem[]
 
   @@unique([organizationId, sku])
   @@unique([organizationId, barcode])
@@ -3150,11 +3159,12 @@ model InventoryItem {
 }
 
 model MarketplaceEnquiry {
-  id               String                   @id @default(uuid())
+  id               String                      @id @default(uuid())
   organizationId   String
   inventoryItemId  String?
   resourceId       String?
-  status           MarketplaceEnquiryStatus @default(New)
+  customerId       String?
+  status           MarketplaceEnquiryStatus    @default(New)
   customerName     String
   customerEmail    String
   customerPhone    String?
@@ -3162,18 +3172,67 @@ model MarketplaceEnquiry {
   eventLocation    String?
   quantity         Float?
   message          String
-  createdAt        DateTime                 @default(now())
-  updatedAt        DateTime                 @updatedAt
-  organization     Organization             @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  inventoryItem    InventoryItem?           @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
-  resource         Resource?                @relation(fields: [resourceId], references: [id], onDelete: Restrict)
+  createdAt        DateTime                    @default(now())
+  updatedAt        DateTime                    @updatedAt
+  organization     Organization                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inventoryItem    InventoryItem?              @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  resource         Resource?                   @relation(fields: [resourceId], references: [id], onDelete: Restrict)
+  customer         MarketplaceCustomer?        @relation(fields: [customerId], references: [id], onDelete: SetNull)
   salesOpportunity SalesOpportunity?
+  messages         MarketplaceEnquiryMessage[]
 
   @@index([organizationId])
   @@index([inventoryItemId])
   @@index([resourceId])
+  @@index([customerId])
   @@index([status])
   @@index([createdAt])
+}
+
+model MarketplaceCustomer {
+  id           String                             @id @default(uuid())
+  email        String                             @unique
+  passwordHash String
+  name         String
+  phone        String?
+  createdAt    DateTime                           @default(now())
+  updatedAt    DateTime                           @updatedAt
+  enquiries    MarketplaceEnquiry[]
+  shortlist    MarketplaceCustomerShortlistItem[]
+  messages     MarketplaceEnquiryMessage[]        @relation("MarketplaceMessageAuthoredByCustomer")
+}
+
+model MarketplaceCustomerShortlistItem {
+  id         String              @id @default(uuid())
+  customerId String
+  resourceId String
+  createdAt  DateTime            @default(now())
+  customer   MarketplaceCustomer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  resource   Resource            @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, resourceId])
+  @@index([customerId, createdAt])
+  @@index([resourceId])
+}
+
+model MarketplaceEnquiryMessage {
+  id               String                       @id @default(uuid())
+  organizationId   String
+  enquiryId        String
+  authorRole       MarketplaceMessageAuthorRole
+  authorCustomerId String?
+  authorUserId     String?
+  body             String
+  createdAt        DateTime                     @default(now())
+  organization     Organization                 @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  enquiry          MarketplaceEnquiry           @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  authorCustomer   MarketplaceCustomer?         @relation("MarketplaceMessageAuthoredByCustomer", fields: [authorCustomerId], references: [id], onDelete: SetNull)
+  authorUser       User?                        @relation("MarketplaceMessageAuthoredByUser", fields: [authorUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([enquiryId, createdAt])
+  @@index([authorCustomerId])
+  @@index([authorUserId])
 }
 
 model SalesOpportunity {

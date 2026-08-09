@@ -50,6 +50,6 @@ function getAccessTokenTtlSeconds(ttl: string) {
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy, JwtAuthGuard],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

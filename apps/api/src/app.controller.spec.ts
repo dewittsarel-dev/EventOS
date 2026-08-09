@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ServiceUnavailableException } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaService } from './prisma/prisma.service';
@@ -37,6 +38,20 @@ describe('AppController', () => {
         version: '0.1.0',
         database: 'connected',
       }),
+    );
+  });
+
+  it('reports process liveness without requiring the database', () => {
+    expect(controller.getLiveness()).toEqual(
+      expect.objectContaining({ status: 'alive' }),
+    );
+  });
+
+  it('rejects readiness when the database is unavailable', async () => {
+    prismaService.$queryRawUnsafe.mockRejectedValueOnce(new Error('offline'));
+
+    await expect(controller.getReadiness()).rejects.toBeInstanceOf(
+      ServiceUnavailableException,
     );
   });
 });

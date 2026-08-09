@@ -13,6 +13,17 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-09 — Marketplace Customer Workspace and Deployment Foundation
+
+- Added a customer-only Marketplace account and JWT session boundary that cannot authenticate into private ClientOS operations.
+- Added an authenticated customer enquiry workspace with status tracking, supplier replies and two-way enquiry messages.
+- Added saved Marketplace shortlists and a customer comparison view using only explicitly published listing data.
+- Connected supplier replies from ClientOS Marketplace management to the customer workspace while retaining the enquiry as the governed intake record.
+- Added responsive customer account, enquiry and comparison screens, accessible feedback states, server-owned customer identity and guarded ownership checks.
+- Added provider-neutral deployment guidance, explicit environment configuration, database-backed readiness checks and independent process liveness checks.
+- Applied the reversible Marketplace customer workspace migration to the approved local development database.
+- Verification status: all 53 web test files and 117 tests passed; web lint and production build passed; all 32 API suites and 175 tests passed; all 14 API end-to-end suites and 48 HTTP tests passed; API build and lint passed.
+
 ### 2026-08-09 — Provider-Neutral Mood Board AI Render Packages
 
 - Added an auditable render-request lifecycle for draft Mood Board scenes without selecting or contacting an external AI provider.

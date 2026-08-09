@@ -31,6 +31,7 @@ export type MarketplaceEnquiry = {
   createdAt: string;
   listing: { id: string; name: string };
   opportunity: MarketplaceOpportunity | null;
+  messages?: Array<{ id: string; authorRole: 'Customer' | 'Supplier' | 'System'; body: string; createdAt: string }>;
 };
 
 export type MarketplaceOpportunity = {
@@ -48,3 +49,19 @@ export type MarketplaceOpportunity = {
   createdAt: string;
   updatedAt: string;
 };
+
+export type MarketplaceCustomer = { id: string; email: string; name: string; phone: string | null };
+export type MarketplaceCustomerSession = { accessToken: string; tokenType: 'Bearer'; customer: MarketplaceCustomer };
+export type MarketplaceCustomerEnquiry = {
+  id: string;
+  status: MarketplaceEnquiry['status'];
+  eventDate: string | null;
+  eventLocation: string | null;
+  quantity: number | null;
+  message: string;
+  createdAt: string;
+  resource: { id: string; name: string } | null;
+  salesOpportunity: { status: MarketplaceOpportunity['status']; eventId: string | null } | null;
+  messages: Array<{ id: string; authorRole: 'Customer' | 'Supplier' | 'System'; body: string; createdAt: string }>;
+};
+export type MarketplaceShortlistItem = { resourceId: string; createdAt: string; listing: MarketplaceListing };

@@ -117,7 +117,11 @@ The repository now contains the verified backend architecture from M004 through 
 
 - Public catalogue and enquiry intake are implemented over explicitly published data.
 - ClientOS suppliers can create and edit Resource Engine records, explicitly publish or unpublish them, preview the public product, reply to enquiries and record audited enquiry outcomes privately.
-- Customer accounts and payments remain refinement work after the first-draft checkpoint; no booking or payment is created silently from an enquiry.
+- Marketplace customer foundation — COMPLETE: customer-only accounts use a separate authentication boundary from ClientOS and provide an owned enquiry workspace.
+- Customer enquiry workspace — COMPLETE: customers can track enquiry status and exchange messages with the supplier without exposing private operational records.
+- Shortlist and comparison — COMPLETE: signed-in customers can save and compare explicitly published supplier listings.
+- ClientOS communication refinement — COMPLETE: supplier replies recorded in ClientOS are visible in the owning customer workspace and remain tied to the governed enquiry.
+- Payments remain future refinement work; no booking, payment or authoritative Event is created silently from an enquiry.
 - Marketplace discovery refinement — COMPLETE: customers can filter published resources by category and type, open rich listing details, browse supplier public catalogues and send listing-specific enquiries while private operational fields remain excluded.
 - Marketplace opportunity conversion — COMPLETE for the first draft: an operator creates and qualifies a distinct sales opportunity, records confirmation evidence, and explicitly authorises creation of a Draft Event. Legacy direct status conversion is blocked, and AI cannot create or confirm the Event automatically.
 
@@ -126,6 +130,8 @@ The repository now contains the verified backend architecture from M004 through 
 - Automated package verification and public Marketplace integration coverage are active.
 - The Marketplace enquiry migration has been applied to the local approved development database.
 - Responsive foundation refinement is complete for the shared shell, action-heavy page headers, ClientOS search, public Marketplace header and key event operations; key desktop routes were rechecked for horizontal overflow.
+- Marketplace customer account, enquiry and comparison flows include responsive layouts, accessible feedback and strict record-ownership enforcement; a full independent accessibility and penetration audit remains a production gate.
+- Provider-neutral liveness/readiness endpoints, environment requirements, migration policy, backup expectations and rollback guidance are documented in `docs/DEPLOYMENT_READINESS.md`.
 - Production hosting, managed PostgreSQL, secrets, observability and deployment verification require the chosen production environment and credentials.
 
 ## Future package guidance

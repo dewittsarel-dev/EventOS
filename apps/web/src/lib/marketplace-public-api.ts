@@ -1,11 +1,11 @@
-import type { MarketplaceEnquiry, MarketplaceListing, MarketplaceListingPage, MarketplaceOpportunity } from './marketplace-public-types';
+import type { MarketplaceCustomer, MarketplaceCustomerEnquiry, MarketplaceCustomerSession, MarketplaceEnquiry, MarketplaceListing, MarketplaceListingPage, MarketplaceOpportunity, MarketplaceShortlistItem } from './marketplace-public-types';
 
 const apiBaseUrl = () => (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001').replace(/\/$/, '');
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${apiBaseUrl()}${path}`, { ...init, headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) }, cache: 'no-store' });
   if (!response.ok) {
-    const body = await response.json().catch(() => ({})) as { message?: string | string[] };
+    const body = (await response.json().catch(() => ({}))) as { message?: string | string[] };
     throw new Error(Array.isArray(body.message) ? body.message.join(', ') : body.message || `Request failed (${response.status})`);
   }
   return response.json() as Promise<T>;
@@ -40,27 +40,18 @@ export async function listMarketplaceEnquiries(options: { baseUrl: string; token
   return response.json() as Promise<MarketplaceEnquiry[]>;
 }
 
-export async function updateMarketplaceEnquiryStatus(options: {
-  baseUrl: string;
-  token: string;
-  organizationId: string;
-  enquiryId: string;
-  status: MarketplaceEnquiry['status'];
-}) {
-  const response = await fetch(
-    `${options.baseUrl.replace(/\/$/, '')}/marketplace/enquiries/${options.enquiryId}/status`,
-    {
-      method: 'PATCH',
-      headers: {
-        Authorization: `Bearer ${options.token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        organizationId: options.organizationId,
-        status: options.status,
-      }),
+export async function updateMarketplaceEnquiryStatus(options: { baseUrl: string; token: string; organizationId: string; enquiryId: string; status: MarketplaceEnquiry['status'] }) {
+  const response = await fetch(`${options.baseUrl.replace(/\/$/, '')}/marketplace/enquiries/${options.enquiryId}/status`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${options.token}`,
+      'Content-Type': 'application/json',
     },
-  );
+    body: JSON.stringify({
+      organizationId: options.organizationId,
+      status: options.status,
+    }),
+  });
   if (!response.ok) throw new Error(`Marketplace enquiry could not be updated (${response.status})`);
   return response.json() as Promise<{
     id: string;
@@ -77,7 +68,7 @@ async function privateMarketplaceRequest<T>(options: PrivateMarketplaceOptions, 
     headers: { Authorization: `Bearer ${options.token}`, 'Content-Type': 'application/json', ...(init.headers || {}) },
   });
   if (!response.ok) {
-    const body = await response.json().catch(() => ({})) as { message?: string | string[] };
+    const body = (await response.json().catch(() => ({}))) as { message?: string | string[] };
     throw new Error(Array.isArray(body.message) ? body.message.join(', ') : body.message || `Request failed (${response.status})`);
   }
   return response.json() as Promise<T>;
@@ -93,4 +84,19 @@ export function updateMarketplaceOpportunity(options: PrivateMarketplaceOptions,
 
 export function convertMarketplaceOpportunity(options: PrivateMarketplaceOptions, opportunityId: string, input: { confirmationEvidenceType: string; confirmationReference: string; title: string; eventType: string; eventDate: string; startTime: string; endTime: string; venue: string; budgetCents?: number }) {
   return privateMarketplaceRequest<{ opportunity: MarketplaceOpportunity; event: { id: string; title: string; status: string }; contact: { id: string; name: string } }>(options, `/marketplace/opportunities/${opportunityId}/convert-to-event`, { method: 'POST', body: JSON.stringify({ organizationId: options.organizationId, ...input }) });
+}
+
+const customerRequest = <T>(token: string, path: string, init?: RequestInit) => request<T>(`/public/marketplace/customer${path}`, { ...init, headers: { Authorization: `Bearer ${token}`, ...(init?.headers || {}) } });
+export const registerMarketplaceCustomer = (input: { email: string; password: string; name: string; phone?: string }) => request<MarketplaceCustomerSession>('/public/marketplace/customer/register', { method: 'POST', body: JSON.stringify(input) });
+export const loginMarketplaceCustomer = (input: { email: string; password: string }) => request<MarketplaceCustomerSession>('/public/marketplace/customer/login', { method: 'POST', body: JSON.stringify(input) });
+export const getMarketplaceCustomer = (token: string) => customerRequest<MarketplaceCustomer>(token, '/me');
+export const listCustomerEnquiries = (token: string) => customerRequest<MarketplaceCustomerEnquiry[]>(token, '/enquiries');
+export const createCustomerEnquiry = (token: string, input: { resourceId: string; eventDate?: string; eventLocation?: string; quantity?: number; message: string }) => customerRequest<{ id: string; status: string; createdAt: string }>(token, '/enquiries', { method: 'POST', body: JSON.stringify(input) });
+export const sendCustomerEnquiryMessage = (token: string, enquiryId: string, body: string) => customerRequest(token, `/enquiries/${enquiryId}/messages`, { method: 'POST', body: JSON.stringify({ body }) });
+export const listCustomerShortlist = (token: string) => customerRequest<MarketplaceShortlistItem[]>(token, '/shortlist');
+export const addCustomerShortlist = (token: string, resourceId: string) => customerRequest(token, '/shortlist', { method: 'POST', body: JSON.stringify({ resourceId }) });
+export const removeCustomerShortlist = (token: string, resourceId: string) => customerRequest(token, `/shortlist/${resourceId}`, { method: 'DELETE' });
+
+export async function sendMarketplaceEnquiryMessage(options: PrivateMarketplaceOptions, enquiryId: string, body: string) {
+  return privateMarketplaceRequest(options, `/marketplace/enquiries/${enquiryId}/messages?organizationId=${encodeURIComponent(options.organizationId)}`, { method: 'POST', body: JSON.stringify({ body }) });
 }

@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import {
   MarketplaceEnquiryStatus,
+  MarketplaceMessageAuthorRole,
   Prisma,
   ResourceQuantityMode,
   ResourceStatus,
@@ -175,6 +176,10 @@ export class MarketplacePublicService {
             updatedAt: true,
           },
         },
+        messages: {
+          orderBy: { createdAt: 'asc' as const },
+          select: { id: true, authorRole: true, body: true, createdAt: true },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -198,6 +203,7 @@ export class MarketplacePublicService {
           'Legacy Marketplace listing',
       },
       opportunity: entry.salesOpportunity,
+      messages: entry.messages,
     }));
   }
 
@@ -455,6 +461,29 @@ export class MarketplacePublicService {
         },
       });
       return updated;
+    });
+  }
+
+  async sendOrganizationMessage(
+    userId: string,
+    organizationId: string,
+    enquiryId: string,
+    body: string,
+  ) {
+    await this.ensureOrganizationMembership(userId, organizationId);
+    const enquiry = await this.prisma.marketplaceEnquiry.findFirst({
+      where: { id: enquiryId, organizationId },
+      select: { id: true },
+    });
+    if (!enquiry) throw new NotFoundException('Marketplace enquiry not found');
+    return this.prisma.marketplaceEnquiryMessage.create({
+      data: {
+        organizationId,
+        enquiryId,
+        authorRole: MarketplaceMessageAuthorRole.Supplier,
+        authorUserId: userId,
+        body,
+      },
     });
   }
 

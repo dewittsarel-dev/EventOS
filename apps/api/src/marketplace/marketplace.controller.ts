@@ -39,6 +39,7 @@ import {
   CreateSalesOpportunityDto,
   UpdateSalesOpportunityDto,
 } from './dto/sales-opportunity.dto';
+import { MarketplaceEnquiryMessageDto } from './dto/marketplace-customer.dto';
 
 @ApiTags('marketplace')
 @ApiBearerAuth('access-token')
@@ -83,6 +84,22 @@ export class MarketplaceController {
       dto.organizationId,
       enquiryId,
       dto.status,
+    );
+  }
+
+  @Post('enquiries/:id/messages')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  sendEnquiryMessage(
+    @CurrentUser() user: UserResponseDto,
+    @Param('id', ParseUUIDPipe) enquiryId: string,
+    @Body() dto: MarketplaceEnquiryMessageDto,
+    @Query('organizationId', ParseUUIDPipe) organizationId: string,
+  ) {
+    return this.marketplacePublicService.sendOrganizationMessage(
+      user.id,
+      organizationId,
+      enquiryId,
+      dto.body,
     );
   }
 
