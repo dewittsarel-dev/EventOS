@@ -82,7 +82,12 @@ Never commit production values, database credentials or provider tokens.
 
 ## Logging and privacy
 
-- Centralise structured application errors and request correlation identifiers.
+- Every API response includes an `x-request-id`. A valid caller-supplied value is
+  preserved; otherwise the API generates a UUID. Completion records contain only
+  the request ID, method, route path, status and duration so individual requests
+  can be traced without recording request bodies, query values or credentials.
+- Centralise the structured request records in the selected hosting log sink and
+  add application-error aggregation before accepting real customer data.
 - Do not log passwords, bearer tokens, JWT secrets, customer message content or payment details.
 - Restrict production log access and configure retention before accepting real customer data.
 

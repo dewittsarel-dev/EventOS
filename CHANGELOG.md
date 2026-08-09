@@ -13,6 +13,14 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-09 — Production Request Observability
+
+- Added an API-wide request correlation identifier that preserves safe caller identifiers or generates a UUID.
+- Returned the correlation identifier in every API response through `x-request-id`.
+- Added privacy-safe structured completion records containing only request ID, method, path, status and duration, with warning/error severity for unsuccessful responses.
+- Documented the remaining external log aggregation and retention controls required before accepting real customer data.
+- Verification status: API build passed; all 33 API suites and 181 tests passed; API lint passed; web lint and production build passed.
+
 ### 2026-08-09 — Cloudflare, Vercel and Railway Deployment Foundation
 
 - Selected Cloudflare DNS, Vercel web hosting and Railway API/PostgreSQL without introducing provider-specific business logic.

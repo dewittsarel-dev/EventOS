@@ -136,6 +136,7 @@ The repository now contains the verified backend architecture from M004 through 
 - Responsive foundation refinement is complete for the shared shell, action-heavy page headers, ClientOS search, public Marketplace header and key event operations; key desktop routes were rechecked for horizontal overflow.
 - Marketplace customer account, enquiry and comparison flows include responsive layouts, accessible feedback and strict record-ownership enforcement; a full independent accessibility and penetration audit remains a production gate.
 - Public API hardening — COMPLETE for the provider-neutral baseline: standard security headers, input constraints and route-specific abuse limits protect Marketplace account and enquiry flows.
+- Production request observability — COMPLETE for the application baseline: every API response carries a correlation ID and privacy-safe structured completion records expose method, path, status and duration without logging bodies, query values or credentials.
 - Provider-neutral liveness/readiness endpoints, environment requirements, migration policy, backup expectations and rollback guidance are documented in `docs/DEPLOYMENT_READINESS.md`.
 - Production provisioning, secrets, backups, observability and live deployment verification are the next controlled steps in the selected Cloudflare/Vercel/Railway environment.
 
