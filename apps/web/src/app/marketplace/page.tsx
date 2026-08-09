@@ -302,27 +302,30 @@ export default function MarketplacePage() {
               </button>
             </div>
             {sentReference ? (
-              <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-800">
+              <div role="status" className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-emerald-800">
                 <p className="font-semibold">Enquiry sent successfully</p>
-                <p className="mt-1 text-sm">The supplier can now respond through ClientOS.</p>
+                <p className="mt-1 text-sm">The supplier can now respond through ClientOS.{customerSession ? ' Track replies in My planning.' : ''}</p>
                 <p className="mt-3 text-xs">Reference: {sentReference}</p>
+                {customerSession ? <a href="/marketplace/account" className="mt-4 inline-block text-sm font-semibold underline">Open My planning</a> : null}
               </div>
             ) : (
               <form className="mt-7 grid gap-3 sm:grid-cols-2" onSubmit={submitEnquiry}>
-                {[
-                  ['customerName', 'Your name'],
-                  ['customerEmail', 'Email address'],
-                  ['customerPhone', 'Phone (optional)'],
-                  ['eventLocation', 'Event location'],
-                ].map(([name, placeholder]) => (
-                  <input key={name} required={name === 'customerName' || name === 'customerEmail'} type={name === 'customerEmail' ? 'email' : 'text'} name={name} placeholder={placeholder} className="rounded-xl border border-stone-300 bg-white p-3 text-sm outline-none focus:border-amber-500" />
-                ))}
+                {customerSession ? (
+                  <p className="rounded-xl bg-stone-100 p-3 text-sm text-stone-700 sm:col-span-2">Sending as <strong>{customerSession.customer.name}</strong> ({customerSession.customer.email}). Supplier replies will appear in My planning.</p>
+                ) : (
+                  <>
+                    <input required aria-label="Your name" name="customerName" placeholder="Your name" className="rounded-xl border border-stone-300 bg-white p-3 text-sm outline-none focus:border-amber-500" />
+                    <input required aria-label="Email address" type="email" name="customerEmail" placeholder="Email address" className="rounded-xl border border-stone-300 bg-white p-3 text-sm outline-none focus:border-amber-500" />
+                    <input aria-label="Phone" name="customerPhone" placeholder="Phone (optional)" className="rounded-xl border border-stone-300 bg-white p-3 text-sm outline-none focus:border-amber-500" />
+                  </>
+                )}
+                <input aria-label="Event location" name="eventLocation" placeholder="Event location" className="rounded-xl border border-stone-300 bg-white p-3 text-sm outline-none focus:border-amber-500" />
                 <label className="text-xs text-stone-500">
                   Event date
                   <input type="date" name="eventDate" className="mt-1 block w-full rounded-xl border border-stone-300 bg-white p-3 text-sm text-stone-800" />
                 </label>
-                <input min="1" type="number" name="quantity" placeholder="Quantity" className="self-end rounded-xl border border-stone-300 bg-white p-3 text-sm" />
-                <textarea required name="message" placeholder="Tell the supplier what you need, including your event style and timing." className="min-h-28 rounded-xl border border-stone-300 bg-white p-3 text-sm outline-none focus:border-amber-500 sm:col-span-2" />
+                <input aria-label="Quantity" min="1" type="number" name="quantity" placeholder="Quantity" className="self-end rounded-xl border border-stone-300 bg-white p-3 text-sm" />
+                <textarea required aria-label="Enquiry details" name="message" placeholder="Tell the supplier what you need, including your event style and timing." className="min-h-28 rounded-xl border border-stone-300 bg-white p-3 text-sm outline-none focus:border-amber-500 sm:col-span-2" />
                 <button className="mt-2 rounded-full bg-amber-300 px-5 py-3 font-semibold text-stone-950 hover:bg-amber-200 sm:col-span-2">Send enquiry to supplier</button>
               </form>
             )}

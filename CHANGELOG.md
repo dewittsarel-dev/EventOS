@@ -13,6 +13,15 @@ Each package entry should follow this structure:
 
 ## Current repository entries
 
+### 2026-08-09 — Marketplace Customer Experience and Public API Hardening
+
+- Removed duplicate contact-detail entry for signed-in Marketplace customers; enquiries now clearly use the authenticated customer identity owned by the server.
+- Added direct post-enquiry navigation to the customer planning workspace and improved form labelling and success announcements for assistive technology.
+- Added standard HTTP security headers and conservative request limits for customer registration, login, messaging, shortlist actions and anonymous enquiry submission.
+- Tightened validation for customer names, login inputs and enquiry messages so whitespace-only or oversized values are rejected before persistence.
+- Verified the live Marketplace and customer sign-in surfaces at desktop and 390px mobile width with no horizontal overflow.
+- Verification status: all 54 web test files and 118 tests passed; web lint and production build passed; all 32 API suites and 175 tests passed; all 14 API end-to-end suites and 48 HTTP tests passed; API build and lint passed.
+
 ### 2026-08-09 — Marketplace Customer Workspace and Deployment Foundation
 
 - Added a customer-only Marketplace account and JWT session boundary that cannot authenticate into private ClientOS operations.

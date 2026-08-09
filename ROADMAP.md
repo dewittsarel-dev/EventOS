@@ -131,6 +131,7 @@ The repository now contains the verified backend architecture from M004 through 
 - The Marketplace enquiry migration has been applied to the local approved development database.
 - Responsive foundation refinement is complete for the shared shell, action-heavy page headers, ClientOS search, public Marketplace header and key event operations; key desktop routes were rechecked for horizontal overflow.
 - Marketplace customer account, enquiry and comparison flows include responsive layouts, accessible feedback and strict record-ownership enforcement; a full independent accessibility and penetration audit remains a production gate.
+- Public API hardening — COMPLETE for the provider-neutral baseline: standard security headers, input constraints and route-specific abuse limits protect Marketplace account and enquiry flows.
 - Provider-neutral liveness/readiness endpoints, environment requirements, migration policy, backup expectations and rollback guidance are documented in `docs/DEPLOYMENT_READINESS.md`.
 - Production hosting, managed PostgreSQL, secrets, observability and deployment verification require the chosen production environment and credentials.
 

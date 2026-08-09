@@ -7,9 +7,13 @@ import { AuthModule } from '../auth/auth.module';
 import { MarketplaceCustomerController } from './marketplace-customer.controller';
 import { MarketplaceCustomerGuard } from './marketplace-customer.guard';
 import { MarketplaceCustomerService } from './marketplace-customer.service';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
-  imports: [AuthModule],
+  imports: [
+    AuthModule,
+    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 60 }]),
+  ],
   controllers: [
     MarketplaceController,
     MarketplacePublicController,

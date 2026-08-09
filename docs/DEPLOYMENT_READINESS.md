@@ -43,6 +43,14 @@ Never commit production values, database credentials or provider tokens.
 - Do not log passwords, bearer tokens, JWT secrets, customer message content or payment details.
 - Restrict production log access and configure retention before accepting real customer data.
 
+## Public endpoint protection
+
+- Helmet security headers are enabled for every API response.
+- Marketplace customer endpoints are rate-limited, with tighter limits on registration and login; anonymous enquiry submission is independently limited.
+- The built-in limiter is suitable for local and single-instance deployments. A multi-instance production deployment must use shared rate-limit storage.
+- Configure the hosting platform's trusted-proxy boundary before relying on client-IP rate limits; do not trust arbitrary forwarded headers.
+- Complete an independent penetration test and accessibility audit before accepting real customer or payment data.
+
 ## Rollback
 
 - Roll application traffic back to the last verified image when application checks fail.

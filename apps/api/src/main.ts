@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { buildCorsOptions } from './config/cors.config';
 
@@ -12,6 +13,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const configService = app.get(ConfigService);
 
+  app.use(helmet());
   app.enableCors(buildCorsOptions());
 
   app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));

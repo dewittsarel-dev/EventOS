@@ -11,6 +11,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import {
   MarketplaceCustomerEnquiryDto,
   MarketplaceCustomerLoginDto,
@@ -28,13 +29,18 @@ import { MarketplaceCustomerService } from './marketplace-customer.service';
 @ApiTags('marketplace-customer')
 @Controller('public/marketplace/customer')
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+@UseGuards(ThrottlerGuard)
 export class MarketplaceCustomerController {
   constructor(private readonly customers: MarketplaceCustomerService) {}
 
-  @Post('register') register(@Body() dto: MarketplaceCustomerRegisterDto) {
+  @Post('register')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  register(@Body() dto: MarketplaceCustomerRegisterDto) {
     return this.customers.register(dto);
   }
-  @Post('login') login(@Body() dto: MarketplaceCustomerLoginDto) {
+  @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  login(@Body() dto: MarketplaceCustomerLoginDto) {
     return this.customers.login(dto.email, dto.password);
   }
 

@@ -17,13 +17,13 @@ const trim = ({ value }: { value: unknown }) =>
 export class MarketplaceCustomerRegisterDto {
   @Transform(trim) @IsEmail() @MaxLength(254) email: string;
   @IsString() @MinLength(10) @MaxLength(128) password: string;
-  @Transform(trim) @IsString() @MaxLength(160) name: string;
+  @Transform(trim) @IsString() @MinLength(1) @MaxLength(160) name: string;
   @Transform(trim) @IsOptional() @IsString() @MaxLength(40) phone?: string;
 }
 
 export class MarketplaceCustomerLoginDto {
-  @Transform(trim) @IsEmail() email: string;
-  @IsString() password: string;
+  @Transform(trim) @IsEmail() @MaxLength(254) email: string;
+  @IsString() @MaxLength(128) password: string;
 }
 
 export class MarketplaceCustomerEnquiryDto {
@@ -39,7 +39,7 @@ export class MarketplaceCustomerEnquiryDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(1)
   quantity?: number;
-  @Transform(trim) @IsString() @MaxLength(3000) message: string;
+  @Transform(trim) @IsString() @MinLength(1) @MaxLength(3000) message: string;
 }
 
 export class MarketplaceShortlistDto {

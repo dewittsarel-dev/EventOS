@@ -6,6 +6,7 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
+  UseGuards,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
@@ -15,6 +16,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { CreateMarketplaceEnquiryDto } from './dto/create-marketplace-enquiry.dto';
 import { FindMarketplaceListingsQueryDto } from './dto/find-marketplace-listings-query.dto';
 import { MarketplacePublicService } from './marketplace-public.service';
@@ -41,6 +43,8 @@ export class MarketplacePublicController {
   }
 
   @Post('enquiries')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @ApiCreatedResponse({
     description: 'Enquiry accepted for supplier follow-up.',
   })
