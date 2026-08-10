@@ -83,6 +83,21 @@ describe('AppShell', () => {
     expect(window.location.pathname).toBe('/events');
   });
 
+  it('provides persistent mobile access to the main workspaces', () => {
+    render(
+      <AppSessionProvider>
+        <AppShell><div>Content</div></AppShell>
+      </AppSessionProvider>,
+    );
+
+    const mobileNav = screen.getByRole('navigation', { name: 'Mobile quick navigation' });
+
+    expect(within(mobileNav).getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/');
+    expect(within(mobileNav).getByRole('link', { name: 'Events' })).toHaveAttribute('aria-current', 'page');
+    expect(within(mobileNav).getByRole('link', { name: 'Activity' })).toHaveAttribute('href', '/activity');
+    expect(within(mobileNav).getByRole('link', { name: 'Settings' })).toHaveAttribute('href', '/settings/organization');
+  });
+
   it('connects the notification control to the actionable activity stream', () => {
     render(
       <AppSessionProvider>

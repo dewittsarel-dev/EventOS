@@ -2,6 +2,7 @@ export type AppRouteMeta = {
   href: string;
   label: string;
   section: string;
+  matchPrefix?: string;
   placeholder?: boolean;
 };
 
@@ -10,7 +11,12 @@ export const PRIMARY_NAV_ROUTES: AppRouteMeta[] = [
   { href: '/events', label: 'Events', section: 'Primary' },
   { href: '/documents', label: 'Documents', section: 'Primary' },
   { href: '/activity', label: 'Activity', section: 'Primary' },
-  { href: '/settings/organization', label: 'Settings', section: 'Primary' },
+  {
+    href: '/settings/organization',
+    label: 'Settings',
+    section: 'Primary',
+    matchPrefix: '/settings',
+  },
 ];
 
 export const OPERATIONS_NAV_ROUTES: AppRouteMeta[] = [
@@ -28,6 +34,16 @@ export const APP_NAV_ROUTES = [
   ...OPERATIONS_NAV_ROUTES,
   { href: '/marketplace', label: 'Marketplace', section: 'Separate surface' },
 ];
+
+export function routeMatches(pathname: string, route: AppRouteMeta) {
+  const matchPath = route.matchPrefix ?? route.href;
+
+  if (matchPath === '/') {
+    return pathname === '/';
+  }
+
+  return pathname === matchPath || pathname.startsWith(`${matchPath}/`);
+}
 
 function prettifySegment(segment: string) {
   if (segment === '[id]' || /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(segment)) {
@@ -68,9 +84,7 @@ export function buildBreadcrumbs(pathname: string) {
 }
 
 export function routeTitle(pathname: string) {
-  const matched = APP_NAV_ROUTES.find((route) =>
-    pathname === route.href ? true : pathname.startsWith(`${route.href}/`),
-  );
+  const matched = APP_NAV_ROUTES.find((route) => routeMatches(pathname, route));
 
   if (!matched) {
     return 'Workspace';

@@ -5,6 +5,7 @@ import {
   PRIMARY_NAV_ROUTES,
   buildBreadcrumbs,
   routeTitle,
+  routeMatches,
 } from './route-meta';
 
 describe('route meta', () => {
@@ -47,5 +48,15 @@ describe('route meta', () => {
     expect(routeTitle('/quotations')).toBe('Quotations');
     expect(routeTitle('/marketplace')).toBe('Marketplace');
     expect(routeTitle('/documents')).toBe('Documents');
+    expect(routeTitle('/settings/users')).toBe('Settings');
+    expect(routeTitle('/settings/roles')).toBe('Settings');
+  });
+
+  it('uses a shared settings prefix for active navigation state', () => {
+    const settingsRoute = PRIMARY_NAV_ROUTES.find((route) => route.label === 'Settings');
+
+    expect(settingsRoute).toBeDefined();
+    expect(routeMatches('/settings/users', settingsRoute!)).toBe(true);
+    expect(routeMatches('/events', settingsRoute!)).toBe(false);
   });
 });

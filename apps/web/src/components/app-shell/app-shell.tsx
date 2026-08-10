@@ -15,6 +15,7 @@ import {
   OPERATIONS_NAV_ROUTES,
   PRIMARY_NAV_ROUTES,
   buildBreadcrumbs,
+  routeMatches,
   routeTitle,
 } from './route-meta';
 import {
@@ -207,11 +208,8 @@ export function AppShell({ children }: AppShellProps) {
   );
 
   function isActiveRoute(href: string) {
-    if (href === '/') {
-      return pathname === '/';
-    }
-
-    return pathname === href || pathname.startsWith(`${href}/`);
+    const route = APP_NAV_ROUTES.find((item) => item.href === href);
+    return route ? routeMatches(pathname, route) : false;
   }
 
   function onSaveSession() {
@@ -308,13 +306,13 @@ export function AppShell({ children }: AppShellProps) {
     <nav aria-label="Main navigation" className="mt-4 space-y-1">
       <div className="pb-1">
         <p className={`px-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 ${isSidebarCollapsed ? 'md:hidden xl:block' : ''}`}>
-          Workspace
+          Core workspace
         </p>
       </div>
       {navLinks(PRIMARY_NAV_ROUTES)}
       <div className="pb-1 pt-5">
         <p className={`px-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 ${isSidebarCollapsed ? 'md:hidden xl:block' : ''}`}>
-          Business operations
+          Business records
         </p>
       </div>
       {navLinks(OPERATIONS_NAV_ROUTES)}
@@ -641,7 +639,7 @@ export function AppShell({ children }: AppShellProps) {
             </div>
           </header>
 
-          <main className="min-w-0 flex-1 overflow-x-clip px-3 py-5 md:px-7 md:py-7">
+          <main className="min-w-0 flex-1 overflow-x-clip px-3 pb-24 pt-5 md:px-7 md:py-7">
             <div className="mx-auto w-full max-w-7xl">
               {isSessionHydrated && enforceAuth && !isAuthenticated ? (
                 <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
@@ -652,6 +650,32 @@ export function AppShell({ children }: AppShellProps) {
               )}
             </div>
           </main>
+
+          <nav
+            aria-label="Mobile quick navigation"
+            className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-zinc-200 bg-white/95 px-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-8px_24px_rgba(24,24,27,0.08)] backdrop-blur-xl md:hidden"
+          >
+            {PRIMARY_NAV_ROUTES.filter((item) =>
+              ['/', '/events', '/activity', '/settings/organization'].includes(item.href),
+            ).map((item) => {
+              const Icon = navIcon(item.label);
+              const isActive = isActiveRoute(item.href);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={isActive ? 'page' : undefined}
+                  className={`flex min-w-0 flex-col items-center gap-1 rounded-lg px-1 py-1.5 text-[11px] font-medium ${
+                    isActive ? 'bg-zinc-950 text-white' : 'text-zinc-600 hover:bg-zinc-100'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="truncate">{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
         </div>
       </div>
 
