@@ -21,9 +21,11 @@ The first catalogue definition is implemented in `apps/api/src/simulation/simula
 
 Persistence is guarded by three independent controls: an explicit isolated-mode opt-in, a non-production runtime, and a database name containing `simulation`, `simulator`, or `test`. Simulator reset deletes only the exact 150 deterministic organization slugs. Broad prefix deletion is prohibited.
 
-The deterministic catalogue contains 590 synthetic offerings. Four original AI-generated fixture families represent supplier stock, planner services, venues and technical specialists. Every listing is labelled synthetic and states that it is unavailable for real purchase.
+The deterministic catalogue contains 1,190 synthetic offerings across the 150 fictional businesses. Original AI-generated fixture families represent supplier stock, planner services, venues and technical specialists. Every listing is labelled synthetic and states that it is unavailable for real purchase.
 
-The decor catalogue now also includes original product-family photography for gold Chiavari chairs, banquet/cocktail tables, floral centrepieces and modular backdrops. These images were generated specifically for EventOS, contain no real supplier identity or copied catalogue content, and are mapped to realistic synthetic listings for Marketplace presentation and AI mood-board testing.
+The decor catalogue includes original product-family photography for chairs, banquet/cocktail tables, floral centrepieces, modular backdrops, place settings, linen, ottomans, plinths and decorative lighting. Detailed listings include individual cutlery, underplates, crockery, glassware, napkin rings, table runners, napkins, candles, lounge pieces and compact display items. These images were generated specifically for EventOS, contain no real supplier identity or copied catalogue content, and are mapped to realistic synthetic listings for Marketplace presentation, search and AI mood-board testing.
+
+The complete deterministic inventory is available as a downloadable CSV at [`apps/web/public/simulation/eventos-synthetic-catalogue.csv`](../apps/web/public/simulation/eventos-synthetic-catalogue.csv). It records the fictional business, location, scale, item, SKU, quantity behaviour, pricing, image and synthetic provenance for every listing. Regenerate it with `pnpm --filter api simulation:export-catalogue` whenever the fixture definition changes.
 
 ## Operator-managed reference company
 

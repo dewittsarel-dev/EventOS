@@ -6,7 +6,7 @@ describe('simulation catalogue fixtures', () => {
   const catalogue = createSimulationCatalogue(businesses);
 
   it('creates realistic deterministic catalogue coverage for every business', () => {
-    expect(catalogue).toHaveLength(590);
+    expect(catalogue).toHaveLength(1190);
     expect(createSimulationCatalogue(businesses)).toEqual(catalogue);
     expect(new Set(catalogue.map(({ id }) => id)).size).toBe(catalogue.length);
     expect(new Set(catalogue.map(({ sku }) => sku)).size).toBe(
@@ -33,14 +33,12 @@ describe('simulation catalogue fixtures', () => {
 
   it('uses original product-family visuals for decor Marketplace and mood-board tests', () => {
     const chair = catalogue.find(({ name }) => name.includes('Chiavari Chair'));
-    const table = catalogue.find(({ name }) =>
-      name.includes('Banquet and Cocktail'),
-    );
+    const table = catalogue.find(({ name }) => name.includes('Banquet Table'));
     const floral = catalogue.find(({ name }) =>
-      name.includes('Floral Centrepiece'),
+      name.includes('Low Floral Arrangement'),
     );
     const backdrop = catalogue.find(({ name }) =>
-      name.includes('Event Backdrop'),
+      name.includes('Timber Arch Backdrop'),
     );
 
     expect(chair?.imagePath).toBe(
@@ -60,6 +58,26 @@ describe('simulation catalogue fixtures', () => {
           item.description.includes('Not available for real purchase.'),
       ),
     ).toBe(true);
+  });
+
+  it('includes detailed small-item inventory for search and mood-board tests', () => {
+    const expectedItems = [
+      ['Gold Dinner Fork', '/simulation/catalogue/table-settings.png'],
+      ['Gold-Rim Underplate', '/simulation/catalogue/table-settings.png'],
+      ['Sage Table Runner', '/simulation/catalogue/event-linens.png'],
+      ['Sage Velvet Ottoman', '/simulation/catalogue/ottomans-and-plinths.png'],
+      [
+        'Ivory Display Plinth',
+        '/simulation/catalogue/ottomans-and-plinths.png',
+      ],
+      ['Wireless Table Lamp', '/simulation/catalogue/decorative-lighting.png'],
+    ] as const;
+
+    expectedItems.forEach(([name, imagePath]) => {
+      expect(
+        catalogue.find((item) => item.name.includes(name))?.imagePath,
+      ).toBe(imagePath);
+    });
   });
 
   it('covers stock, capacity and service quantity behaviours', () => {

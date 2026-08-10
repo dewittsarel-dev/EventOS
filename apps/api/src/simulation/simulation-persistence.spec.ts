@@ -17,13 +17,13 @@ const isolatedEnvironment = {
 };
 
 describe('simulation persistence', () => {
-  it('persists all 150 businesses and 590 catalogue items repeatably', async () => {
+  it('persists all 150 businesses and 1190 catalogue items repeatably', async () => {
     const store = createStore();
     const persistence = new SimulationPersistence(store, isolatedEnvironment);
 
     await expect(persistence.seed()).resolves.toEqual({
       businesses: 150,
-      catalogueItems: 590,
+      catalogueItems: 1190,
     });
     expect(store.upsertBusiness.mock.calls).toHaveLength(150);
     expect(store.upsertBusiness.mock.calls[0]?.[0].slug).toMatch(
