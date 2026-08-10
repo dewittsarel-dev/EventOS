@@ -4,6 +4,8 @@ import {
   IsBoolean,
   IsEnum,
   IsInt,
+  IsArray,
+  IsObject,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -12,6 +14,7 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
+import { SupplierProductAvailability } from './supplier-product-availability.enum';
 import { SupplierProductCategory } from './supplier-product-category.enum';
 import { SupplierProductUnit } from './supplier-product-unit.enum';
 
@@ -54,6 +57,25 @@ export class CreateSupplierProductDto {
   @ApiProperty({ enum: SupplierProductCategory })
   @IsEnum(SupplierProductCategory)
   category: SupplierProductCategory;
+
+  @ApiPropertyOptional({ example: 'Dining tables' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  subcategory?: string;
+
+  @ApiPropertyOptional({
+    example: { colour: 'Gold', material: 'Metal', style: 'Classic' },
+  })
+  @IsOptional()
+  @IsObject()
+  attributes?: Record<string, string>;
+
+  @ApiPropertyOptional({ example: 'Excellent' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  condition?: string;
 
   @ApiPropertyOptional({ example: 'Chauvet' })
   @Transform(({ value }) => trimOptional(value))
@@ -103,6 +125,63 @@ export class CreateSupplierProductDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   minimumOrderQuantity?: number;
+
+  @ApiPropertyOptional({ example: 100 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  totalQuantity?: number;
+
+  @ApiPropertyOptional({ enum: SupplierProductAvailability })
+  @IsOptional()
+  @IsEnum(SupplierProductAvailability)
+  availability?: SupplierProductAvailability;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  deliveryAvailable?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  pickupAvailable?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  deliveryRadiusKm?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  deliveryFee?: number;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  searchTerms?: string[];
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  marketplaceDescription?: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  imageUrls?: string[];
 
   @ApiPropertyOptional({ example: false, default: false })
   @IsOptional()

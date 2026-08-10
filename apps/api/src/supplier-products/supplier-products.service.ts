@@ -1,10 +1,19 @@
 import {
   ConflictException,
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import {
+  Prisma,
+  ResourceCondition,
+  ResourceQuantityMode,
+  ResourceStatus,
+  ResourceType,
+  ResourceVisibility,
+  SupplierProductPublicationStatus,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSupplierProductDto } from './dto/create-supplier-product.dto';
 import { FindSupplierProductsQueryDto } from './dto/find-supplier-products-query.dto';
@@ -30,6 +39,73 @@ type SupplierProductWithRelations = Prisma.SupplierProductGetPayload<{
   include: typeof supplierProductInclude;
 }>;
 
+type MarketplaceProjectionProduct = {
+  organizationId: string;
+  supplierId: string;
+  productName: string;
+  category: string;
+  subcategory: string | null;
+  marketplaceDescription: string | null;
+  description: string | null;
+  tags: string[];
+  searchTerms: string[];
+  imageUrls: string[];
+  availability: string;
+  unit: string;
+  totalQuantity: number | null;
+  condition: string | null;
+  sellingPrice: number | null;
+};
+
+function resourceTypeFor(category: string): ResourceType {
+  if (category === 'Service') return ResourceType.SERVICE;
+  if (category === 'Venue') return ResourceType.VENUE;
+  if (category === 'Transport') return ResourceType.VEHICLE;
+  if (category === 'Consumable') return ResourceType.CONSUMABLE;
+  return ResourceType.BULK_ITEM;
+}
+
+function resourceConditionFor(condition?: string | null): ResourceCondition {
+  const value = (condition ?? '').toUpperCase();
+  return Object.values(ResourceCondition).includes(value as ResourceCondition)
+    ? (value as ResourceCondition)
+    : ResourceCondition.UNKNOWN;
+}
+
+export function buildMarketplaceProjection(
+  product: MarketplaceProjectionProduct,
+) {
+  const resourceType = resourceTypeFor(product.category);
+  return {
+    organizationId: product.organizationId,
+    supplierId: product.supplierId,
+    name: product.productName,
+    description: product.marketplaceDescription || product.description,
+    category: product.subcategory || product.category,
+    tags: product.tags,
+    keywords: product.searchTerms,
+    aiSummary: product.marketplaceDescription || product.description,
+    searchPhrases: product.searchTerms,
+    imageUrls: product.imageUrls,
+    resourceType,
+    quantityMode:
+      resourceType === ResourceType.SERVICE
+        ? ResourceQuantityMode.UNLIMITED
+        : resourceType === ResourceType.VENUE
+          ? ResourceQuantityMode.CAPACITY
+          : ResourceQuantityMode.QUANTITY,
+    status:
+      product.availability === 'Unavailable'
+        ? ResourceStatus.RESERVED
+        : ResourceStatus.AVAILABLE,
+    visibility: ResourceVisibility.MARKETPLACE,
+    unit: product.unit,
+    totalQuantity: product.totalQuantity,
+    condition: resourceConditionFor(product.condition),
+    rentalPrice: product.sellingPrice,
+  };
+}
+
 @Injectable()
 export class SupplierProductsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -50,6 +126,9 @@ export class SupplierProductsService {
           productName: dto.productName.trim(),
           sku: this.normalizeNullable(dto.sku),
           category: dto.category,
+          subcategory: this.normalizeNullable(dto.subcategory),
+          attributes: dto.attributes ?? undefined,
+          condition: this.normalizeNullable(dto.condition),
           brand: this.normalizeNullable(dto.brand),
           description: this.normalizeNullable(dto.description),
           unit: dto.unit,
@@ -63,6 +142,18 @@ export class SupplierProductsService {
             dto.minimumOrderQuantity === undefined
               ? null
               : dto.minimumOrderQuantity,
+          totalQuantity: dto.totalQuantity ?? null,
+          availability: dto.availability,
+          deliveryAvailable: dto.deliveryAvailable ?? false,
+          pickupAvailable: dto.pickupAvailable ?? true,
+          deliveryRadiusKm: dto.deliveryRadiusKm ?? null,
+          deliveryFee: dto.deliveryFee ?? null,
+          tags: this.cleanTerms(dto.tags),
+          searchTerms: this.cleanTerms(dto.searchTerms),
+          marketplaceDescription: this.normalizeNullable(
+            dto.marketplaceDescription,
+          ),
+          imageUrls: this.cleanTerms(dto.imageUrls),
           preferredProduct: dto.preferredProduct ?? false,
           active: dto.active ?? true,
           notes: this.normalizeNullable(dto.notes),
@@ -199,6 +290,15 @@ export class SupplierProductsService {
             ? {}
             : { sku: this.normalizeNullable(dto.sku) }),
           ...(dto.category === undefined ? {} : { category: dto.category }),
+          ...(dto.subcategory === undefined
+            ? {}
+            : { subcategory: this.normalizeNullable(dto.subcategory) }),
+          ...(dto.attributes === undefined
+            ? {}
+            : { attributes: dto.attributes ?? Prisma.JsonNull }),
+          ...(dto.condition === undefined
+            ? {}
+            : { condition: this.normalizeNullable(dto.condition) }),
           ...(dto.brand === undefined
             ? {}
             : { brand: this.normalizeNullable(dto.brand) }),
@@ -219,6 +319,40 @@ export class SupplierProductsService {
           ...(dto.minimumOrderQuantity === undefined
             ? {}
             : { minimumOrderQuantity: dto.minimumOrderQuantity }),
+          ...(dto.totalQuantity === undefined
+            ? {}
+            : { totalQuantity: dto.totalQuantity }),
+          ...(dto.availability === undefined
+            ? {}
+            : { availability: dto.availability }),
+          ...(dto.deliveryAvailable === undefined
+            ? {}
+            : { deliveryAvailable: dto.deliveryAvailable }),
+          ...(dto.pickupAvailable === undefined
+            ? {}
+            : { pickupAvailable: dto.pickupAvailable }),
+          ...(dto.deliveryRadiusKm === undefined
+            ? {}
+            : { deliveryRadiusKm: dto.deliveryRadiusKm }),
+          ...(dto.deliveryFee === undefined
+            ? {}
+            : { deliveryFee: dto.deliveryFee }),
+          ...(dto.tags === undefined
+            ? {}
+            : { tags: this.cleanTerms(dto.tags) }),
+          ...(dto.searchTerms === undefined
+            ? {}
+            : { searchTerms: this.cleanTerms(dto.searchTerms) }),
+          ...(dto.marketplaceDescription === undefined
+            ? {}
+            : {
+                marketplaceDescription: this.normalizeNullable(
+                  dto.marketplaceDescription,
+                ),
+              }),
+          ...(dto.imageUrls === undefined
+            ? {}
+            : { imageUrls: this.cleanTerms(dto.imageUrls) }),
           ...(dto.preferredProduct === undefined
             ? {}
             : { preferredProduct: dto.preferredProduct }),
@@ -230,6 +364,11 @@ export class SupplierProductsService {
         include: supplierProductInclude,
       });
 
+      if (
+        updated.publicationStatus === SupplierProductPublicationStatus.Published
+      ) {
+        await this.syncMarketplaceProjection(updated);
+      }
       return this.mapProduct(updated);
     } catch (error: unknown) {
       this.handleUniqueError(error);
@@ -259,6 +398,86 @@ export class SupplierProductsService {
     });
   }
 
+  async submitForReview(
+    userId: string,
+    supplierId: string,
+    productId: string,
+    organizationId: string,
+  ) {
+    const product = await this.getScopedProduct(
+      userId,
+      supplierId,
+      productId,
+      organizationId,
+    );
+    this.assertPublishable(product);
+    const updated = await this.prisma.supplierProduct.update({
+      where: { id: productId },
+      data: {
+        publicationStatus: SupplierProductPublicationStatus.Review,
+        submittedForReviewAt: new Date(),
+      },
+      include: supplierProductInclude,
+    });
+    return this.mapProduct(updated);
+  }
+
+  async publish(
+    userId: string,
+    supplierId: string,
+    productId: string,
+    organizationId: string,
+  ) {
+    const product = await this.getScopedProduct(
+      userId,
+      supplierId,
+      productId,
+      organizationId,
+    );
+    this.assertPublishable(product);
+    const resourceId = await this.syncMarketplaceProjection(product);
+    const updated = await this.prisma.supplierProduct.update({
+      where: { id: productId },
+      data: {
+        marketplaceResourceId: resourceId,
+        publicationStatus: SupplierProductPublicationStatus.Published,
+        publishedAt: new Date(),
+        withdrawnAt: null,
+      },
+      include: supplierProductInclude,
+    });
+    return this.mapProduct(updated);
+  }
+
+  async withdraw(
+    userId: string,
+    supplierId: string,
+    productId: string,
+    organizationId: string,
+  ) {
+    const product = await this.getScopedProduct(
+      userId,
+      supplierId,
+      productId,
+      organizationId,
+    );
+    if (product.marketplaceResourceId) {
+      await this.prisma.resource.update({
+        where: { id: product.marketplaceResourceId },
+        data: { visibility: ResourceVisibility.HIDDEN },
+      });
+    }
+    const updated = await this.prisma.supplierProduct.update({
+      where: { id: productId },
+      data: {
+        publicationStatus: SupplierProductPublicationStatus.Withdrawn,
+        withdrawnAt: new Date(),
+      },
+      include: supplierProductInclude,
+    });
+    return this.mapProduct(updated);
+  }
+
   async remove(
     userId: string,
     supplierId: string,
@@ -280,8 +499,12 @@ export class SupplierProductsService {
 
     this.ensureProductScope(existing, supplierId, organizationId);
 
-    await this.prisma.supplierProduct.delete({
-      where: { id: productId },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.supplierProduct.delete({ where: { id: productId } });
+      if (existing.marketplaceResourceId)
+        await tx.resource.delete({
+          where: { id: existing.marketplaceResourceId },
+        });
     });
   }
 
@@ -334,6 +557,9 @@ export class SupplierProductsService {
       productName: product.productName,
       sku: product.sku,
       category: product.category,
+      subcategory: product.subcategory,
+      attributes: product.attributes,
+      condition: product.condition,
       brand: product.brand,
       description: product.description,
       unit: product.unit,
@@ -342,6 +568,21 @@ export class SupplierProductsService {
       vatPercent: product.vatPercent,
       leadTimeDays: product.leadTimeDays,
       minimumOrderQuantity: product.minimumOrderQuantity,
+      totalQuantity: product.totalQuantity,
+      availability: product.availability,
+      deliveryAvailable: product.deliveryAvailable,
+      pickupAvailable: product.pickupAvailable,
+      deliveryRadiusKm: product.deliveryRadiusKm,
+      deliveryFee: product.deliveryFee,
+      tags: product.tags,
+      searchTerms: product.searchTerms,
+      marketplaceDescription: product.marketplaceDescription,
+      imageUrls: product.imageUrls,
+      publicationStatus: product.publicationStatus,
+      marketplaceResourceId: product.marketplaceResourceId,
+      submittedForReviewAt: product.submittedForReviewAt,
+      publishedAt: product.publishedAt,
+      withdrawnAt: product.withdrawnAt,
       preferredProduct: product.preferredProduct,
       active: product.active,
       notes: product.notes,
@@ -359,6 +600,69 @@ export class SupplierProductsService {
 
     const trimmed = value.trim();
     return trimmed.length === 0 ? null : trimmed;
+  }
+
+  private cleanTerms(values?: string[]) {
+    return [
+      ...new Set((values ?? []).map((value) => value.trim()).filter(Boolean)),
+    ];
+  }
+
+  private async getScopedProduct(
+    userId: string,
+    supplierId: string,
+    productId: string,
+    organizationId: string,
+  ) {
+    await this.ensureOrganizationAccess(userId, organizationId);
+    const product = await this.prisma.supplierProduct.findUnique({
+      where: { id: productId },
+    });
+    if (!product)
+      throw new NotFoundException(
+        `Supplier product with id ${productId} not found`,
+      );
+    this.ensureProductScope(product, supplierId, organizationId);
+    return product;
+  }
+
+  private assertPublishable(product: {
+    productName: string;
+    subcategory: string | null;
+    marketplaceDescription: string | null;
+    description: string | null;
+    sellingPrice: number | null;
+    imageUrls: string[];
+  }) {
+    const missing = [
+      !product.productName && 'product name',
+      !product.subcategory && 'subcategory',
+      !(product.marketplaceDescription || product.description) &&
+        'Marketplace description',
+      product.sellingPrice === null && 'selling price',
+      product.imageUrls.length === 0 && 'at least one image',
+    ].filter(Boolean);
+    if (missing.length)
+      throw new BadRequestException(
+        `Complete before publication: ${missing.join(', ')}`,
+      );
+  }
+
+  private async syncMarketplaceProjection(
+    product: MarketplaceProjectionProduct & {
+      marketplaceResourceId: string | null;
+    },
+  ) {
+    const data = buildMarketplaceProjection(product);
+    if (product.marketplaceResourceId) {
+      await this.prisma.resource.update({
+        where: { id: product.marketplaceResourceId },
+        data,
+      });
+      return product.marketplaceResourceId;
+    }
+    const created = await this.prisma.resource.create({ data });
+    return created.id;
   }
 
   private async ensureSupplierOwnership(

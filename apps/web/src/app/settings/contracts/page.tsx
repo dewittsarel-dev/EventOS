@@ -49,15 +49,21 @@ export default function ContractTemplatesPage() {
   async function submit(form: HTMLFormElement) {
     const data = new FormData(form);
     const sourceType = String(data.get('sourceType')) as ContractTemplateSourceType;
+    const importedFile = data.get('contractFile');
+    const file = importedFile instanceof File && importedFile.size > 0 ? importedFile : null;
+    let content = String(data.get('content'));
+    if (file && (file.type === 'text/plain' || /\.(txt|md)$/i.test(file.name)) && content.trim() === starter.trim()) {
+      content = await file.text();
+    }
     setBusy('create'); setError(''); setMessage('');
     try {
       await createContractTemplate(options, session.organizationId, {
         name: String(data.get('name')),
         description: String(data.get('description')) || undefined,
         sourceType,
-        importedFileName: sourceType === 'Imported' ? String(data.get('importedFileName')) : undefined,
-        importedFileReference: sourceType === 'Imported' ? String(data.get('importedFileReference')) : undefined,
-        content: String(data.get('content')),
+        importedFileName: sourceType === 'Imported' ? (file?.name || String(data.get('importedFileName'))) : undefined,
+        importedFileReference: sourceType === 'Imported' ? (file ? `clientos-private-upload:${file.name}` : String(data.get('importedFileReference'))) : undefined,
+        content,
       });
       form.reset(); setMessage('Private contract template saved as a draft. Legal approval is still required.'); await load();
     } catch (requestError) { setError(requestError instanceof Error ? requestError.message : 'Template creation failed.'); }
@@ -82,6 +88,7 @@ export default function ContractTemplatesPage() {
       <form className="mt-4 grid gap-3" onSubmit={(event) => { event.preventDefault(); void submit(event.currentTarget); }}>
         <div className="grid gap-3 md:grid-cols-2"><label className="text-sm">Template name<input name="name" required minLength={2} className={`${fieldClass} mt-1`} /></label><label className="text-sm">Source<select name="sourceType" className={`${fieldClass} mt-1`}><option value="Designed">Design in ClientOS</option><option value="Imported">Imported private contract</option></select></label></div>
         <label className="text-sm">Purpose or notes<input name="description" className={`${fieldClass} mt-1`} placeholder="Standard supplier hire agreement" /></label>
+        <label className="text-sm">Import a private contract file<input name="contractFile" type="file" accept=".doc,.docx,.pdf,.txt,.md" className={`${fieldClass} mt-1`} /><span className="mt-1 block text-xs text-zinc-500">The original remains private. Text files can populate the editor; Word and PDF files are registered as controlled sources for later document-storage integration.</span></label>
         <div className="grid gap-3 md:grid-cols-2"><label className="text-sm">Imported file name (only for imported contracts)<input name="importedFileName" className={`${fieldClass} mt-1`} placeholder="supplier-hire-agreement.docx" /></label><label className="text-sm">Private document reference<input name="importedFileReference" className={`${fieldClass} mt-1`} placeholder="Private ClientOS document reference" /></label></div>
         <label className="text-sm">Contract wording<textarea name="content" required minLength={20} rows={14} defaultValue={starter} className={`${fieldClass} mt-1 font-mono`} /></label>
         <p className="text-xs text-zinc-500">Supported examples: {'{{party_a_legal_name}}'}, {'{{party_b_name}}'}, {'{{event_title}}'}, {'{{event_date}}'}, {'{{event_venue}}'}, {'{{scope}}'}, {'{{contract_total}}'} and {'{{payment_terms}}'}.</p>

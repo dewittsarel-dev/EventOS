@@ -173,6 +173,32 @@ export async function restoreSupplierProduct(
   );
 }
 
+async function productWorkflowAction(
+  action: 'submit-review' | 'publish' | 'withdraw',
+  options: RequestOptions,
+  supplierId: string,
+  productId: string,
+  organizationId: string,
+) {
+  return apiRequest<SupplierProductRecord>(
+    `/suppliers/${supplierId}/products/${productId}/${action}?organizationId=${organizationId}`,
+    options,
+    { method: 'PATCH' },
+  );
+}
+
+export function submitSupplierProductForReview(options: RequestOptions, supplierId: string, productId: string, organizationId: string) {
+  return productWorkflowAction('submit-review', options, supplierId, productId, organizationId);
+}
+
+export function publishSupplierProduct(options: RequestOptions, supplierId: string, productId: string, organizationId: string) {
+  return productWorkflowAction('publish', options, supplierId, productId, organizationId);
+}
+
+export function withdrawSupplierProduct(options: RequestOptions, supplierId: string, productId: string, organizationId: string) {
+  return productWorkflowAction('withdraw', options, supplierId, productId, organizationId);
+}
+
 export async function deleteSupplierProduct(
   options: RequestOptions,
   supplierId: string,

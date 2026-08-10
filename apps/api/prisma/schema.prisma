@@ -571,6 +571,20 @@ enum SupplierProductUnit {
   Other
 }
 
+enum SupplierProductPublicationStatus {
+  Draft
+  Review
+  Published
+  Withdrawn
+}
+
+enum SupplierProductAvailability {
+  Available
+  Limited
+  Unavailable
+  MadeToOrder
+}
+
 enum InventoryItemType {
   Equipment
   Furniture
@@ -2998,6 +3012,24 @@ model SupplierProduct {
   preferredProduct       Boolean                 @default(false)
   active                 Boolean                 @default(true)
   notes                  String?
+  subcategory            String?
+  attributes             Json?
+  condition              String?
+  totalQuantity          Float?
+  availability           SupplierProductAvailability    @default(Available)
+  deliveryAvailable      Boolean                        @default(false)
+  pickupAvailable        Boolean                        @default(true)
+  deliveryRadiusKm       Float?
+  deliveryFee            Float?
+  tags                    String[]                       @default([])
+  searchTerms             String[]                       @default([])
+  marketplaceDescription String?
+  imageUrls               String[]                       @default([])
+  publicationStatus       SupplierProductPublicationStatus @default(Draft)
+  marketplaceResourceId  String?                        @unique
+  submittedForReviewAt   DateTime?
+  publishedAt            DateTime?
+  withdrawnAt             DateTime?
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
   organization           Organization            @relation(fields: [organizationId], references: [id], onDelete: Cascade)
@@ -3011,6 +3043,7 @@ model SupplierProduct {
   @@index([category])
   @@index([active])
   @@index([preferredProduct])
+  @@index([publicationStatus])
 }
 
 model InventoryCategory {

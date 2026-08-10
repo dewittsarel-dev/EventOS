@@ -9,24 +9,11 @@ import {
   SupplierProductForm,
   type SupplierProductFormValues,
 } from '@/components/suppliers/supplier-product-form';
+import {
+  DEFAULT_SUPPLIER_PRODUCT_FORM,
+  formToSupplierProductPayload,
+} from '@/lib/supplier-product-form';
 import { createSupplierProduct } from '@/lib/supplier-products-api';
-
-const defaultForm: SupplierProductFormValues = {
-  productName: '',
-  sku: '',
-  category: 'Other',
-  brand: '',
-  description: '',
-  unit: 'Each',
-  costPrice: '',
-  sellingPrice: '',
-  vatPercent: '',
-  leadTimeDays: '',
-  minimumOrderQuantity: '',
-  preferredProduct: false,
-  active: true,
-  notes: '',
-};
 
 export default function NewSupplierProductPage() {
   const params = useParams<{ id: string }>();
@@ -34,7 +21,7 @@ export default function NewSupplierProductPage() {
   const router = useRouter();
 
   const { session } = useAppSession();
-  const [form, setForm] = useState<SupplierProductFormValues>(defaultForm);
+  const [form, setForm] = useState<SupplierProductFormValues>(DEFAULT_SUPPLIER_PRODUCT_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -70,24 +57,7 @@ export default function NewSupplierProductPage() {
         supplierId,
         {
           organizationId: session.organizationId,
-          productName: form.productName.trim(),
-          sku: form.sku.trim() || undefined,
-          category: form.category,
-          brand: form.brand.trim() || undefined,
-          description: form.description.trim() || undefined,
-          unit: form.unit,
-          costPrice: Number(form.costPrice),
-          sellingPrice: form.sellingPrice ? Number(form.sellingPrice) : undefined,
-          vatPercent: form.vatPercent ? Number(form.vatPercent) : undefined,
-          leadTimeDays: form.leadTimeDays
-            ? Number.parseInt(form.leadTimeDays, 10)
-            : undefined,
-          minimumOrderQuantity: form.minimumOrderQuantity
-            ? Number(form.minimumOrderQuantity)
-            : undefined,
-          preferredProduct: form.preferredProduct,
-          active: form.active,
-          notes: form.notes.trim() || undefined,
+          ...formToSupplierProductPayload(form),
         },
       );
 

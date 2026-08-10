@@ -157,6 +157,54 @@ export class SupplierProductsController {
     );
   }
 
+  @Patch(':productId/submit-review')
+  @ApiOperation({ summary: 'Submit supplier product for Marketplace review' })
+  submitForReview(
+    @CurrentUser() user: UserResponseDto,
+    @Param('supplierId') supplierId: string,
+    @Param('productId') productId: string,
+    @Query('organizationId') organizationId: string,
+  ) {
+    return this.supplierProductsService.submitForReview(
+      user.id,
+      supplierId,
+      productId,
+      organizationId,
+    );
+  }
+
+  @Patch(':productId/publish')
+  @ApiOperation({ summary: 'Publish supplier product to Marketplace' })
+  publish(
+    @CurrentUser() user: UserResponseDto,
+    @Param('supplierId') supplierId: string,
+    @Param('productId') productId: string,
+    @Query('organizationId') organizationId: string,
+  ) {
+    return this.supplierProductsService.publish(
+      user.id,
+      supplierId,
+      productId,
+      organizationId,
+    );
+  }
+
+  @Patch(':productId/withdraw')
+  @ApiOperation({ summary: 'Withdraw supplier product from Marketplace' })
+  withdraw(
+    @CurrentUser() user: UserResponseDto,
+    @Param('supplierId') supplierId: string,
+    @Param('productId') productId: string,
+    @Query('organizationId') organizationId: string,
+  ) {
+    return this.supplierProductsService.withdraw(
+      user.id,
+      supplierId,
+      productId,
+      organizationId,
+    );
+  }
+
   @Patch(':productId/archive')
   @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
   @ApiOperation({ summary: 'Archive supplier product' })

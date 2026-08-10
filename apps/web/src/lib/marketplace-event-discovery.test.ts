@@ -19,7 +19,7 @@ describe('marketplace event discovery', () => {
   });
 
   it('builds guided style terms and category recommendations', () => {
-    expect(guidedEventSearchTerms('wedding', 'Rustic', ['Green'])).toEqual(['wood', 'linen', 'neutral', 'green']);
+    expect(guidedEventSearchTerms('wedding', 'Rustic', ['Green'], 'Garden')).toEqual(['wood', 'linen', 'neutral', 'green', 'garden']);
     expect(eventCategories('corporate')).toContain('Technical production');
   });
 });

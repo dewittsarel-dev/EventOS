@@ -13,44 +13,12 @@ import {
   getSupplierProduct,
   updateSupplierProduct,
 } from '@/lib/supplier-products-api';
+import {
+  DEFAULT_SUPPLIER_PRODUCT_FORM,
+  formToSupplierProductPayload,
+  supplierProductToForm,
+} from '@/lib/supplier-product-form';
 import type { SupplierProductRecord } from '@/lib/supplier-products-types';
-
-const defaultForm: SupplierProductFormValues = {
-  productName: '',
-  sku: '',
-  category: 'Other',
-  brand: '',
-  description: '',
-  unit: 'Each',
-  costPrice: '',
-  sellingPrice: '',
-  vatPercent: '',
-  leadTimeDays: '',
-  minimumOrderQuantity: '',
-  preferredProduct: false,
-  active: true,
-  notes: '',
-};
-
-function productToForm(product: SupplierProductRecord): SupplierProductFormValues {
-  return {
-    productName: product.productName,
-    sku: product.sku ?? '',
-    category: product.category,
-    brand: product.brand ?? '',
-    description: product.description ?? '',
-    unit: product.unit,
-    costPrice: String(product.costPrice),
-    sellingPrice: product.sellingPrice === null ? '' : String(product.sellingPrice),
-    vatPercent: product.vatPercent === null ? '' : String(product.vatPercent),
-    leadTimeDays: product.leadTimeDays === null ? '' : String(product.leadTimeDays),
-    minimumOrderQuantity:
-      product.minimumOrderQuantity === null ? '' : String(product.minimumOrderQuantity),
-    preferredProduct: product.preferredProduct,
-    active: product.active,
-    notes: product.notes ?? '',
-  };
-}
 
 export default function EditSupplierProductPage() {
   const params = useParams<{ id: string; productId: string }>();
@@ -61,7 +29,7 @@ export default function EditSupplierProductPage() {
   const { session } = useAppSession();
 
   const [product, setProduct] = useState<SupplierProductRecord | null>(null);
-  const [form, setForm] = useState<SupplierProductFormValues>(defaultForm);
+  const [form, setForm] = useState<SupplierProductFormValues>(DEFAULT_SUPPLIER_PRODUCT_FORM);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -88,7 +56,7 @@ export default function EditSupplierProductPage() {
         );
 
         setProduct(response);
-        setForm(productToForm(response));
+        setForm(supplierProductToForm(response));
       } catch (requestError) {
         setError(
           requestError instanceof Error
@@ -134,26 +102,7 @@ export default function EditSupplierProductPage() {
         supplierId,
         productId,
         session.organizationId,
-        {
-          productName: form.productName.trim(),
-          sku: form.sku.trim() || undefined,
-          category: form.category,
-          brand: form.brand.trim() || undefined,
-          description: form.description.trim() || undefined,
-          unit: form.unit,
-          costPrice: Number(form.costPrice),
-          sellingPrice: form.sellingPrice ? Number(form.sellingPrice) : undefined,
-          vatPercent: form.vatPercent ? Number(form.vatPercent) : undefined,
-          leadTimeDays: form.leadTimeDays
-            ? Number.parseInt(form.leadTimeDays, 10)
-            : undefined,
-          minimumOrderQuantity: form.minimumOrderQuantity
-            ? Number(form.minimumOrderQuantity)
-            : undefined,
-          preferredProduct: form.preferredProduct,
-          active: form.active,
-          notes: form.notes.trim() || undefined,
-        },
+        formToSupplierProductPayload(form),
       );
 
       setSuccess('Product updated successfully. Redirecting...');

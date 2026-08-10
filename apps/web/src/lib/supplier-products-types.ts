@@ -31,6 +31,9 @@ export type SupplierProductSortBy =
   | 'costPrice'
   | 'leadTime';
 
+export type SupplierProductAvailability = 'Available' | 'Limited' | 'Unavailable' | 'MadeToOrder';
+export type SupplierProductPublicationStatus = 'Draft' | 'Review' | 'Published' | 'Withdrawn';
+
 export type SupplierProductRecord = {
   id: string;
   supplierId: string;
@@ -40,6 +43,9 @@ export type SupplierProductRecord = {
   productName: string;
   sku: string | null;
   category: SupplierProductCategory;
+  subcategory: string | null;
+  attributes: Record<string, string> | null;
+  condition: string | null;
   brand: string | null;
   description: string | null;
   unit: SupplierProductUnit;
@@ -48,6 +54,18 @@ export type SupplierProductRecord = {
   vatPercent: number | null;
   leadTimeDays: number | null;
   minimumOrderQuantity: number | null;
+  totalQuantity: number | null;
+  availability: SupplierProductAvailability;
+  deliveryAvailable: boolean;
+  pickupAvailable: boolean;
+  deliveryRadiusKm: number | null;
+  deliveryFee: number | null;
+  tags: string[];
+  searchTerms: string[];
+  marketplaceDescription: string | null;
+  imageUrls: string[];
+  publicationStatus: SupplierProductPublicationStatus;
+  marketplaceResourceId: string | null;
   preferredProduct: boolean;
   active: boolean;
   notes: string | null;
@@ -69,6 +87,9 @@ export type SupplierProductPayload = {
   productName: string;
   sku?: string;
   category: SupplierProductCategory;
+  subcategory?: string;
+  attributes?: Record<string, string>;
+  condition?: string;
   brand?: string;
   description?: string;
   unit: SupplierProductUnit;
@@ -77,6 +98,16 @@ export type SupplierProductPayload = {
   vatPercent?: number;
   leadTimeDays?: number;
   minimumOrderQuantity?: number;
+  totalQuantity?: number;
+  availability?: SupplierProductAvailability;
+  deliveryAvailable?: boolean;
+  pickupAvailable?: boolean;
+  deliveryRadiusKm?: number;
+  deliveryFee?: number;
+  tags?: string[];
+  searchTerms?: string[];
+  marketplaceDescription?: string;
+  imageUrls?: string[];
   preferredProduct?: boolean;
   active?: boolean;
   notes?: string;

@@ -72,10 +72,16 @@ export function interpretEventRequest(input: string): EventDiscoveryBrief {
   };
 }
 
-export function guidedEventSearchTerms(eventType: string, style: string, colours: string[]) {
+export function guidedEventSearchTerms(
+  eventType: string,
+  style: string,
+  colours: string[],
+  theme = '',
+) {
   return [...new Set([
     ...(STYLE_SEARCH_TERMS[style.toLowerCase()] ?? (style ? [style.toLowerCase()] : [])),
     ...colours.map((value) => value.toLowerCase()),
+    ...(theme.trim() ? [theme.trim().toLowerCase()] : []),
   ])];
 }
 
