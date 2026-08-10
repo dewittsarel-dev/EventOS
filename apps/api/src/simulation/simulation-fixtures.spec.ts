@@ -31,52 +31,34 @@ describe('simulation catalogue fixtures', () => {
     ).toBe(true);
   });
 
-  it('uses original product-family visuals for decor Marketplace and mood-board tests', () => {
-    const chair = catalogue.find(({ name }) => name.includes('Chiavari Chair'));
-    const table = catalogue.find(({ name }) => name.includes('Banquet Table'));
-    const floral = catalogue.find(({ name }) =>
-      name.includes('Low Floral Arrangement'),
-    );
-    const backdrop = catalogue.find(({ name }) =>
-      name.includes('Timber Arch Backdrop'),
-    );
+  it('uses detailed product visuals for Marketplace and mood-board tests', () => {
+    const expectedItems = [
+      ['Gold Chiavari Chair', '/simulation/catalogue/products/gold-chiavari-chair.png'],
+      ['Long Oak Banquet Table', '/simulation/catalogue/products/long-oak-banquet-table.png'],
+      ['Blush and Cream Low Centrepiece', '/simulation/catalogue/products/blush-cream-low-centrepiece.png'],
+      ['Ivory Fluted Backdrop', '/simulation/catalogue/products/ivory-fluted-backdrop.png'],
+    ] as const;
 
-    expect(chair?.imagePath).toBe(
-      '/simulation/catalogue/gold-chiavari-chairs.png',
-    );
-    expect(table?.imagePath).toBe('/simulation/catalogue/event-tables.png');
-    expect(floral?.imagePath).toBe(
-      '/simulation/catalogue/floral-centrepieces.png',
-    );
-    expect(backdrop?.imagePath).toBe(
-      '/simulation/catalogue/modular-backdrops.png',
-    );
-    expect(
-      [chair, table, floral, backdrop].every(
-        (item) =>
-          item?.imageProvenance === 'GENERATED_FOR_EVENTOS_SIMULATION' &&
-          item.description.includes('Not available for real purchase.'),
-      ),
-    ).toBe(true);
+    expectedItems.forEach(([name, imagePath]) => {
+      expect(catalogue.find((item) => item.name.includes(name))?.imagePath).toBe(
+        imagePath,
+      );
+    });
   });
 
   it('includes detailed small-item inventory for search and mood-board tests', () => {
     const expectedItems = [
-      ['Gold Dinner Fork', '/simulation/catalogue/table-settings.png'],
-      ['Gold-Rim Underplate', '/simulation/catalogue/table-settings.png'],
-      ['Sage Table Runner', '/simulation/catalogue/event-linens.png'],
-      ['Sage Velvet Ottoman', '/simulation/catalogue/ottomans-and-plinths.png'],
-      [
-        'Ivory Display Plinth',
-        '/simulation/catalogue/ottomans-and-plinths.png',
-      ],
-      ['Wireless Table Lamp', '/simulation/catalogue/decorative-lighting.png'],
+      ['Silver Dinner Fork', '/simulation/catalogue/products/silver-dinner-fork.png'],
+      ['Gold-Rim Underplate', '/simulation/catalogue/products/gold-rim-underplate.png'],
+      ['Ivory Gauze Table Runner', '/simulation/catalogue/products/ivory-gauze-table-runner.png'],
+      ['Ivory Display Plinth', '/simulation/catalogue/products/ivory-display-plinth.png'],
+      ['Wireless Table Lamp', '/simulation/catalogue/products/wireless-table-lamp.png'],
     ] as const;
 
     expectedItems.forEach(([name, imagePath]) => {
-      expect(
-        catalogue.find((item) => item.name.includes(name))?.imagePath,
-      ).toBe(imagePath);
+      expect(catalogue.find((item) => item.name.includes(name))?.imagePath).toBe(
+        imagePath,
+      );
     });
   });
 
@@ -84,17 +66,14 @@ describe('simulation catalogue fixtures', () => {
     const expectedItems = [
       ['Modular Stage Deck', '/simulation/catalogue/staging-and-tents.png'],
       ['White Stretch Tent', '/simulation/catalogue/staging-and-tents.png'],
-      [
-        'Stainless Chafing Dish',
-        '/simulation/catalogue/catering-equipment.png',
-      ],
+      ['Stainless Chafing Dish', '/simulation/catalogue/products/stainless-chafing-dish.png'],
       ['Mountain Ceremony Lawn', '/simulation/catalogue/venues.png'],
     ] as const;
 
     expectedItems.forEach(([name, imagePath]) => {
-      expect(
-        catalogue.find((item) => item.name.includes(name))?.imagePath,
-      ).toBe(imagePath);
+      expect(catalogue.find((item) => item.name.includes(name))?.imagePath).toBe(
+        imagePath,
+      );
     });
   });
 

@@ -54,6 +54,45 @@ const STAGING_IMAGE = '/simulation/catalogue/staging-and-tents.png';
 const CATERING_IMAGE = '/simulation/catalogue/catering-equipment.png';
 const VENUES_IMAGE = '/simulation/catalogue/venues.png';
 
+const PRODUCT_IMAGE_OVERRIDES: Readonly<Record<string, string>> = {
+  'Gold Chiavari Chair':
+    '/simulation/catalogue/products/gold-chiavari-chair.png',
+  'Clear Ghost Chair': '/simulation/catalogue/products/clear-ghost-chair.png',
+  'Black Cross-Back Chair':
+    '/simulation/catalogue/products/black-cross-back-chair.png',
+  'Long Oak Banquet Table':
+    '/simulation/catalogue/products/long-oak-banquet-table.png',
+  'Round Banquet Table':
+    '/simulation/catalogue/products/round-banquet-table.png',
+  'Round Cocktail Table':
+    '/simulation/catalogue/products/round-cocktail-table.png',
+  'Ivory Gauze Table Runner':
+    '/simulation/catalogue/products/ivory-gauze-table-runner.png',
+  'Emerald Velvet Table Runner':
+    '/simulation/catalogue/products/emerald-velvet-table-runner.png',
+  'Ivory Round Tablecloth':
+    '/simulation/catalogue/products/ivory-round-tablecloth.png',
+  'Sage Napkin Set': '/simulation/catalogue/products/sage-napkin-set.png',
+  'Silver Dinner Fork': '/simulation/catalogue/products/silver-dinner-fork.png',
+  'Gold-Rim Underplate':
+    '/simulation/catalogue/products/gold-rim-underplate.png',
+  'White Dinner Plate': '/simulation/catalogue/products/white-dinner-plate.png',
+  'Wine Glass': '/simulation/catalogue/products/wine-glass.png',
+  'White and Green Tall Floral Arrangement':
+    '/simulation/catalogue/products/white-green-tall-floral-arrangement.png',
+  'Blush and Cream Low Centrepiece':
+    '/simulation/catalogue/products/blush-cream-low-centrepiece.png',
+  'Ivory Fluted Backdrop':
+    '/simulation/catalogue/products/ivory-fluted-backdrop.png',
+  'Ivory Display Plinth':
+    '/simulation/catalogue/products/ivory-display-plinth.png',
+  'Wireless Uplight': '/simulation/catalogue/products/wireless-uplight.png',
+  'Wireless Table Lamp':
+    '/simulation/catalogue/products/wireless-table-lamp.png',
+  'Stainless Chafing Dish':
+    '/simulation/catalogue/products/stainless-chafing-dish.png',
+};
+
 const PRODUCT_TEMPLATES: Readonly<Record<string, readonly ProductTemplate[]>> =
   {
     chairs: [
@@ -588,6 +627,7 @@ export function createSimulationCatalogue(
           costPrice,
           sellingPrice: roundCurrency(costPrice * (1.22 + focusIndex * 0.04)),
           imagePath:
+            PRODUCT_IMAGE_OVERRIDES[productVisual.name] ||
             productVisual.imagePath ||
             `/simulation/catalogue/${business.kind.toLowerCase()}.webp`,
           imageProvenance: 'GENERATED_FOR_EVENTOS_SIMULATION',

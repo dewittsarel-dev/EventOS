@@ -136,3 +136,5 @@ dist
 .pnp.*
 
 .turbo/
+# Operator-supplied simulator photographs remain local until reviewed and licensed.
+/Supplier Photos/

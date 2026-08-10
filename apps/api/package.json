@@ -19,7 +19,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "pnpm prisma:generate && jest --config ./test/jest-e2e.json",
-    "simulation:export-catalogue": "ts-node src/simulation/export-simulation-catalogue.ts"
+    "simulation:export-catalogue": "ts-node src/simulation/export-simulation-catalogue.ts",
+    "simulation:audit-photos": "ts-node src/simulation/audit-supplier-photos.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

@@ -77,6 +77,45 @@ console.log(
   `Exported ${catalogue.length} synthetic catalogue items to ${outputPath}`,
 );
 
+const marketplaceOutputPath = resolve(
+  __dirname,
+  '../../../web/public/simulation/eventos-marketplace-catalogue.json',
+);
+writeFileSync(
+  marketplaceOutputPath,
+  `${JSON.stringify(
+    catalogue.map((item) => {
+      const business = businessesById.get(item.businessId);
+      if (!business) throw new Error(`Missing business for ${item.id}`);
+
+      return {
+        id: item.id,
+        sku: item.sku,
+        title: item.name,
+        description: item.description,
+        category: item.category,
+        supplierId: business.id,
+        supplierName: business.name,
+        supplierKind: business.kind,
+        city: business.city,
+        unit: item.unit,
+        quantityMode: item.quantityMode,
+        quantity: item.quantity,
+        sellingPrice: item.sellingPrice,
+        imagePath: item.imagePath,
+        synthetic: true,
+        availability: 'Available',
+      };
+    }),
+    null,
+    2,
+  )}\n`,
+  'utf8',
+);
+console.log(
+  `Exported public-safe Marketplace catalogue to ${marketplaceOutputPath}`,
+);
+
 const visualScenarioPath = resolve(
   __dirname,
   '../../../web/public/simulation/visual-multi-supplier-event.json',

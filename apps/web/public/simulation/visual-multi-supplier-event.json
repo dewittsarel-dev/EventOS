@@ -41,7 +41,7 @@
       "listingId": "SIM-BIZ-001-CAT-007",
       "listingName": "Long Oak Banquet Table [SYNTHETIC]",
       "quantity": 10,
-      "imagePath": "/simulation/catalogue/event-tables.png"
+      "imagePath": "/simulation/catalogue/products/long-oak-banquet-table.png"
     },
     {
       "supplierId": "SIM-BIZ-001",
@@ -49,7 +49,7 @@
       "listingId": "SIM-BIZ-001-CAT-001",
       "listingName": "Gold Chiavari Chair [SYNTHETIC]",
       "quantity": 100,
-      "imagePath": "/simulation/catalogue/gold-chiavari-chairs.png"
+      "imagePath": "/simulation/catalogue/products/gold-chiavari-chair.png"
     },
     {
       "supplierId": "SIM-BIZ-001",
@@ -81,7 +81,7 @@
       "listingId": "SIM-BIZ-001-CAT-032",
       "listingName": "Gold-Rim Underplate [SYNTHETIC]",
       "quantity": 100,
-      "imagePath": "/simulation/catalogue/table-settings.png"
+      "imagePath": "/simulation/catalogue/products/gold-rim-underplate.png"
     },
     {
       "supplierId": "SIM-BIZ-001",
@@ -113,7 +113,7 @@
       "listingId": "SIM-BIZ-021-CAT-003",
       "listingName": "Wireless Uplight [SYNTHETIC]",
       "quantity": 16,
-      "imagePath": "/simulation/catalogue/decorative-lighting.png"
+      "imagePath": "/simulation/catalogue/products/wireless-uplight.png"
     },
     {
       "supplierId": "SIM-BIZ-021",
@@ -137,7 +137,7 @@
       "listingId": "SIM-BIZ-031-CAT-004",
       "listingName": "Stainless Chafing Dish [SYNTHETIC]",
       "quantity": 8,
-      "imagePath": "/simulation/catalogue/catering-equipment.png"
+      "imagePath": "/simulation/catalogue/products/stainless-chafing-dish.png"
     },
     {
       "supplierId": "SIM-BIZ-031",
@@ -195,10 +195,11 @@
           "SIM-BIZ-011-CAT-001"
         ],
         "imagePaths": [
-          "/simulation/catalogue/event-tables.png",
-          "/simulation/catalogue/gold-chiavari-chairs.png",
+          "/simulation/catalogue/products/long-oak-banquet-table.png",
+          "/simulation/catalogue/products/gold-chiavari-chair.png",
           "/simulation/catalogue/event-linens.png",
           "/simulation/catalogue/table-settings.png",
+          "/simulation/catalogue/products/gold-rim-underplate.png",
           "/simulation/catalogue/floral-centrepieces.png"
         ]
       },
@@ -211,7 +212,7 @@
           "SIM-BIZ-021-CAT-013"
         ],
         "imagePaths": [
-          "/simulation/catalogue/decorative-lighting.png",
+          "/simulation/catalogue/products/wireless-uplight.png",
           "/simulation/catalogue/staging-and-tents.png"
         ]
       },
@@ -223,6 +224,7 @@
           "SIM-BIZ-031-CAT-008"
         ],
         "imagePaths": [
+          "/simulation/catalogue/products/stainless-chafing-dish.png",
           "/simulation/catalogue/catering-equipment.png"
         ]
       }
