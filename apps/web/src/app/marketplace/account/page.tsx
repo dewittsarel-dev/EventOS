@@ -4,6 +4,7 @@ import { FormEvent, useCallback, useEffect, useState } from 'react';
 import { clearMarketplaceCustomerSession, readMarketplaceCustomerSession, writeMarketplaceCustomerSession } from '@/lib/marketplace-customer-session';
 import { listCustomerEnquiries, listCustomerShortlist, loginMarketplaceCustomer, registerMarketplaceCustomer, removeCustomerShortlist, sendCustomerEnquiryMessage } from '@/lib/marketplace-public-api';
 import type { MarketplaceCustomerEnquiry, MarketplaceCustomerSession, MarketplaceShortlistItem } from '@/lib/marketplace-public-types';
+import { MarketplaceFooter, MarketplaceHeader } from '@/components/marketplace/marketplace-shell';
 
 const field = 'rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-amber-500';
 
@@ -184,13 +185,17 @@ export default function MarketplaceAccountPage() {
 
 function MarketplaceFrame({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-screen bg-[#f5f1e9] px-5 py-8 text-stone-950 md:px-10">
-      <div className="mx-auto max-w-6xl">
-        <a href="/marketplace" className="mb-8 inline-block text-sm font-medium">
-          ← Marketplace
-        </a>
-        {children}
-      </div>
-    </main>
+    <>
+      <MarketplaceHeader compact />
+      <main className="min-h-screen bg-[#f5f1e9] px-5 py-8 text-stone-950 md:px-10">
+        <div className="mx-auto max-w-6xl">
+          <a href="/marketplace" className="mb-8 inline-block text-sm font-medium">
+            ← Marketplace
+          </a>
+          {children}
+        </div>
+      </main>
+      <MarketplaceFooter />
+    </>
   );
 }

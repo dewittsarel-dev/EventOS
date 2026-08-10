@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-img-element -- supplier image hosts are dynamic */
 
 import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { MarketplaceFooter, MarketplaceHeader } from '@/components/marketplace/marketplace-shell';
 import { addCustomerShortlist, createCustomerEnquiry, createMarketplaceEnquiry, listMarketplaceListings } from '@/lib/marketplace-public-api';
 import { readMarketplaceCustomerSession } from '@/lib/marketplace-customer-session';
 import type { MarketplaceCustomerSession, MarketplaceListing } from '@/lib/marketplace-public-types';
@@ -76,28 +77,7 @@ export default function MarketplacePage() {
 
   return (
     <main className="min-h-screen bg-[#f5f1e9] text-stone-950">
-      <header className="sticky top-0 z-30 border-b border-stone-200/80 bg-[#fffdf9]/90 px-5 backdrop-blur-xl md:px-10">
-        <div className="mx-auto flex h-[4.5rem] max-w-7xl items-center justify-between gap-4">
-          <a href="/marketplace" className="flex items-center gap-3" aria-label="EventOS Marketplace home">
-            <span className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-stone-950 text-xs font-semibold text-white">
-              EO
-              <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-amber-400" />
-            </span>
-            <span>
-              <span className="block text-sm font-semibold tracking-tight sm:text-base">EventOS Marketplace</span>
-              <span className="hidden text-[11px] text-stone-500 sm:block">Find the right partners for your event</span>
-            </span>
-          </a>
-          <div className="flex items-center gap-2">
-            <a href="/marketplace/account" className="rounded-full border border-stone-300 bg-white px-3 py-2 text-xs font-medium hover:border-stone-950 sm:text-sm">
-              {customerSession ? 'My planning' : 'Customer sign in'}
-            </a>
-            <a href="/login" className="rounded-full border border-stone-300 bg-white px-3 py-2 text-xs font-medium hover:border-stone-950 hover:bg-stone-950 hover:text-white sm:px-4 sm:text-sm">
-              ClientOS
-            </a>
-          </div>
-        </div>
-      </header>
+      <MarketplaceHeader />
 
       <section className="relative overflow-hidden bg-stone-950 px-5 py-16 text-white md:px-10 md:py-24">
         <div className="absolute inset-0 opacity-35 [background-image:radial-gradient(circle_at_15%_10%,#b48a34_0,transparent_25%),radial-gradient(circle_at_85%_70%,#625340_0,transparent_30%)]" />
@@ -123,8 +103,8 @@ export default function MarketplacePage() {
         </div>
       </section>
 
-      <section className="border-b border-stone-200 bg-[#fffdf9] px-5 py-5 md:px-10">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-2 md:justify-start">
+      <section className="sticky top-[4.5rem] z-30 border-b border-stone-200 bg-[#fffdf9]/95 px-5 py-3 backdrop-blur-xl md:static md:px-10 md:py-5">
+        <div className="mx-auto flex max-w-7xl items-center gap-2 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible md:pb-0">
           <span className="mr-2 text-xs font-semibold uppercase tracking-[0.14em] text-stone-400">Explore</span>
           {['Furniture', 'Décor', 'Florals', 'Venues', 'Catering', 'Production'].map((option) => (
             <button
@@ -134,7 +114,7 @@ export default function MarketplacePage() {
                 setCategory(option);
                 void load(search, option, resourceType);
               }}
-              className={`rounded-full border px-4 py-2 text-sm ${category === option ? 'border-stone-950 bg-stone-950 text-white' : 'border-stone-200 bg-white text-stone-700 hover:border-stone-400 hover:text-stone-950'}`}
+              className={`shrink-0 rounded-full border px-4 py-2 text-sm ${category === option ? 'border-stone-950 bg-stone-950 text-white' : 'border-stone-200 bg-white text-stone-700 hover:border-stone-400 hover:text-stone-950'}`}
             >
               {option}
             </button>
@@ -152,7 +132,7 @@ export default function MarketplacePage() {
             {listings.length} result{listings.length === 1 ? '' : 's'}
           </span>
         </div>
-        <div className="mb-7 flex flex-col gap-3 rounded-2xl border border-stone-200 bg-[#fffdf9] p-3 sm:flex-row sm:items-center">
+        <div className="mb-7 grid gap-3 rounded-2xl border border-stone-200 bg-[#fffdf9] p-3 sm:grid-cols-[minmax(0,15rem)_auto_1fr] sm:items-center">
           <select
             aria-label="Filter by resource type"
             value={resourceType}
@@ -186,7 +166,7 @@ export default function MarketplacePage() {
               Clear all filters
             </button>
           ) : null}
-          <p className="text-xs text-stone-400 sm:ml-auto">Only supplier-published information is shown</p>
+          <p className="text-xs text-stone-400 sm:justify-self-end">Only supplier-published information is shown</p>
         </div>
         {error ? (
           <p role="alert" className="mb-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -222,7 +202,7 @@ export default function MarketplacePage() {
             {listings.map((item) => (
               <article key={item.id} className="group overflow-hidden rounded-3xl border border-stone-200 bg-[#fffdf9] shadow-sm hover:-translate-y-1 hover:shadow-xl hover:shadow-stone-900/10">
                 <div className="aspect-[4/3] overflow-hidden bg-stone-200">{item.primaryPhotoUrl || item.photoUrls[0] ? <img className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" src={item.primaryPhotoUrl || item.photoUrls[0]} alt={item.title || 'Marketplace item'} /> : <ListingPlaceholder />}</div>
-                <div className="p-5">
+                <div className="flex min-h-64 flex-col p-5">
                   <div className="flex items-center justify-between gap-2">
                     <p className="truncate text-[11px] font-semibold uppercase tracking-[0.14em] text-stone-400">{item.categoryName}</p>
                     <span className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-medium ${item.availabilityStatus === 'Available' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-800'}`}>{item.availabilityStatus}</span>
@@ -239,7 +219,7 @@ export default function MarketplacePage() {
                     </a>
                   </p>
                   <p className="mt-3 line-clamp-2 min-h-10 text-sm leading-5 text-stone-600">{item.description || 'Contact the supplier for details.'}</p>
-                  <div className="mt-5 flex items-end justify-between gap-3 border-t border-stone-100 pt-4">
+                  <div className="mt-auto flex flex-wrap items-end justify-between gap-3 border-t border-stone-100 pt-4">
                     <div className="text-sm">
                       {item.rentalPrice !== null ? (
                         <p>
@@ -250,7 +230,7 @@ export default function MarketplacePage() {
                         <p className="font-medium">Price on request</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center justify-end gap-2">
                       {customerSession ? (
                         <button disabled={savedIds.includes(item.id)} onClick={() => void addCustomerShortlist(customerSession.accessToken, item.id).then(() => setSavedIds((ids) => [...ids, item.id]))} className="text-xs font-medium text-stone-500 disabled:text-emerald-700">
                           {savedIds.includes(item.id) ? 'Saved' : 'Save'}
@@ -277,16 +257,7 @@ export default function MarketplacePage() {
         ) : null}
       </section>
 
-      <footer className="border-t border-stone-800 bg-stone-950 px-5 py-10 text-stone-400 md:px-10">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            <span className="font-semibold text-white">EventOS Marketplace</span> · Customer discovery powered by supplier-managed ClientOS data.
-          </p>
-          <a href="/login" className="text-stone-300 hover:text-amber-300">
-            Manage your business in ClientOS →
-          </a>
-        </div>
-      </footer>
+      <MarketplaceFooter />
 
       {selected ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-stone-950/70 p-0 backdrop-blur-sm sm:items-center sm:p-5" role="dialog" aria-modal="true" aria-label={`Enquire about ${selected.title}`}>
