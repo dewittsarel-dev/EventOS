@@ -23,6 +23,14 @@ Persistence is guarded by three independent controls: an explicit isolated-mode 
 
 The deterministic catalogue contains 590 synthetic offerings. Four original AI-generated fixture families represent supplier stock, planner services, venues and technical specialists. Every listing is labelled synthetic and states that it is unavailable for real purchase.
 
+## Operator-managed reference company
+
+The operator will also create one clearly labelled test organization through the normal ClientOS screens. This reference company represents a decor supplier that also performs event-planning work. It is deliberately not one of the 150 automated simulator businesses, and automated seed/reset operations must preserve it.
+
+The reference company is used for hands-on acceptance testing: completing a company profile, creating locations, entering real test inventory, attaching images the operator owns or may legally use, publishing selected listings, receiving a Marketplace enquiry, planning an event, procuring from other synthetic suppliers, reserving assets, executing the event and reconciling finance.
+
+ClientOS remains authoritative for its private company, inventory and operational records. Marketplace receives only explicitly published customer-facing information. The company must remain visibly marked as test data and must never accept a real order while used for simulation.
+
 ## Scenario ladder
 
 The simulator will grow through controlled slices:

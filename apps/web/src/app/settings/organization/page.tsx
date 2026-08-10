@@ -9,6 +9,7 @@ import {
   updateOrganizationSettings,
 } from '../../../lib/organization-settings-api';
 import type { OrganizationSettingsRecord } from '../../../lib/organization-settings-types';
+import { OperatorReferenceChecklist } from './operator-reference-checklist';
 
 type OrganizationForm = {
   companyName: string;
@@ -205,6 +206,13 @@ export default function OrganizationSettingsPage() {
         <div className="rounded-xl border border-zinc-200 bg-white p-6 text-sm text-zinc-600">
           Loading organization details...
         </div>
+      ) : null}
+
+      {canLoad && !loading ? (
+        <OperatorReferenceChecklist
+          key={session.organizationId}
+          organizationId={session.organizationId}
+        />
       ) : null}
 
       {canLoad && !loading ? (

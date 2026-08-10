@@ -29,6 +29,7 @@ vi.mock('../../../lib/organization-settings-api', () => ({
 
 describe('OrganizationSettingsPage', () => {
   beforeEach(() => {
+    window.localStorage.clear();
     getOrganizationSettings.mockReset();
     updateOrganizationSettings.mockReset();
     updateOrganizationLogo.mockReset();
@@ -114,5 +115,25 @@ describe('OrganizationSettingsPage', () => {
     });
 
     expect(await screen.findByText('Organization settings saved.')).toBeInTheDocument();
+  });
+
+  it('tracks the operator-managed supplier and planner test journey', async () => {
+    render(<OrganizationSettingsPage />);
+
+    const enable = await screen.findByRole('button', {
+      name: 'Use this organization as my simulation reference company',
+    });
+    fireEvent.click(enable);
+
+    expect(screen.getByText('Supplier + planner test journey')).toBeInTheDocument();
+    const profileStep = screen.getByLabelText(
+      'Mark Complete the test company profile complete',
+    );
+    fireEvent.click(profileStep);
+
+    expect(screen.getByText('1 of 6 setup steps complete.')).toBeInTheDocument();
+    expect(window.localStorage.getItem(
+      'eventos:operator-reference:11111111-1111-4111-8111-111111111111',
+    )).toContain('profile');
   });
 });

@@ -7,6 +7,14 @@ import { SimulationBusinessProfile } from './simulation-business-catalog';
 
 export const SIMULATION_SLUG_PREFIX = 'simulation-';
 
+export function getAutomatedSimulationSlugs(): string[] {
+  return createSimulationBusinessCatalog().map(({ slug }) => slug);
+}
+
+export function isAutomatedSimulationOwnedSlug(slug: string): boolean {
+  return getAutomatedSimulationSlugs().includes(slug);
+}
+
 export interface SimulationPersistenceStore {
   upsertBusiness(
     business: SimulationBusinessProfile,
@@ -46,7 +54,7 @@ export class SimulationPersistence {
 
   async reset(): Promise<number> {
     this.assertIsolatedEnvironment();
-    const slugs = createSimulationBusinessCatalog().map(({ slug }) => slug);
+    const slugs = getAutomatedSimulationSlugs();
     return this.store.deleteBusinessesByExactSlugs(slugs);
   }
 
