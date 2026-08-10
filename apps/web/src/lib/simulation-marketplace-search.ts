@@ -6,6 +6,15 @@ export interface SearchableSimulationListing {
   description: string;
 }
 
+export function matchesSimulationCategories(
+  listingCategory: string,
+  selectedCategory: string,
+  recommendedCategories: string[],
+) {
+  if (selectedCategory) return listingCategory === selectedCategory;
+  return recommendedCategories.length === 0 || recommendedCategories.includes(listingCategory);
+}
+
 export function normalizeSimulationSearch(value: string) {
   return value
     .toLowerCase()

@@ -8,7 +8,11 @@ import {
   interpretEventRequest,
   type MarketplaceDiscoveryMode,
 } from '@/lib/marketplace-event-discovery';
-import { normalizeSimulationSearch, simulationSearchScore } from '@/lib/simulation-marketplace-search';
+import {
+  matchesSimulationCategories,
+  normalizeSimulationSearch,
+  simulationSearchScore,
+} from '@/lib/simulation-marketplace-search';
 
 interface SimulationListing {
   id: string;
@@ -67,6 +71,7 @@ export default function SimulationMarketplacePage() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
+  const [recommendedCategories, setRecommendedCategories] = useState<string[]>([]);
   const [city, setCity] = useState('');
   const [supplier, setSupplier] = useState('');
   const [quantityMode, setQuantityMode] = useState('');
@@ -77,8 +82,21 @@ export default function SimulationMarketplacePage() {
   const [assistantBrief, setAssistantBrief] = useState<ReturnType<typeof interpretEventRequest> | null>(null);
   const [guidedType, setGuidedType] = useState('Wedding');
   const [guidedGuests, setGuidedGuests] = useState('100');
+  const [guidedDate, setGuidedDate] = useState('');
+  const [guidedTheme, setGuidedTheme] = useState('');
+  const [guidedCity, setGuidedCity] = useState('Pretoria');
+  const [guidedArea, setGuidedArea] = useState('');
+  const [guidedRadius, setGuidedRadius] = useState('30');
+  const [guidedVenueStatus, setGuidedVenueStatus] = useState('needed');
+  const [guidedVenueName, setGuidedVenueName] = useState('');
+  const [guidedSetting, setGuidedSetting] = useState('Either');
   const [guidedStyle, setGuidedStyle] = useState('Elegant');
   const [guidedColour, setGuidedColour] = useState('Neutral');
+  const [guidedBudget, setGuidedBudget] = useState('');
+  const [guidedRequirements, setGuidedRequirements] = useState<string[]>(() =>
+    eventCategories('Wedding'),
+  );
+  const [guidedSubstitutions, setGuidedSubstitutions] = useState(true);
 
   useEffect(() => {
     fetch('/simulation/eventos-marketplace-catalogue.json')
@@ -108,7 +126,7 @@ export default function SimulationMarketplacePage() {
       .filter(
         ({ listing, score }) =>
         score > 0 &&
-        (!category || listing.category === category) &&
+        matchesSimulationCategories(listing.category, category, recommendedCategories) &&
         (!city || listing.city === city) &&
         (!supplier || listing.supplierName === supplier) &&
         (!quantityMode || listing.quantityMode === quantityMode) &&
@@ -119,11 +137,12 @@ export default function SimulationMarketplacePage() {
           right.score - left.score || left.listing.title.localeCompare(right.listing.title),
       )
       .map(({ listing }) => listing);
-  }, [category, city, listings, maximumPrice, quantityMode, search, supplier]);
+  }, [category, city, listings, maximumPrice, quantityMode, recommendedCategories, search, supplier]);
 
   function reset() {
     setSearch('');
     setCategory('');
+    setRecommendedCategories([]);
     setCity('');
     setSupplier('');
     setQuantityMode('');
@@ -137,14 +156,28 @@ export default function SimulationMarketplacePage() {
     setCity(brief.city);
     setMaximumPrice('');
     setSearch('');
-    setCategory(brief.categories[0] ?? '');
+    setCategory('');
+    setRecommendedCategories([...new Set(brief.categories)]);
     setVisible(48);
   }
 
   function applyGuidedRequest() {
     setSearch('');
-    setCategory(eventCategories(guidedType)[0] ?? '');
+    setCity(guidedCity);
+    setMaximumPrice('');
+    setCategory('');
+    setRecommendedCategories([
+      ...new Set(guidedRequirements.length ? guidedRequirements : eventCategories(guidedType)),
+    ]);
     setVisible(48);
+  }
+
+  function toggleGuidedRequirement(value: string) {
+    setGuidedRequirements((current) => {
+      return current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value];
+    });
   }
 
   return (
@@ -193,7 +226,7 @@ export default function SimulationMarketplacePage() {
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 lg:col-span-2" role="status">
                   <p className="font-semibold">Event brief understood</p>
                   <p className="mt-1 text-sm text-stone-700">{[assistantBrief.eventType, assistantBrief.guests ? `${assistantBrief.guests} guests` : '', assistantBrief.city, assistantBrief.budget ? money(assistantBrief.budget) : ''].filter(Boolean).join(' · ') || 'More information is needed.'}</p>
-                  {assistantBrief.categories.length ? <div className="mt-3 flex flex-wrap gap-2">{assistantBrief.categories.map((value) => <button key={value} type="button" onClick={() => { setCategory(value); setSearch(''); }} className="rounded-full border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium">Explore {value}</button>)}</div> : null}
+                  {assistantBrief.categories.length ? <div className="mt-3 flex flex-wrap gap-2">{assistantBrief.categories.map((value) => <button key={value} type="button" onClick={() => { setCategory(value); setRecommendedCategories([]); setSearch(''); }} className="rounded-full border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium">Explore {value}</button>)}</div> : null}
                   {assistantBrief.followUpQuestions.length ? <div className="mt-3"><p className="text-xs font-semibold uppercase tracking-wide text-stone-500">A planner would ask next</p><ul className="mt-1 list-disc pl-5 text-sm text-stone-700">{assistantBrief.followUpQuestions.map((value) => <li key={value}>{value}</li>)}</ul></div> : null}
                 </div>
               ) : null}
@@ -202,20 +235,58 @@ export default function SimulationMarketplacePage() {
 
           {mode === 'guided' ? (
             <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <label className="text-xs font-semibold text-stone-600">Event type<select value={guidedType} onChange={(event) => setGuidedType(event.target.value)} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm font-normal text-stone-950">{['Wedding', 'Birthday', 'Party', 'Corporate', 'Conference', 'Product launch', 'Funeral'].map((value) => <option key={value}>{value}</option>)}</select></label>
+              <p className="text-sm font-semibold sm:col-span-2 lg:col-span-4">1. Event basics</p>
+              <label className="text-xs font-semibold text-stone-600">Event type<select value={guidedType} onChange={(event) => { const value = event.target.value; setGuidedType(value); setGuidedRequirements(eventCategories(value)); }} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm font-normal text-stone-950">{['Wedding', 'Birthday', 'Party', 'Corporate', 'Conference', 'Product launch', 'Funeral'].map((value) => <option key={value}>{value}</option>)}</select></label>
+              <label className="text-xs font-semibold text-stone-600">Event date<input type="date" value={guidedDate} onChange={(event) => setGuidedDate(event.target.value)} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm font-normal text-stone-950" /></label>
               <label className="text-xs font-semibold text-stone-600">Guests<input type="number" min="1" value={guidedGuests} onChange={(event) => setGuidedGuests(event.target.value)} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm font-normal text-stone-950" /></label>
+              <label className="text-xs font-semibold text-stone-600">Theme or occasion<input value={guidedTheme} onChange={(event) => setGuidedTheme(event.target.value)} placeholder="Garden, heritage, awards..." className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm font-normal text-stone-950" /></label>
+              <p className="mt-2 border-t border-stone-200 pt-4 text-sm font-semibold sm:col-span-2 lg:col-span-4">2. Location and venue</p>
+              <label className="text-xs font-semibold text-stone-600">Venue status<select value={guidedVenueStatus} onChange={(event) => setGuidedVenueStatus(event.target.value)} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm font-normal text-stone-950"><option value="needed">Help me find a venue</option><option value="selected">Venue already selected</option><option value="undecided">Not decided yet</option></select></label>
+              {guidedVenueStatus === 'selected' ? <label className="text-xs font-semibold text-stone-600">Venue name<input value={guidedVenueName} onChange={(event) => setGuidedVenueName(event.target.value)} placeholder="Enter the selected venue" className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm font-normal text-stone-950" /></label> : null}
+              <label className="text-xs font-semibold text-stone-600">City<select value={guidedCity} onChange={(event) => setGuidedCity(event.target.value)} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm font-normal text-stone-950">{(options.cities.length ? options.cities : ['Pretoria', 'Johannesburg', 'Cape Town', 'Durban']).map((value) => <option key={value}>{value}</option>)}</select></label>
+              <label className="text-xs font-semibold text-stone-600">Preferred area<input value={guidedArea} onChange={(event) => setGuidedArea(event.target.value)} placeholder="Suburb or district" className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm font-normal text-stone-950" /></label>
+              <label className="text-xs font-semibold text-stone-600">Travel radius (km)<input type="number" min="0" value={guidedRadius} onChange={(event) => setGuidedRadius(event.target.value)} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm font-normal text-stone-950" /></label>
+              <label className="text-xs font-semibold text-stone-600">Setting<select value={guidedSetting} onChange={(event) => setGuidedSetting(event.target.value)} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm font-normal text-stone-950">{['Either', 'Indoor', 'Outdoor', 'Mixed indoor and outdoor'].map((value) => <option key={value}>{value}</option>)}</select></label>
+              <p className="mt-2 border-t border-stone-200 pt-4 text-sm font-semibold sm:col-span-2 lg:col-span-4">3. Look, budget and flexibility</p>
               <label className="text-xs font-semibold text-stone-600">Style<select value={guidedStyle} onChange={(event) => setGuidedStyle(event.target.value)} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm font-normal text-stone-950">{['Elegant', 'Modern', 'Classic', 'Rustic', 'Vintage', 'Old fashioned', 'Bohemian', 'Minimalist', 'Luxury', 'Romantic'].map((value) => <option key={value}>{value}</option>)}</select></label>
               <label className="text-xs font-semibold text-stone-600">Main colour<select value={guidedColour} onChange={(event) => setGuidedColour(event.target.value)} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm font-normal text-stone-950">{['Neutral', 'White', 'Black', 'Gold', 'Silver', 'Green', 'Blue', 'Pink', 'Red', 'Pastel'].map((value) => <option key={value}>{value}</option>)}</select></label>
-              <div className="sm:col-span-2 lg:col-span-4 rounded-2xl bg-stone-50 p-4 text-sm text-stone-600">
-                <span className="font-semibold text-stone-950">Suggested direction:</span> {guidedGuests || '0'} guests · {guidedStyle.toLowerCase()} · {guidedColour.toLowerCase()} · search cues: {guidedEventSearchTerms(guidedType, guidedStyle, [guidedColour]).join(', ')}
+              <label className="text-xs font-semibold text-stone-600">Total event budget (ZAR)<input type="number" min="0" value={guidedBudget} onChange={(event) => setGuidedBudget(event.target.value)} placeholder="Optional" className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2.5 text-sm font-normal text-stone-950" /></label>
+              <label className="flex items-center gap-3 rounded-xl border border-stone-200 px-3 py-2.5 text-sm"><input type="checkbox" checked={guidedSubstitutions} onChange={(event) => setGuidedSubstitutions(event.target.checked)} className="h-4 w-4 accent-amber-400" /><span><strong className="block">Allow close alternatives</strong><span className="text-xs text-stone-500">Show suitable substitutions when needed</span></span></label>
+              <div className="mt-2 border-t border-stone-200 pt-4 sm:col-span-2 lg:col-span-4">
+                <p className="text-sm font-semibold">4. What do you need?</p>
+                <p className="mt-1 text-xs text-stone-500">Select any event areas to include. You can change these later.</p>
+                <div className="mt-3 flex flex-wrap gap-2">{options.categories.map((value) => { const selected = guidedRequirements.includes(value); return <button key={value} type="button" aria-pressed={selected} onClick={() => toggleGuidedRequirement(value)} className={`rounded-full border px-3 py-2 text-xs ${selected ? 'border-amber-400 bg-amber-50 font-semibold' : 'border-stone-300'}`}>{selected ? 'Selected · ' : ''}{value}</button>; })}</div>
               </div>
-              <div className="sm:col-span-2 lg:col-span-4 flex flex-wrap items-center gap-2"><button type="button" onClick={applyGuidedRequest} className="rounded-full bg-stone-950 px-5 py-2.5 text-sm font-semibold text-white">Show a recommended starting point</button>{eventCategories(guidedType).map((value) => <button key={value} type="button" onClick={() => { setCategory(value); setSearch(''); }} className="rounded-full border border-stone-300 px-3 py-2 text-xs">{value}</button>)}</div>
+              <div className="rounded-2xl bg-stone-50 p-4 text-sm text-stone-600 sm:col-span-2 lg:col-span-4">
+                <span className="font-semibold text-stone-950">Suggested direction:</span>{' '}
+                {guidedType} for {guidedGuests || '0'} guests
+                {guidedDate ? ` on ${guidedDate}` : ''} in {guidedCity}
+                {guidedArea ? `, ${guidedArea}` : ''} / {guidedSetting.toLowerCase()} /{' '}
+                {guidedStyle.toLowerCase()} / {guidedColour.toLowerCase()}
+                {guidedTheme ? ` / ${guidedTheme}` : ''}
+                {guidedBudget ? ` / budget R${guidedBudget}` : ''} / venue:{' '}
+                {guidedVenueStatus === 'selected'
+                  ? guidedVenueName || 'selected'
+                  : guidedVenueStatus === 'needed'
+                    ? 'required'
+                    : 'undecided'}{' '}
+                / within {guidedRadius || '0'} km / alternatives{' '}
+                {guidedSubstitutions ? 'allowed' : 'not allowed'} / search cues:{' '}
+                {guidedEventSearchTerms(guidedType, guidedStyle, [guidedColour]).join(', ')}
+              </div>
+              <div className="sm:col-span-2 lg:col-span-4 flex flex-wrap items-center gap-3"><button type="button" onClick={applyGuidedRequest} className="rounded-full bg-stone-950 px-5 py-2.5 text-sm font-semibold text-white">Show combined recommendations</button><span className="text-xs text-stone-500">Uses all {guidedRequirements.length || eventCategories(guidedType).length} selected event areas together.</span></div>
             </div>
           ) : null}
         </div>
+        {recommendedCategories.length ? (
+          <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between" role="status">
+            <div><p className="text-sm font-semibold">Combined event recommendations</p><p className="mt-1 text-xs text-stone-600">Showing offerings across {recommendedCategories.join(', ')}.</p></div>
+            <button type="button" onClick={() => setRecommendedCategories([])} className="self-start rounded-full border border-amber-400 bg-white px-3 py-1.5 text-xs font-semibold sm:self-auto">Clear recommendations</button>
+          </div>
+        ) : null}
         <div className={`${mode === 'catalogue' ? 'mt-5' : 'mt-4'} grid gap-3 rounded-3xl border border-stone-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-3`}>
           <input aria-label="Search synthetic catalogue" value={search} onChange={(event) => { setSearch(event.target.value); setVisible(48); }} placeholder="Search item, SKU or supplier" className="rounded-xl border border-stone-200 px-3 py-2.5 text-sm" />
-          <select aria-label="Category" value={category} onChange={(event) => setCategory(event.target.value)} className="rounded-xl border border-stone-200 px-3 py-2.5 text-sm"><option value="">All categories</option>{options.categories.map((value) => <option key={value}>{value}</option>)}</select>
+          <select aria-label="Category" value={category} onChange={(event) => { setCategory(event.target.value); setRecommendedCategories([]); }} className="rounded-xl border border-stone-200 px-3 py-2.5 text-sm"><option value="">All categories</option>{options.categories.map((value) => <option key={value}>{value}</option>)}</select>
           <select aria-label="City" value={city} onChange={(event) => setCity(event.target.value)} className="rounded-xl border border-stone-200 px-3 py-2.5 text-sm"><option value="">All cities</option>{options.cities.map((value) => <option key={value}>{value}</option>)}</select>
           <select aria-label="Supplier" value={supplier} onChange={(event) => setSupplier(event.target.value)} className="rounded-xl border border-stone-200 px-3 py-2.5 text-sm"><option value="">All suppliers</option>{options.suppliers.map((value) => <option key={value}>{value}</option>)}</select>
           <select aria-label="Offering type" value={quantityMode} onChange={(event) => setQuantityMode(event.target.value)} className="rounded-xl border border-stone-200 px-3 py-2.5 text-sm"><option value="">All offering types</option><option value="QUANTITY">Stocked items</option><option value="CAPACITY">Capacity-based offerings</option><option value="UNLIMITED">Services / quoted</option></select>

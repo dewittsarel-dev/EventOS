@@ -2,10 +2,28 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  matchesSimulationCategories,
   normalizeSimulationSearch,
   simulationSearchScore,
   type SearchableSimulationListing,
 } from './simulation-marketplace-search';
+
+describe('simulation marketplace category recommendations', () => {
+  it('includes every category selected by the guided builder', () => {
+    const recommendations = ['Venues', 'Furniture and tableware', 'Florals and styling'];
+
+    expect(matchesSimulationCategories('Venues', '', recommendations)).toBe(true);
+    expect(matchesSimulationCategories('Florals and styling', '', recommendations)).toBe(true);
+    expect(matchesSimulationCategories('Photography', '', recommendations)).toBe(false);
+  });
+
+  it('allows a manual category to override combined recommendations', () => {
+    const recommendations = ['Venues', 'Florals and styling'];
+
+    expect(matchesSimulationCategories('Venues', 'Florals and styling', recommendations)).toBe(false);
+    expect(matchesSimulationCategories('Florals and styling', 'Florals and styling', recommendations)).toBe(true);
+  });
+});
 
 interface CatalogueListing extends SearchableSimulationListing {
   id: string;
