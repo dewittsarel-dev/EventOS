@@ -19,6 +19,10 @@ The catalogue deliberately includes micro, small, medium and large businesses ac
 
 The first catalogue definition is implemented in `apps/api/src/simulation/simulation-business-catalog.ts`. It is deterministic so failures can be reproduced and future releases can be compared with the same baseline.
 
+Persistence is guarded by three independent controls: an explicit isolated-mode opt-in, a non-production runtime, and a database name containing `simulation`, `simulator`, or `test`. Simulator reset deletes only the exact 150 deterministic organization slugs. Broad prefix deletion is prohibited.
+
+The deterministic catalogue contains 590 synthetic offerings. Four original AI-generated fixture families represent supplier stock, planner services, venues and technical specialists. Every listing is labelled synthetic and states that it is unavailable for real purchase.
+
 ## Scenario ladder
 
 The simulator will grow through controlled slices:
