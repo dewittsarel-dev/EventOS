@@ -79,6 +79,7 @@ describe('AppShell', () => {
     fireEvent.click(screen.getByLabelText('Open navigation menu'));
 
     expect(screen.getByLabelText('Close navigation menu')).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Open Marketplace' })).toHaveLength(2);
     expect(window.location.pathname).toBe('/events');
   });
 

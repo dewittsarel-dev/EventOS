@@ -176,7 +176,7 @@ export default function DashboardPage() {
         </section>
       ) : (
         <>
-          <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_65%,#334155_100%)] p-5 text-zinc-100 shadow-sm md:p-6">
+          <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-[linear-gradient(135deg,#09090b_0%,#18181b_62%,#27272a_100%)] p-5 text-zinc-100 shadow-sm md:p-7">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div className="min-w-0">
                 <p className="text-xs uppercase tracking-[0.2em] text-slate-300">
@@ -192,37 +192,29 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              <div className="grid w-full gap-2 sm:grid-cols-2 lg:w-auto lg:grid-cols-3">
+              <div className="flex w-full flex-col gap-2 lg:w-auto lg:min-w-[31rem]">
                 <Link
                   href="/events/new"
-                  className="rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-center text-sm font-medium text-white transition hover:bg-white/20"
+                  className="rounded-xl bg-amber-400 px-4 py-3 text-center text-sm font-semibold text-zinc-950 shadow-sm transition hover:bg-amber-300"
                 >
                   Create Event
                 </Link>
-                <Link
-                  href="/quotations/new"
-                  className="rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-center text-sm font-medium text-white transition hover:bg-white/20"
-                >
-                  Create Quotation
-                </Link>
-                <Link
-                  href="/contacts/new"
-                  className="rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-center text-sm font-medium text-white transition hover:bg-white/20"
-                >
-                  Add Contact
-                </Link>
-                <Link
-                  href="/suppliers/new"
-                  className="rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-center text-sm font-medium text-white transition hover:bg-white/20"
-                >
-                  Add Supplier
-                </Link>
-                <Link
-                  href="/tasks/new"
-                  className="rounded-lg border border-white/25 bg-white/10 px-3 py-2 text-center text-sm font-medium text-white transition hover:bg-white/20"
-                >
-                  Create Task
-                </Link>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {[
+                    ['/quotations/new', 'Quotation'],
+                    ['/contacts/new', 'Contact'],
+                    ['/suppliers/new', 'Supplier'],
+                    ['/tasks/new', 'Task'],
+                  ].map(([href, label]) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      className="rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-center text-xs font-medium text-white transition hover:bg-white/20"
+                    >
+                      {label}
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
           </section>
@@ -279,7 +271,15 @@ export default function DashboardPage() {
             </section>
           ) : null}
 
-          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <section aria-labelledby="workspace-overview-heading">
+            <div className="mb-3 flex items-end justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Workspace</p>
+                <h2 id="workspace-overview-heading" className="mt-1 text-lg font-semibold text-zinc-900">Operational overview</h2>
+              </div>
+              <p className="hidden text-xs text-zinc-500 sm:block">Live organization totals</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             <article className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
               <p className="text-xs uppercase tracking-wide text-zinc-500">Events This Month</p>
               <p className="mt-2 text-2xl font-semibold text-zinc-900">
@@ -305,7 +305,7 @@ export default function DashboardPage() {
               </p>
             </article>
             <article className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-              <p className="text-xs uppercase tracking-wide text-zinc-500">Overdue Tasks</p>
+              <p className="text-xs uppercase tracking-wide text-rose-600">Overdue Tasks</p>
               <p className="mt-2 text-2xl font-semibold text-zinc-900">
                 {overview?.stats.overdueTasks ?? 0}
               </p>
@@ -322,6 +322,7 @@ export default function DashboardPage() {
                 {overview?.stats.totalContacts ?? 0}
               </p>
             </article>
+            </div>
           </section>
 
           {loading ? (
@@ -343,7 +344,12 @@ export default function DashboardPage() {
             </div>
           ) : null}
 
-          <section className="grid min-w-0 gap-4 xl:grid-cols-2">
+          <section aria-labelledby="workstream-heading">
+            <div className="mb-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">Plan and deliver</p>
+              <h2 id="workstream-heading" className="mt-1 text-lg font-semibold text-zinc-900">Your active work</h2>
+            </div>
+            <div className="grid min-w-0 gap-4 xl:grid-cols-2">
             <article className="min-w-0 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-base font-semibold text-zinc-900">Upcoming Events</h3>
@@ -495,6 +501,7 @@ export default function DashboardPage() {
                 </ul>
               )}
             </article>
+            </div>
           </section>
 
           <section className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">

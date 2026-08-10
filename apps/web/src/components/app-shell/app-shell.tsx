@@ -306,10 +306,15 @@ export function AppShell({ children }: AppShellProps) {
 
   const nav = (
     <nav aria-label="Main navigation" className="mt-4 space-y-1">
+      <div className="pb-1">
+        <p className={`px-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 ${isSidebarCollapsed ? 'md:hidden xl:block' : ''}`}>
+          Workspace
+        </p>
+      </div>
       {navLinks(PRIMARY_NAV_ROUTES)}
       <div className="pb-1 pt-5">
         <p className={`px-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-400 ${isSidebarCollapsed ? 'md:hidden xl:block' : ''}`}>
-          Operational tools
+          Business operations
         </p>
       </div>
       {navLinks(OPERATIONS_NAV_ROUTES)}
@@ -398,6 +403,20 @@ export function AppShell({ children }: AppShellProps) {
                 </button>
               </div>
               {nav}
+              <div className="mt-5 border-t border-zinc-200 pt-4">
+                <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                  Customer-facing
+                </p>
+                <Link
+                  href="/marketplace"
+                  target="_blank"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="mt-2 flex items-center justify-between rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm font-medium text-zinc-700 hover:bg-white hover:text-zinc-950"
+                >
+                  <span>Open Marketplace</span>
+                  <span aria-hidden="true">↗</span>
+                </Link>
+              </div>
             </div>
           </div>
         ) : null}

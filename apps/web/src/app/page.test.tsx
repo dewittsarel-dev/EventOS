@@ -116,6 +116,12 @@ describe('DashboardPage', () => {
     expect(screen.getAllByText('Launch Gala').length).toBeGreaterThan(0);
     expect(screen.getByText('Recent Activity')).toBeInTheDocument();
     expect(screen.getByText('Calendar Preview')).toBeInTheDocument();
+    expect(screen.getByText('Operational overview')).toBeInTheDocument();
+    expect(screen.getByText('Your active work')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Create Event' })).toHaveAttribute(
+      'href',
+      '/events/new',
+    );
     expect(screen.getByText('1 item needs your attention.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open task' })).toHaveAttribute(
       'href',
