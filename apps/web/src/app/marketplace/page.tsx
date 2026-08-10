@@ -92,7 +92,7 @@ export default function MarketplacePage() {
             <a href="/marketplace/account" className="rounded-full border border-stone-300 bg-white px-3 py-2 text-xs font-medium hover:border-stone-950 sm:text-sm">
               {customerSession ? 'My planning' : 'Customer sign in'}
             </a>
-            <a href="/login" className="hidden rounded-full border border-stone-300 bg-white px-3 py-2 text-xs font-medium hover:border-stone-950 hover:bg-stone-950 hover:text-white sm:block sm:px-4 sm:text-sm">
+            <a href="/login" className="rounded-full border border-stone-300 bg-white px-3 py-2 text-xs font-medium hover:border-stone-950 hover:bg-stone-950 hover:text-white sm:px-4 sm:text-sm">
               ClientOS
             </a>
           </div>
