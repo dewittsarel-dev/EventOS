@@ -31,6 +31,37 @@ describe('simulation catalogue fixtures', () => {
     ).toBe(true);
   });
 
+  it('uses original product-family visuals for decor Marketplace and mood-board tests', () => {
+    const chair = catalogue.find(({ name }) => name.includes('Chiavari Chair'));
+    const table = catalogue.find(({ name }) =>
+      name.includes('Banquet and Cocktail'),
+    );
+    const floral = catalogue.find(({ name }) =>
+      name.includes('Floral Centrepiece'),
+    );
+    const backdrop = catalogue.find(({ name }) =>
+      name.includes('Event Backdrop'),
+    );
+
+    expect(chair?.imagePath).toBe(
+      '/simulation/catalogue/gold-chiavari-chairs.png',
+    );
+    expect(table?.imagePath).toBe('/simulation/catalogue/event-tables.png');
+    expect(floral?.imagePath).toBe(
+      '/simulation/catalogue/floral-centrepieces.png',
+    );
+    expect(backdrop?.imagePath).toBe(
+      '/simulation/catalogue/modular-backdrops.png',
+    );
+    expect(
+      [chair, table, floral, backdrop].every(
+        (item) =>
+          item?.imageProvenance === 'GENERATED_FOR_EVENTOS_SIMULATION' &&
+          item.description.includes('Not available for real purchase.'),
+      ),
+    ).toBe(true);
+  });
+
   it('covers stock, capacity and service quantity behaviours', () => {
     expect(new Set(catalogue.map(({ quantityMode }) => quantityMode))).toEqual(
       new Set(['QUANTITY', 'CAPACITY', 'UNLIMITED']),

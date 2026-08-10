@@ -34,6 +34,51 @@ function roundCurrency(value: number) {
   return Math.round(value * 100) / 100;
 }
 
+interface ProductVisualFixture {
+  readonly name: string;
+  readonly description: string;
+  readonly imagePath: string;
+}
+
+const PRODUCT_VISUALS: Readonly<Record<string, ProductVisualFixture>> = {
+  chairs: {
+    name: 'Gold Chiavari Chair Collection',
+    description:
+      'Synthetic gold Chiavari event chairs with ivory seat cushions for seating plans and mood-board tests.',
+    imagePath: '/simulation/catalogue/gold-chiavari-chairs.png',
+  },
+  tables: {
+    name: 'Banquet and Cocktail Table Collection',
+    description:
+      'Synthetic long banquet, square dining and round cocktail tables for layout and capacity tests.',
+    imagePath: '/simulation/catalogue/event-tables.png',
+  },
+  flowers: {
+    name: 'White and Green Floral Centrepiece Collection',
+    description:
+      'Synthetic low, medium and tall floral arrangements for table styling and mood-board tests.',
+    imagePath: '/simulation/catalogue/floral-centrepieces.png',
+  },
+  'centre pieces': {
+    name: 'Blush and Cream Centrepiece Collection',
+    description:
+      'Synthetic floral centrepieces in complementary heights for tablescape planning tests.',
+    imagePath: '/simulation/catalogue/floral-centrepieces.png',
+  },
+  backdrops: {
+    name: 'Modular Event Backdrop Collection',
+    description:
+      'Synthetic timber, ivory fluted and black geometric backdrop systems for design tests.',
+    imagePath: '/simulation/catalogue/modular-backdrops.png',
+  },
+  decor: {
+    name: 'Ceremony and Feature Decor Collection',
+    description:
+      'Synthetic modular structures for ceremony, stage and feature-area mood-board tests.',
+    imagePath: '/simulation/catalogue/modular-backdrops.png',
+  },
+};
+
 export function createSimulationCatalogue(
   businesses: readonly SimulationBusinessProfile[],
 ): SimulationCatalogueItem[] {
@@ -46,14 +91,15 @@ export function createSimulationCatalogue(
       const basePrice =
         180 + ((Number(business.id.slice(-3)) * 73 + index * 191) % 4200);
       const costPrice = roundCurrency(basePrice * scale);
+      const productVisual = PRODUCT_VISUALS[focus];
 
       return {
         id: `${business.id}-CAT-${String(index + 1).padStart(2, '0')}`,
         businessId: business.id,
-        name: `${titleCase(focus)} ${business.scale} Package [SYNTHETIC]`,
+        name: `${productVisual?.name ?? `${titleCase(focus)} ${business.scale} Package`} [SYNTHETIC]`,
         category: business.category,
         sku: `SIM-${business.id.slice(-3)}-${String(index + 1).padStart(2, '0')}`,
-        description: `Synthetic ${focus} fixture for repeatable EventOS simulator scenarios. Not available for real purchase.`,
+        description: `${productVisual?.description ?? `Synthetic ${focus} fixture for repeatable EventOS simulator scenarios.`} Not available for real purchase.`,
         unit: isService ? 'Service' : isVenue ? 'Day' : 'Each',
         quantityMode: isService
           ? 'UNLIMITED'
@@ -67,7 +113,9 @@ export function createSimulationCatalogue(
             : 20 + Math.round(scale * 80),
         costPrice,
         sellingPrice: roundCurrency(costPrice * (1.22 + index * 0.04)),
-        imagePath: `/simulation/catalogue/${business.kind.toLowerCase()}.webp`,
+        imagePath:
+          productVisual?.imagePath ??
+          `/simulation/catalogue/${business.kind.toLowerCase()}.webp`,
         imageProvenance: 'GENERATED_FOR_EVENTOS_SIMULATION',
       } satisfies SimulationCatalogueItem;
     }),

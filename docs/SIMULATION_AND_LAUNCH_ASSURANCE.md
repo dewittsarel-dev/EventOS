@@ -23,6 +23,8 @@ Persistence is guarded by three independent controls: an explicit isolated-mode 
 
 The deterministic catalogue contains 590 synthetic offerings. Four original AI-generated fixture families represent supplier stock, planner services, venues and technical specialists. Every listing is labelled synthetic and states that it is unavailable for real purchase.
 
+The decor catalogue now also includes original product-family photography for gold Chiavari chairs, banquet/cocktail tables, floral centrepieces and modular backdrops. These images were generated specifically for EventOS, contain no real supplier identity or copied catalogue content, and are mapped to realistic synthetic listings for Marketplace presentation and AI mood-board testing.
+
 ## Operator-managed reference company
 
 The operator will also create one clearly labelled test organization through the normal ClientOS screens. This reference company represents a decor supplier that also performs event-planning work. It is deliberately not one of the 150 automated simulator businesses, and automated seed/reset operations must preserve it.

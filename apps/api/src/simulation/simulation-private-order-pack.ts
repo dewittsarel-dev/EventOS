@@ -143,7 +143,7 @@ export function createSmallPrivateOrderPack(): SmallPrivateOrderPack {
   if (!supplier) throw new Error('Furniture simulation supplier is missing.');
 
   const listing = createSimulationCatalogue([supplier]).find(({ name }) =>
-    name.toLowerCase().includes('chairs'),
+    name.toLowerCase().includes('chair'),
   );
   if (!listing) throw new Error('Chair simulation listing is missing.');
 
