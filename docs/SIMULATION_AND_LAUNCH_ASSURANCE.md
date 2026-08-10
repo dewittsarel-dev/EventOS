@@ -43,6 +43,8 @@ The simulator will grow through controlled slices:
 
 Each level must cover the complete relevant journey from Marketplace discovery and enquiry through ClientOS qualification, Event creation, design, requirements, mood board, procurement, commercial control, assets, execution, finance and closeout.
 
+The first executable scenario pack is `SIM-PACK-PRIVATE-ORDER-001`. It creates a deterministic synthetic customer, supplier listing, Marketplace enquiry, accepted-quotation evidence and Draft Event, then produces traceable evidence for all 12 lifecycle stages. It verifies that private ClientOS listing fields are not published, preserves human approval authority, and exercises recovery from unavailable stock and payment failure. The pack remains in memory and cannot write to production.
+
 ## Required failure and governance coverage
 
 - Conflicting reservations, partial stock and last-minute substitutions.
@@ -68,6 +70,8 @@ A release is not launch-ready merely because package tests pass. Before public l
 - failures are traceable to a stable scenario and synthetic record identifier.
 
 ## Delivery slices
+
+Current implementation checkpoint: the first Slice 4 scenario pack is executable and covered by automated tests. Further customer and event packs remain incremental follow-up work.
 
 - Slice 1 — deterministic 150-business catalogue and regression rules: complete.
 - Slice 2 — isolated persistence seeding and cleanup safeguards.
