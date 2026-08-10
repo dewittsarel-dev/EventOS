@@ -11,6 +11,7 @@ describe('MarketplaceSupplierPage', () => {
     render(<MarketplaceSupplierPage />);
     expect(await screen.findByRole('heading', { name: 'Celebrations' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Gold Chair/ })).toHaveAttribute('href', '/marketplace/listings/listing-1');
+    expect(screen.getByText('Supplier imagery coming soon')).toBeInTheDocument();
     expect(listMarketplaceListings).toHaveBeenCalledWith({ supplier: 'celebrations', limit: 48 });
   });
 });

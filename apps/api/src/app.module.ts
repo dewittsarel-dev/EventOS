@@ -7,6 +7,7 @@ import { AssetManagementModule } from './asset-management/asset-management.modul
 import { CapabilityModule } from './capabilities/capability.module';
 import { CommercialWorkspacesModule } from './commercial-workspaces/commercial-workspaces.module';
 import { ContactsModule } from './contacts/contacts.module';
+import { ContractsModule } from './contracts/contracts.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { EventExecutionModule } from './event-execution/event-execution.module';
 import { EventLifecycleModule } from './event-lifecycle/event-lifecycle.module';
@@ -45,6 +46,7 @@ import { RequestObservabilityMiddleware } from './observability/request-observab
     AssetManagementModule,
     DashboardModule,
     ContactsModule,
+    ContractsModule,
     MarketplaceModule,
     EventDesignModule,
     EventExecutionModule,

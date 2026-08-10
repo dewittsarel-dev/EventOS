@@ -28,6 +28,18 @@ function containsPhrase(value: string, query: string) {
 
 const productIntentDemotions: Record<string, string[]> = {
   glass: ['rack', 'transport', 'holder', 'underplate'],
+  table: ['runner', 'cloth', 'linen', 'lamp', 'number', 'centre'],
+  chair: ['cover', 'cushion', 'tie'],
+};
+
+const queryAliases: Record<string, string[]> = {
+  crockery: ['plate', 'bowl', 'cup', 'saucer'],
+  cutlery: ['fork', 'knife', 'spoon'],
+  glassware: ['glass', 'goblet', 'flute'],
+  couch: ['sofa', 'lounge'],
+  sofa: ['couch', 'lounge'],
+  flowers: ['floral', 'flower'],
+  vintage: ['classic', 'rustic', 'wood', 'brass'],
 };
 
 export function simulationSearchScore(listing: SearchableSimulationListing, query: string) {
@@ -50,5 +62,7 @@ export function simulationSearchScore(listing: SearchableSimulationListing, quer
   if (containsAll(normalizeSimulationSearch(listing.sku)) || containsAll(normalizeSimulationSearch(listing.supplierName))) return 300;
   if (containsAll(normalizeSimulationSearch(listing.category))) return 200;
   if (containsAll(normalizeSimulationSearch(listing.description))) return 100;
+  const aliases = queryAliases[query] ?? [];
+  if (aliases.some((alias) => title.includes(alias))) return 90;
   return 0;
 }

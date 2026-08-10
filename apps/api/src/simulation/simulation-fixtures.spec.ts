@@ -33,32 +33,59 @@ describe('simulation catalogue fixtures', () => {
 
   it('uses detailed product visuals for Marketplace and mood-board tests', () => {
     const expectedItems = [
-      ['Gold Chiavari Chair', '/simulation/catalogue/products/gold-chiavari-chair.png'],
-      ['Long Oak Banquet Table', '/simulation/catalogue/products/long-oak-banquet-table.png'],
-      ['Blush and Cream Low Centrepiece', '/simulation/catalogue/products/blush-cream-low-centrepiece.png'],
-      ['Ivory Fluted Backdrop', '/simulation/catalogue/products/ivory-fluted-backdrop.png'],
+      [
+        'Gold Chiavari Chair',
+        '/simulation/catalogue/products/gold-chiavari-chair.png',
+      ],
+      [
+        'Long Oak Banquet Table',
+        '/simulation/catalogue/products/long-oak-banquet-table.png',
+      ],
+      [
+        'Blush and Cream Low Centrepiece',
+        '/simulation/catalogue/products/blush-cream-low-centrepiece.png',
+      ],
+      [
+        'Ivory Fluted Backdrop',
+        '/simulation/catalogue/products/ivory-fluted-backdrop.png',
+      ],
     ] as const;
 
     expectedItems.forEach(([name, imagePath]) => {
-      expect(catalogue.find((item) => item.name.includes(name))?.imagePath).toBe(
-        imagePath,
-      );
+      expect(
+        catalogue.find((item) => item.name.includes(name))?.imagePath,
+      ).toBe(imagePath);
     });
   });
 
   it('includes detailed small-item inventory for search and mood-board tests', () => {
     const expectedItems = [
-      ['Silver Dinner Fork', '/simulation/catalogue/products/silver-dinner-fork.png'],
-      ['Gold-Rim Underplate', '/simulation/catalogue/products/gold-rim-underplate.png'],
-      ['Ivory Gauze Table Runner', '/simulation/catalogue/products/ivory-gauze-table-runner.png'],
-      ['Ivory Display Plinth', '/simulation/catalogue/products/ivory-display-plinth.png'],
-      ['Wireless Table Lamp', '/simulation/catalogue/products/wireless-table-lamp.png'],
+      [
+        'Silver Dinner Fork',
+        '/simulation/catalogue/products/silver-dinner-fork.png',
+      ],
+      [
+        'Gold-Rim Underplate',
+        '/simulation/catalogue/products/gold-rim-underplate.png',
+      ],
+      [
+        'Ivory Gauze Table Runner',
+        '/simulation/catalogue/products/ivory-gauze-table-runner.png',
+      ],
+      [
+        'Ivory Display Plinth',
+        '/simulation/catalogue/products/ivory-display-plinth.png',
+      ],
+      [
+        'Wireless Table Lamp',
+        '/simulation/catalogue/products/wireless-table-lamp.png',
+      ],
     ] as const;
 
     expectedItems.forEach(([name, imagePath]) => {
-      expect(catalogue.find((item) => item.name.includes(name))?.imagePath).toBe(
-        imagePath,
-      );
+      expect(
+        catalogue.find((item) => item.name.includes(name))?.imagePath,
+      ).toBe(imagePath);
     });
   });
 
@@ -66,14 +93,17 @@ describe('simulation catalogue fixtures', () => {
     const expectedItems = [
       ['Modular Stage Deck', '/simulation/catalogue/staging-and-tents.png'],
       ['White Stretch Tent', '/simulation/catalogue/staging-and-tents.png'],
-      ['Stainless Chafing Dish', '/simulation/catalogue/products/stainless-chafing-dish.png'],
+      [
+        'Stainless Chafing Dish',
+        '/simulation/catalogue/products/stainless-chafing-dish.png',
+      ],
       ['Mountain Ceremony Lawn', '/simulation/catalogue/venues.png'],
     ] as const;
 
     expectedItems.forEach(([name, imagePath]) => {
-      expect(catalogue.find((item) => item.name.includes(name))?.imagePath).toBe(
-        imagePath,
-      );
+      expect(
+        catalogue.find((item) => item.name.includes(name))?.imagePath,
+      ).toBe(imagePath);
     });
   });
 

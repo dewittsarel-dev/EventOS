@@ -87,6 +87,19 @@ Status values:
 - Expected outcomes:
   - reproducible package quality gate in automated checks
 
+## COM-002 Governed Contract Templates and Agreements
+
+- Status: completed
+- Objective: let ClientOS organizations retain their own contract wording and prepare reviewable agreements between event parties from authoritative commercial records.
+- Dependencies:
+  - M008 Commercial Workspace
+  - organization, event and membership records
+- Expected outcomes:
+  - private designed or imported contract templates with approval state
+  - immutable event-specific agreement versions and party snapshots
+  - human approval controls and commercial-workspace traceability
+  - no contract publication through Marketplace
+
 ## Backlog Hygiene Rules
 
 - Keep items scoped and testable.

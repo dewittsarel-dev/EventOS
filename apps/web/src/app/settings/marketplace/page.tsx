@@ -92,6 +92,29 @@ export default function MarketplaceManagementPage() {
       ) : null}
       {loading ? <p className="rounded-2xl border border-zinc-200 bg-white p-5 text-sm text-zinc-600 shadow-sm">Loading Marketplace management…</p> : null}
 
+      <section className="rounded-2xl border border-amber-200 bg-amber-50/70 p-5 shadow-sm">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-amber-700">Supplier setup</p>
+        <h2 className="mt-1 text-lg font-semibold tracking-tight">Set up your Marketplace presence</h2>
+        <p className="mt-1 max-w-3xl text-sm text-zinc-600">Complete these steps in ClientOS. Products remain private until somebody in your business explicitly publishes them.</p>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <Link href="/settings/organization" className="rounded-xl border border-amber-200 bg-white p-4 hover:border-amber-400">
+            <span className="text-xs font-semibold text-amber-700">Step 1</span>
+            <strong className="mt-1 block text-sm">Complete business profile</strong>
+            <span className="mt-1 block text-xs leading-5 text-zinc-500">Business name, contact details, location, website and logo.</span>
+          </Link>
+          <Link href="/resources/new" className="rounded-xl border border-amber-200 bg-white p-4 hover:border-amber-400">
+            <span className="text-xs font-semibold text-amber-700">Step 2</span>
+            <strong className="mt-1 block text-sm">Add products and services</strong>
+            <span className="mt-1 block text-xs leading-5 text-zinc-500">Use the guided form. Photographs may be added now or later.</span>
+          </Link>
+          <Link href="/inventory" className="rounded-xl border border-amber-200 bg-white p-4 hover:border-amber-400">
+            <span className="text-xs font-semibold text-amber-700">Step 3</span>
+            <strong className="mt-1 block text-sm">Review and publish</strong>
+            <span className="mt-1 block text-xs leading-5 text-zinc-500">Control exactly which records become visible to customers.</span>
+          </Link>
+        </div>
+      </section>
+
       <section className="overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-zinc-100 bg-zinc-50/70 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>

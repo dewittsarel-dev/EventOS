@@ -140,6 +140,28 @@ enum CommercialWorkspaceStatus {
   Closed
 }
 
+enum ContractTemplateSourceType {
+  Designed
+  Imported
+}
+
+enum ContractTemplateStatus {
+  Draft
+  Approved
+  Archived
+}
+
+enum CommercialAgreementStatus {
+  Draft
+  UnderReview
+  Approved
+  Sent
+  PartiallySigned
+  Executed
+  Superseded
+  Cancelled
+}
+
 enum CommercialRfqStatus {
   Draft
   Approved
@@ -787,6 +809,11 @@ model User {
   assetInstancesCreated            AssetInstance[]             @relation("AssetInstanceCreatedBy")
   eventExecutionsCreated           EventExecution[]            @relation("EventExecutionCreatedBy")
   financeWorkspacesCreated         EventFinanceWorkspace[]     @relation("EventFinanceWorkspaceCreatedBy")
+  contractTemplatesCreated         ContractTemplate[]          @relation("ContractTemplateCreatedBy")
+  contractTemplatesApproved        ContractTemplate[]          @relation("ContractTemplateApprovedBy")
+  commercialAgreementsCreated      CommercialAgreement[]       @relation("CommercialAgreementCreatedBy")
+  commercialAgreementsApproved     CommercialAgreement[]       @relation("CommercialAgreementApprovedBy")
+  commercialAgreementVersions      CommercialAgreementVersion[] @relation("CommercialAgreementVersionCreatedBy")
 
   @@index([email])
 }
@@ -845,6 +872,8 @@ model Organization {
   marketplaceEnquiries      MarketplaceEnquiry[]
   salesOpportunities        SalesOpportunity[]
   marketplaceMessages       MarketplaceEnquiryMessage[]
+  contractTemplates         ContractTemplate[]
+  commercialAgreements      CommercialAgreement[]
 
   @@index([slug])
 }
@@ -945,6 +974,7 @@ model Event {
   eventExecution           EventExecution?
   financeWorkspace         EventFinanceWorkspace?
   salesOpportunity         SalesOpportunity?
+  commercialAgreements     CommercialAgreement[]
 
   @@index([organizationId])
   @@index([contactId])
@@ -1421,11 +1451,93 @@ model CommercialWorkspace {
   quotes                CommercialQuote[]
   awards                CommercialAward[]
   purchaseOrderDrafts   CommercialPurchaseOrderDraft[]
+  agreements           CommercialAgreement[]
 
   @@unique([procurementPackageId])
   @@index([organizationId])
   @@index([eventId, status])
   @@index([procurementSolutionId])
+  @@index([createdByUserId])
+}
+
+model ContractTemplate {
+  id                    String                     @id @default(uuid())
+  organizationId        String
+  name                  String
+  description           String?
+  sourceType            ContractTemplateSourceType
+  importedFileName      String?
+  importedFileReference String?
+  content               String
+  mergeFields           String[]                   @default([])
+  status                ContractTemplateStatus     @default(Draft)
+  createdByUserId       String
+  approvedByUserId      String?
+  approvedAt            DateTime?
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+  organization          Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy             User                       @relation("ContractTemplateCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  approvedBy            User?                      @relation("ContractTemplateApprovedBy", fields: [approvedByUserId], references: [id], onDelete: Restrict)
+  agreements            CommercialAgreement[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId, status])
+  @@index([createdByUserId])
+  @@index([approvedByUserId])
+}
+
+model CommercialAgreement {
+  id                    String                    @id @default(uuid())
+  organizationId        String
+  eventId               String
+  commercialWorkspaceId String?
+  templateId            String?
+  counterpartyType      String
+  counterpartyId        String?
+  counterpartyName      String
+  title                 String
+  status                CommercialAgreementStatus @default(Draft)
+  currentVersion        Int                       @default(1)
+  createdByUserId       String
+  approvedByUserId      String?
+  approvedAt            DateTime?
+  sentAt                DateTime?
+  executedAt            DateTime?
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+  organization          Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event                 Event                     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  commercialWorkspace   CommercialWorkspace?      @relation(fields: [commercialWorkspaceId], references: [id], onDelete: SetNull)
+  template              ContractTemplate?         @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  createdBy             User                      @relation("CommercialAgreementCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  approvedBy            User?                     @relation("CommercialAgreementApprovedBy", fields: [approvedByUserId], references: [id], onDelete: Restrict)
+  versions              CommercialAgreementVersion[]
+
+  @@index([organizationId, status])
+  @@index([eventId, status])
+  @@index([commercialWorkspaceId])
+  @@index([templateId])
+  @@index([createdByUserId])
+  @@index([approvedByUserId])
+}
+
+model CommercialAgreementVersion {
+  id                 String              @id @default(uuid())
+  agreementId        String
+  version            Int
+  content            String
+  partyASnapshot     Json
+  partyBSnapshot     Json
+  commercialSnapshot Json
+  sourceReferences   Json?
+  generatedByAi      Boolean             @default(false)
+  createdByUserId    String
+  createdAt          DateTime            @default(now())
+  agreement          CommercialAgreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+  createdBy          User                @relation("CommercialAgreementVersionCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([agreementId, version])
   @@index([createdByUserId])
 }
 

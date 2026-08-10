@@ -4,18 +4,28 @@ import CommercialWorkspacePage from './page';
 
 const listProcurementPackages = vi.fn();
 const listCommercialWorkspaces = vi.fn();
+const listContractTemplates = vi.fn();
+const listCommercialAgreements = vi.fn();
 
 vi.mock('next/navigation', () => ({ useParams: () => ({ id: 'event-1' }) }));
-vi.mock('../../../../components/app-shell/session-context', () => ({ useAppSession: () => ({ session: { token: 'token-1', baseUrl: 'http://localhost:3001' } }) }));
+vi.mock('../../../../components/app-shell/session-context', () => ({ useAppSession: () => ({ session: { token: 'token-1', baseUrl: 'http://localhost:3001', organizationId: 'org-1' } }) }));
 vi.mock('../../../../lib/procurement-api', () => ({ listProcurementPackages: (...args: unknown[]) => listProcurementPackages(...args) }));
 vi.mock('../../../../lib/commercial-api', () => ({
   listCommercialWorkspaces: (...args: unknown[]) => listCommercialWorkspaces(...args),
   generateCommercialWorkspace: vi.fn(), approveCommercialRfq: vi.fn(), sendCommercialRfq: vi.fn(), submitCommercialQuote: vi.fn(), compareCommercialQuotes: vi.fn(), reviewCommercialSubstitution: vi.fn(), createCommercialAwards: vi.fn(), prepareCommercialPurchaseOrderDrafts: vi.fn(), approveCommercialPurchaseOrderDraft: vi.fn(),
 }));
+vi.mock('../../../../lib/contracts-api', () => ({
+  listContractTemplates: (...args: unknown[]) => listContractTemplates(...args),
+  listCommercialAgreements: (...args: unknown[]) => listCommercialAgreements(...args),
+  generateCommercialAgreement: vi.fn(),
+  approveCommercialAgreement: vi.fn(),
+}));
 
 describe('CommercialWorkspacePage', () => {
   beforeEach(() => {
     listProcurementPackages.mockResolvedValue([]);
+    listContractTemplates.mockResolvedValue([]);
+    listCommercialAgreements.mockResolvedValue([]);
     listCommercialWorkspaces.mockResolvedValue([{
       id: 'workspace-1', status: 'Draft', procurementPackageId: 'package-1', createdAt: '2026-08-08T00:00:00.000Z',
       procurementPackage: { name: 'Furniture Package' }, procurementSolution: {},

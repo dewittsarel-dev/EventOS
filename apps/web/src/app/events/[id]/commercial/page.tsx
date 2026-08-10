@@ -26,6 +26,13 @@ import type {
 import { listProcurementPackages } from '../../../../lib/procurement-api';
 import type { ProcurementPackage } from '../../../../lib/procurement-types';
 import { commercialGuidance } from '../../../../lib/event-workspace-guidance';
+import {
+  approveCommercialAgreement,
+  generateCommercialAgreement,
+  listCommercialAgreements,
+  listContractTemplates,
+} from '../../../../lib/contracts-api';
+import type { CommercialAgreement, ContractTemplate } from '../../../../lib/contracts-types';
 
 const fieldClass = 'rounded-md border border-zinc-300 px-3 py-2 text-sm';
 
@@ -37,6 +44,8 @@ export default function CommercialWorkspacePage() {
   const [packages, setPackages] = useState<ProcurementPackage[]>([]);
   const [workspaces, setWorkspaces] = useState<CommercialWorkspace[]>([]);
   const [comparisons, setComparisons] = useState<Record<string, CommercialComparison>>({});
+  const [contractTemplates, setContractTemplates] = useState<ContractTemplate[]>([]);
+  const [agreements, setAgreements] = useState<Record<string, CommercialAgreement[]>>({});
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -44,16 +53,20 @@ export default function CommercialWorkspacePage() {
   const load = useCallback(async () => {
     if (!session.token) return;
     try {
-      const [packageRows, workspaceRows] = await Promise.all([
+      const [packageRows, workspaceRows, templateRows] = await Promise.all([
         listProcurementPackages(options, eventId),
         listCommercialWorkspaces(options, eventId),
+        listContractTemplates(options, session.organizationId),
       ]);
+      const agreementRows = await Promise.all(workspaceRows.map(async (workspace) => [workspace.id, await listCommercialAgreements(options, eventId, workspace.id)] as const));
       setPackages(packageRows);
       setWorkspaces(workspaceRows);
+      setContractTemplates(templateRows);
+      setAgreements(Object.fromEntries(agreementRows));
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Failed to load Commercial Workspace.');
     }
-  }, [eventId, options, session.token]);
+  }, [eventId, options, session.organizationId, session.token]);
 
   useEffect(() => {
     // Load the commercial conversations for this event.
@@ -126,6 +139,8 @@ export default function CommercialWorkspacePage() {
             key={workspace.id}
             workspace={workspace}
             comparison={comparisons[workspace.id]}
+            contractTemplates={contractTemplates}
+            agreements={agreements[workspace.id] ?? []}
             busy={busy}
             onApproveRfq={(rfqId) => action(`approve-rfq-${rfqId}`, () => approveCommercialRfq(options, eventId, workspace.id, rfqId), 'RFQ approved. It has not been sent.')}
             onSendRfq={(rfqId) => action(`send-rfq-${rfqId}`, () => sendCommercialRfq(options, eventId, workspace.id, rfqId), 'Approved RFQ delivered to the supplier workspace.')}
@@ -135,6 +150,8 @@ export default function CommercialWorkspacePage() {
             onAward={(quoteLineId, quantity) => action(`award-${quoteLineId}`, () => createCommercialAwards(options, eventId, workspace.id, [{ quoteLineId, quantity }]), 'Commercial award recorded. No purchase order was sent.')}
             onPreparePo={() => action(`prepare-po-${workspace.id}`, () => prepareCommercialPurchaseOrderDrafts(options, eventId, workspace.id), 'Purchase-order drafts prepared from approved awards. Nothing was sent.')}
             onApprovePo={(draftId) => action(`approve-po-${draftId}`, () => approveCommercialPurchaseOrderDraft(options, eventId, workspace.id, draftId), 'Purchase-order draft approved. Supplier delivery remains a separate controlled action.')}
+            onGenerateAgreement={(templateId, supplierId, title) => action(`generate-agreement-${workspace.id}`, () => generateCommercialAgreement(options, eventId, workspace.id, { templateId, supplierId, title: title || undefined }), 'Agreement draft generated from approved records. It has not been sent or signed.')}
+            onApproveAgreement={(agreementId) => action(`approve-agreement-${agreementId}`, () => approveCommercialAgreement(options, eventId, workspace.id, agreementId), 'Agreement wording approved. Sending and signing remain separate controlled actions.')}
           />
         ))}
         {!workspaces.length ? <p className="rounded-xl border border-zinc-200 bg-white p-5 text-sm text-zinc-600">No commercial conversations yet.</p> : null}
@@ -155,10 +172,13 @@ type QuoteInput = Parameters<typeof submitCommercialQuote>[4];
 
 function WorkspaceCard(props: {
   workspace: CommercialWorkspace; comparison?: CommercialComparison; busy: string;
+  contractTemplates: ContractTemplate[]; agreements: CommercialAgreement[];
   onApproveRfq: (rfqId: string) => Promise<void>; onSendRfq: (rfqId: string) => Promise<void>;
   onSubmitQuote: (rfq: CommercialRfq, input: QuoteInput) => Promise<void>; onCompare: () => Promise<void>;
   onReviewSubstitution: (impactId: string, status: 'Approved' | 'Rejected') => Promise<void>;
   onAward: (quoteLineId: string, quantity: number) => Promise<void>; onPreparePo: () => Promise<void>; onApprovePo: (draftId: string) => Promise<void>;
+  onGenerateAgreement: (templateId: string, supplierId: string, title: string) => Promise<void>;
+  onApproveAgreement: (agreementId: string) => Promise<void>;
 }) {
   const { workspace, comparison, busy } = props;
   return <article className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
@@ -169,7 +189,34 @@ function WorkspaceCard(props: {
     {workspace.quotes.length ? <div className="mt-5"><button onClick={() => void props.onCompare()} disabled={busy === `compare-${workspace.id}`} className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium">Compare current quotes</button>{comparison ? <ComparisonPanel comparison={comparison} awards={workspace.awards.map((award) => award.commercialQuoteLineId)} onReview={props.onReviewSubstitution} onAward={props.onAward} /> : null}</div> : null}
     {workspace.awards.length ? <div className="mt-5 rounded-lg border border-emerald-200 bg-emerald-50 p-4"><p className="font-medium text-emerald-900">{workspace.awards.length} awarded line{workspace.awards.length === 1 ? '' : 's'}</p><p className="mt-1 text-sm text-emerald-800">Prepare controlled purchase-order drafts grouped by supplier.</p><button onClick={() => void props.onPreparePo()} className="mt-3 rounded-md bg-emerald-800 px-3 py-2 text-sm text-white">Prepare PO drafts</button></div> : null}
     {workspace.purchaseOrderDrafts.length ? <div className="mt-5 grid gap-3 md:grid-cols-2">{workspace.purchaseOrderDrafts.map((draft) => <div key={draft.id} className="rounded-lg border border-zinc-200 p-4"><div className="flex justify-between gap-2"><p className="font-medium">{draft.supplierName}</p><span className="text-xs">{draft.status}</span></div><p className="mt-1 text-sm">{money(draft.totalAmount, draft.currency)} · {draft.lines.length} lines</p>{draft.status === 'Draft' ? <button onClick={() => void props.onApprovePo(draft.id)} className="mt-3 rounded-md border border-zinc-300 px-3 py-2 text-sm">Approve PO draft</button> : null}</div>)}</div> : null}
+    <AgreementsPanel {...props} />
   </article>;
+}
+
+function AgreementsPanel(props: Pick<Parameters<typeof WorkspaceCard>[0], 'workspace' | 'contractTemplates' | 'agreements' | 'busy' | 'onGenerateAgreement' | 'onApproveAgreement'>) {
+  const { workspace, contractTemplates, agreements, busy } = props;
+  const awardedLineIds = new Set(workspace.awards.map((award) => award.commercialQuoteLineId));
+  const suppliers = Array.from(new Map(workspace.quotes
+    .filter((quote) => quote.lines.some((line) => awardedLineIds.has(line.id)))
+    .map((quote) => [quote.supplierId, { id: quote.supplierId, name: quote.supplierName }])).values());
+  const approvedTemplates = contractTemplates.filter((template) => template.status === 'Approved');
+
+  return <section className="mt-5 rounded-lg border border-zinc-200 p-4">
+    <div className="flex flex-wrap items-start justify-between gap-2">
+      <div><h3 className="font-semibold">Contracts and agreements</h3><p className="mt-1 text-sm text-zinc-600">Generate a private event agreement from an approved company template and the awarded commercial records.</p></div>
+      <Link href="/settings/contracts" className="rounded-md border border-zinc-300 px-3 py-2 text-sm">Manage templates</Link>
+    </div>
+    {suppliers.length > 0 && approvedTemplates.length > 0 ? <form onSubmit={(event) => { event.preventDefault(); const data = new FormData(event.currentTarget); void props.onGenerateAgreement(String(data.get('templateId')), String(data.get('supplierId')), String(data.get('title'))); }} className="mt-4 grid gap-2 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
+      <label className="text-xs text-zinc-600">Approved template<select required name="templateId" className={`${fieldClass} mt-1 w-full`}><option value="">Select template</option>{approvedTemplates.map((template) => <option key={template.id} value={template.id}>{template.name}</option>)}</select></label>
+      <label className="text-xs text-zinc-600">Awarded supplier<select required name="supplierId" className={`${fieldClass} mt-1 w-full`}><option value="">Select supplier</option>{suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}</select></label>
+      <label className="text-xs text-zinc-600">Agreement title<input name="title" className={`${fieldClass} mt-1 w-full`} placeholder="Event supply agreement" /></label>
+      <button disabled={busy === `generate-agreement-${workspace.id}`} className="rounded-md bg-zinc-900 px-3 py-2 text-sm text-white disabled:opacity-40">Generate draft</button>
+    </form> : <p className="mt-4 rounded-md bg-zinc-50 p-3 text-sm text-zinc-600">{!suppliers.length ? 'Award at least one supplier quote line before generating an agreement.' : 'Approve a company contract template before generating an agreement.'}</p>}
+    {agreements.length ? <div className="mt-4 grid gap-3 md:grid-cols-2">{agreements.map((agreement) => {
+      const latestVersion = agreement.versions.at(-1);
+      return <article key={agreement.id} className="rounded-md border border-zinc-200 p-3"><div className="flex justify-between gap-2"><div><p className="font-medium">{agreement.title}</p><p className="text-xs text-zinc-600">{agreement.counterpartyName} - {agreement.template.name}</p></div><span className="text-xs">{splitLabel(agreement.status)}</span></div>{latestVersion ? <details className="mt-3"><summary className="cursor-pointer text-sm font-medium">Preview frozen version {latestVersion.version}</summary><pre className="mt-2 max-h-72 overflow-auto whitespace-pre-wrap rounded bg-zinc-50 p-3 text-xs">{latestVersion.content}</pre></details> : null}<p className="mt-3 text-xs text-amber-700">Private draft. Not sent and not signed.</p>{agreement.status === 'UnderReview' || agreement.status === 'Draft' ? <button onClick={() => void props.onApproveAgreement(agreement.id)} disabled={busy === `approve-agreement-${agreement.id}`} className="mt-3 rounded-md border border-zinc-300 px-3 py-2 text-sm disabled:opacity-40">Approve agreement wording</button> : null}</article>;
+    })}</div> : null}
+  </section>;
 }
 
 function RfqCard({ rfq, quotes, busy, onApprove, onSend, onSubmitQuote }: { rfq: CommercialRfq; quotes: CommercialWorkspace['quotes']; busy: string; onApprove: () => Promise<void>; onSend: () => Promise<void>; onSubmitQuote: (input: QuoteInput) => Promise<void> }) {

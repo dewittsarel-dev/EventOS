@@ -5,6 +5,9 @@ export type ResourceRecord = {
   description: string | null;
   category: string;
   tags: string[];
+  keywords: string[];
+  aiSummary: string | null;
+  searchPhrases: string[];
   imageUrls: string[];
   resourceType: 'ASSET' | 'BULK_ITEM' | 'CONSUMABLE' | 'SERVICE' | 'STAFF' | 'VEHICLE' | 'VENUE';
   quantityMode: 'SERIALIZED' | 'QUANTITY' | 'CAPACITY' | 'UNLIMITED';
@@ -23,6 +26,9 @@ export type ResourcePayload = {
   description?: string;
   category: string;
   tags?: string[];
+  keywords?: string[];
+  aiSummary?: string;
+  searchPhrases?: string[];
   imageUrls?: string[];
   resourceType: ResourceRecord['resourceType'];
   quantityMode: ResourceRecord['quantityMode'];
@@ -30,6 +36,7 @@ export type ResourcePayload = {
   visibility: ResourceRecord['visibility'];
   unit: string;
   totalQuantity?: number;
+  condition?: ResourceRecord['condition'];
   rentalPrice?: number;
 };
 

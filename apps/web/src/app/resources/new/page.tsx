@@ -24,5 +24,5 @@ export default function NewResourcePage() {
     finally { setBusy(false); }
   }
 
-  return <div className="flex flex-col gap-4"><PageHeader title="Create Resource" description="Create one live Resource Engine record for ClientOS operations and optional Marketplace publication." actions={<Link href="/inventory" className="rounded-md border px-3 py-2 text-sm">Back to Resources</Link>} />{error ? <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}<ResourceForm busy={busy} submitLabel="Create resource" onSubmit={save} /></div>;
+  return <div className="flex flex-col gap-4"><PageHeader title="Add a product or service" description="A guided ClientOS form that prepares supplier inventory for search and optional Marketplace publication." actions={<Link href="/inventory" className="rounded-md border px-3 py-2 text-sm">Back to inventory</Link>} />{error ? <p role="alert" className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}<ResourceForm busy={busy} submitLabel="Save privately" onSubmit={save} /></div>;
 }

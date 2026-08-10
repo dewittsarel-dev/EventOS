@@ -91,6 +91,18 @@ Each entry should contain:
   - Future workflow orchestration can evolve independently from record management.
   - Resource, Purchase Order, Task and supplier-booking capabilities can later integrate through capability contracts instead of direct page-specific logic.
 
+## DEC-008
+
+- Date: 2026-08-10
+- Status: accepted
+- Context: EventOS must prepare agreements between customers, suppliers, planners, venues and other event parties while allowing each ClientOS organization to retain its own approved legal wording.
+- Decision: Keep reusable contract templates and event-specific agreement versions inside private ClientOS. Generate agreement drafts from the authoritative commercial conversation and party records, require explicit human review and approval, and expose no contract content through public Marketplace records.
+- Consequences:
+  - Organizations may design a template or register an imported original with governed merge fields.
+  - Generated agreements preserve immutable party and commercial snapshots for auditability.
+  - EventOS may draft but never auto-sign or make an agreement binding without authorized human action.
+  - Amendments and electronic-signature integrations can extend the versioned agreement record without creating another commercial source of truth.
+
 ## Superseding a Decision
 
 When replacing a decision:
