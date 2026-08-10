@@ -2,6 +2,7 @@ import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { createSimulationBusinessCatalog } from './simulation-business-catalog';
 import { createSimulationCatalogue } from './simulation-fixtures';
+import { createVisualMultiSupplierEventPack } from './simulation-visual-event-pack';
 
 const businesses = createSimulationBusinessCatalog();
 const catalogue = createSimulationCatalogue(businesses);
@@ -75,3 +76,14 @@ writeFileSync(
 console.log(
   `Exported ${catalogue.length} synthetic catalogue items to ${outputPath}`,
 );
+
+const visualScenarioPath = resolve(
+  __dirname,
+  '../../../web/public/simulation/visual-multi-supplier-event.json',
+);
+writeFileSync(
+  visualScenarioPath,
+  `${JSON.stringify(createVisualMultiSupplierEventPack(), null, 2)}\n`,
+  'utf8',
+);
+console.log(`Exported visual multi-supplier scenario to ${visualScenarioPath}`);

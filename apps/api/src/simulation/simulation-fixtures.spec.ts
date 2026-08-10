@@ -6,7 +6,7 @@ describe('simulation catalogue fixtures', () => {
   const catalogue = createSimulationCatalogue(businesses);
 
   it('creates realistic deterministic catalogue coverage for every business', () => {
-    expect(catalogue).toHaveLength(1190);
+    expect(catalogue).toHaveLength(1350);
     expect(createSimulationCatalogue(businesses)).toEqual(catalogue);
     expect(new Set(catalogue.map(({ id }) => id)).size).toBe(catalogue.length);
     expect(new Set(catalogue.map(({ sku }) => sku)).size).toBe(
@@ -71,6 +71,24 @@ describe('simulation catalogue fixtures', () => {
         '/simulation/catalogue/ottomans-and-plinths.png',
       ],
       ['Wireless Table Lamp', '/simulation/catalogue/decorative-lighting.png'],
+    ] as const;
+
+    expectedItems.forEach(([name, imagePath]) => {
+      expect(
+        catalogue.find((item) => item.name.includes(name))?.imagePath,
+      ).toBe(imagePath);
+    });
+  });
+
+  it('includes staging, tents, catering equipment and fictional venue visuals', () => {
+    const expectedItems = [
+      ['Modular Stage Deck', '/simulation/catalogue/staging-and-tents.png'],
+      ['White Stretch Tent', '/simulation/catalogue/staging-and-tents.png'],
+      [
+        'Stainless Chafing Dish',
+        '/simulation/catalogue/catering-equipment.png',
+      ],
+      ['Mountain Ceremony Lawn', '/simulation/catalogue/venues.png'],
     ] as const;
 
     expectedItems.forEach(([name, imagePath]) => {

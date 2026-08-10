@@ -50,6 +50,9 @@ const TABLE_SETTINGS_IMAGE = '/simulation/catalogue/table-settings.png';
 const LINENS_IMAGE = '/simulation/catalogue/event-linens.png';
 const FURNITURE_IMAGE = '/simulation/catalogue/ottomans-and-plinths.png';
 const LIGHTING_IMAGE = '/simulation/catalogue/decorative-lighting.png';
+const STAGING_IMAGE = '/simulation/catalogue/staging-and-tents.png';
+const CATERING_IMAGE = '/simulation/catalogue/catering-equipment.png';
+const VENUES_IMAGE = '/simulation/catalogue/venues.png';
 
 const PRODUCT_TEMPLATES: Readonly<Record<string, readonly ProductTemplate[]>> =
   {
@@ -353,6 +356,179 @@ const PRODUCT_TEMPLATES: Readonly<Record<string, readonly ProductTemplate[]>> =
         'Stanchion Light',
         'Compact light fitting for queue and arrival stanchions.',
         LIGHTING_IMAGE,
+      ),
+    ],
+    staging: [
+      template(
+        'Modular Stage Deck',
+        'Low modular stage deck for configurable event platforms.',
+        STAGING_IMAGE,
+      ),
+      template(
+        'Stage Step Unit',
+        'Matching step unit for safe stage access.',
+        STAGING_IMAGE,
+      ),
+      template(
+        'Stage Safety Rail',
+        'Modular safety rail for exposed stage edges.',
+        STAGING_IMAGE,
+      ),
+      template(
+        'Compact Truss Arch',
+        'Freestanding truss arch for lighting, branding and technical tests.',
+        STAGING_IMAGE,
+      ),
+      template(
+        'Crowd-Control Barrier',
+        'Interlocking barrier for queues, stages and controlled access areas.',
+        STAGING_IMAGE,
+      ),
+    ],
+    tents: [
+      template(
+        'White Stretch Tent',
+        'Flexible white stretch tent for outdoor guest and dining zones.',
+        STAGING_IMAGE,
+      ),
+      template(
+        'White Frame Marquee',
+        'Weather-protected frame marquee for formal outdoor events.',
+        STAGING_IMAGE,
+      ),
+      template(
+        'Compact Event Gazebo',
+        'Compact gazebo for service, registration or supplier stations.',
+        STAGING_IMAGE,
+      ),
+      template(
+        'Weighted Tent Base',
+        'Weighted base for safe temporary tent and gazebo installation.',
+        STAGING_IMAGE,
+      ),
+    ],
+    equipment: [
+      template(
+        'Stainless Chafing Dish',
+        'Stainless buffet chafing dish for hot-service planning.',
+        CATERING_IMAGE,
+      ),
+      template(
+        'Commercial Soup Kettle',
+        'Countertop soup kettle for controlled hot service.',
+        CATERING_IMAGE,
+      ),
+      template(
+        'Beverage Urn',
+        'Insulated hot-water and beverage urn for guest service.',
+        CATERING_IMAGE,
+      ),
+      template(
+        'Insulated Food Carrier',
+        'Portable insulated carrier for event food logistics.',
+        CATERING_IMAGE,
+      ),
+      template(
+        'Portable Serving Counter',
+        'Modular serving counter for buffet and service layouts.',
+        CATERING_IMAGE,
+      ),
+      template(
+        'Mobile Bar Counter',
+        'Portable bar counter for beverage service zones.',
+        CATERING_IMAGE,
+      ),
+      template(
+        'Plate Transport Rack',
+        'Mobile rack for organised plate storage and service.',
+        CATERING_IMAGE,
+      ),
+      template(
+        'Glass Transport Rack',
+        'Compartment rack for safe glassware handling.',
+        CATERING_IMAGE,
+      ),
+      template(
+        'Compact Refrigerated Display',
+        'Mobile chilled display for controlled cold service.',
+        CATERING_IMAGE,
+      ),
+    ],
+    'private dining': [
+      template(
+        'Intimate Glass Garden Venue',
+        'Fictional modern garden venue for intimate private dining.',
+        VENUES_IMAGE,
+      ),
+    ],
+    'small weddings': [
+      template(
+        'Boutique Garden Wedding Venue',
+        'Fictional garden venue for small wedding simulations.',
+        VENUES_IMAGE,
+      ),
+    ],
+    workshops: [
+      template(
+        'Boutique Workshop Venue',
+        'Fictional flexible venue for workshops and small sessions.',
+        VENUES_IMAGE,
+      ),
+    ],
+    conferences: [
+      template(
+        'Grand Ballroom Conference Venue',
+        'Fictional ballroom configured for large conferences.',
+        VENUES_IMAGE,
+      ),
+    ],
+    exhibitions: [
+      template(
+        'Large Exhibition Hall',
+        'Fictional large-format hall for exhibition simulations.',
+        VENUES_IMAGE,
+      ),
+    ],
+    concerts: [
+      template(
+        'Indoor Concert Hall',
+        'Fictional indoor venue for staged concert simulations.',
+        VENUES_IMAGE,
+      ),
+    ],
+    galas: [
+      template(
+        'Grand Ballroom Gala Venue',
+        'Fictional elegant ballroom for gala event simulations.',
+        VENUES_IMAGE,
+      ),
+    ],
+    festivals: [
+      template(
+        'Mountain Lawn Festival Venue',
+        'Fictional outdoor lawn for festival simulations.',
+        VENUES_IMAGE,
+      ),
+    ],
+    markets: [
+      template(
+        'Outdoor Market Lawn',
+        'Fictional open lawn for market-layout simulations.',
+        VENUES_IMAGE,
+      ),
+    ],
+    weddings: [
+      template(
+        'Mountain Ceremony Lawn',
+        'Fictional outdoor ceremony venue with mountain views.',
+        VENUES_IMAGE,
+      ),
+    ],
+    'sporting events': [
+      template(
+        'Open-Air Sporting Event Grounds',
+        'Fictional open grounds for sporting-event simulations.',
+        VENUES_IMAGE,
       ),
     ],
   };

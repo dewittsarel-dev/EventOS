@@ -42,7 +42,7 @@ const ARCHETYPES: readonly SimulationBusinessArchetype[] = [
     kind: 'Supplier',
     category: 'Lighting and audiovisual',
     nameStem: 'Lighting & AV Test Co',
-    catalogueFocus: ['lighting', 'audio', 'screens', 'staging'],
+    catalogueFocus: ['lighting', 'audio', 'screens', 'staging', 'tents'],
   },
   {
     kind: 'Supplier',

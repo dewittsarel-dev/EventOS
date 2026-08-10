@@ -1,0 +1,260 @@
+{
+  "id": "SIM-VISUAL-EVENT-001",
+  "synthetic": true,
+  "event": {
+    "title": "Mountain garden wedding [SYNTHETIC]",
+    "guestCount": 100,
+    "status": "Draft",
+    "eventDate": "2027-09-18"
+  },
+  "suppliers": [
+    {
+      "id": "SIM-BIZ-001",
+      "name": "Table & Chair Test Co 01 [SYNTHETIC]",
+      "category": "Furniture and tableware"
+    },
+    {
+      "id": "SIM-BIZ-011",
+      "name": "Floral & Decor Test Co 01 [SYNTHETIC]",
+      "category": "Floral and decor"
+    },
+    {
+      "id": "SIM-BIZ-021",
+      "name": "Lighting & AV Test Co 01 [SYNTHETIC]",
+      "category": "Lighting and audiovisual"
+    },
+    {
+      "id": "SIM-BIZ-031",
+      "name": "Catering Test Co 01 [SYNTHETIC]",
+      "category": "Catering and beverages"
+    },
+    {
+      "id": "SIM-BIZ-121",
+      "name": "Outdoor Test Venue 01 [SYNTHETIC]",
+      "category": "Outdoor venue"
+    }
+  ],
+  "lineItems": [
+    {
+      "supplierId": "SIM-BIZ-001",
+      "supplierName": "Table & Chair Test Co 01 [SYNTHETIC]",
+      "listingId": "SIM-BIZ-001-CAT-007",
+      "listingName": "Long Oak Banquet Table [SYNTHETIC]",
+      "quantity": 10,
+      "imagePath": "/simulation/catalogue/event-tables.png"
+    },
+    {
+      "supplierId": "SIM-BIZ-001",
+      "supplierName": "Table & Chair Test Co 01 [SYNTHETIC]",
+      "listingId": "SIM-BIZ-001-CAT-001",
+      "listingName": "Gold Chiavari Chair [SYNTHETIC]",
+      "quantity": 100,
+      "imagePath": "/simulation/catalogue/gold-chiavari-chairs.png"
+    },
+    {
+      "supplierId": "SIM-BIZ-001",
+      "supplierName": "Table & Chair Test Co 01 [SYNTHETIC]",
+      "listingId": "SIM-BIZ-001-CAT-014",
+      "listingName": "Sage Table Runner [SYNTHETIC]",
+      "quantity": 10,
+      "imagePath": "/simulation/catalogue/event-linens.png"
+    },
+    {
+      "supplierId": "SIM-BIZ-001",
+      "supplierName": "Table & Chair Test Co 01 [SYNTHETIC]",
+      "listingId": "SIM-BIZ-001-CAT-025",
+      "listingName": "Gold Dinner Fork [SYNTHETIC]",
+      "quantity": 100,
+      "imagePath": "/simulation/catalogue/table-settings.png"
+    },
+    {
+      "supplierId": "SIM-BIZ-001",
+      "supplierName": "Table & Chair Test Co 01 [SYNTHETIC]",
+      "listingId": "SIM-BIZ-001-CAT-026",
+      "listingName": "Gold Dinner Knife [SYNTHETIC]",
+      "quantity": 100,
+      "imagePath": "/simulation/catalogue/table-settings.png"
+    },
+    {
+      "supplierId": "SIM-BIZ-001",
+      "supplierName": "Table & Chair Test Co 01 [SYNTHETIC]",
+      "listingId": "SIM-BIZ-001-CAT-032",
+      "listingName": "Gold-Rim Underplate [SYNTHETIC]",
+      "quantity": 100,
+      "imagePath": "/simulation/catalogue/table-settings.png"
+    },
+    {
+      "supplierId": "SIM-BIZ-001",
+      "supplierName": "Table & Chair Test Co 01 [SYNTHETIC]",
+      "listingId": "SIM-BIZ-001-CAT-035",
+      "listingName": "Ribbed Water Glass [SYNTHETIC]",
+      "quantity": 100,
+      "imagePath": "/simulation/catalogue/table-settings.png"
+    },
+    {
+      "supplierId": "SIM-BIZ-011",
+      "supplierName": "Floral & Decor Test Co 01 [SYNTHETIC]",
+      "listingId": "SIM-BIZ-011-CAT-001",
+      "listingName": "White and Green Low Floral Arrangement [SYNTHETIC]",
+      "quantity": 20,
+      "imagePath": "/simulation/catalogue/floral-centrepieces.png"
+    },
+    {
+      "supplierId": "SIM-BIZ-011",
+      "supplierName": "Floral & Decor Test Co 01 [SYNTHETIC]",
+      "listingId": "SIM-BIZ-011-CAT-007",
+      "listingName": "Timber Arch Backdrop [SYNTHETIC]",
+      "quantity": 1,
+      "imagePath": "/simulation/catalogue/modular-backdrops.png"
+    },
+    {
+      "supplierId": "SIM-BIZ-021",
+      "supplierName": "Lighting & AV Test Co 01 [SYNTHETIC]",
+      "listingId": "SIM-BIZ-021-CAT-003",
+      "listingName": "Wireless Uplight [SYNTHETIC]",
+      "quantity": 16,
+      "imagePath": "/simulation/catalogue/decorative-lighting.png"
+    },
+    {
+      "supplierId": "SIM-BIZ-021",
+      "supplierName": "Lighting & AV Test Co 01 [SYNTHETIC]",
+      "listingId": "SIM-BIZ-021-CAT-018",
+      "listingName": "White Stretch Tent [SYNTHETIC]",
+      "quantity": 1,
+      "imagePath": "/simulation/catalogue/staging-and-tents.png"
+    },
+    {
+      "supplierId": "SIM-BIZ-021",
+      "supplierName": "Lighting & AV Test Co 01 [SYNTHETIC]",
+      "listingId": "SIM-BIZ-021-CAT-013",
+      "listingName": "Modular Stage Deck [SYNTHETIC]",
+      "quantity": 6,
+      "imagePath": "/simulation/catalogue/staging-and-tents.png"
+    },
+    {
+      "supplierId": "SIM-BIZ-031",
+      "supplierName": "Catering Test Co 01 [SYNTHETIC]",
+      "listingId": "SIM-BIZ-031-CAT-004",
+      "listingName": "Stainless Chafing Dish [SYNTHETIC]",
+      "quantity": 8,
+      "imagePath": "/simulation/catalogue/catering-equipment.png"
+    },
+    {
+      "supplierId": "SIM-BIZ-031",
+      "supplierName": "Catering Test Co 01 [SYNTHETIC]",
+      "listingId": "SIM-BIZ-031-CAT-008",
+      "listingName": "Portable Serving Counter [SYNTHETIC]",
+      "quantity": 3,
+      "imagePath": "/simulation/catalogue/catering-equipment.png"
+    },
+    {
+      "supplierId": "SIM-BIZ-121",
+      "supplierName": "Outdoor Test Venue 01 [SYNTHETIC]",
+      "listingId": "SIM-BIZ-121-CAT-003",
+      "listingName": "Mountain Ceremony Lawn [SYNTHETIC]",
+      "quantity": 1,
+      "imagePath": "/simulation/catalogue/venues.png"
+    }
+  ],
+  "moodBoard": {
+    "status": "AI_DRAFT_AWAITING_OPERATOR_APPROVAL",
+    "title": "Sage, ivory and gold mountain reception [SYNTHETIC]",
+    "instructions": [
+      "Place ten long banquet tables in three parallel rows with ten guests per table.",
+      "Place one gold chair per guest and one sage runner on each table.",
+      "Set every place with a gold fork, gold knife, gold-rim underplate and ribbed water glass.",
+      "Place two low white-and-green floral arrangements on every table.",
+      "Position the timber arch at the ceremony focal point and keep the mountain view unobstructed.",
+      "Use sixteen wireless uplights around the reception boundary and a white stretch tent as the weather fallback.",
+      "Keep catering equipment in a screened service zone outside the primary guest sightline."
+    ],
+    "zones": [
+      {
+        "id": "CEREMONY",
+        "title": "Mountain ceremony lawn",
+        "listingIds": [
+          "SIM-BIZ-011-CAT-007",
+          "SIM-BIZ-121-CAT-003"
+        ],
+        "imagePaths": [
+          "/simulation/catalogue/modular-backdrops.png",
+          "/simulation/catalogue/venues.png"
+        ]
+      },
+      {
+        "id": "RECEPTION",
+        "title": "Three-row banquet reception",
+        "listingIds": [
+          "SIM-BIZ-001-CAT-007",
+          "SIM-BIZ-001-CAT-001",
+          "SIM-BIZ-001-CAT-014",
+          "SIM-BIZ-001-CAT-025",
+          "SIM-BIZ-001-CAT-026",
+          "SIM-BIZ-001-CAT-032",
+          "SIM-BIZ-001-CAT-035",
+          "SIM-BIZ-011-CAT-001"
+        ],
+        "imagePaths": [
+          "/simulation/catalogue/event-tables.png",
+          "/simulation/catalogue/gold-chiavari-chairs.png",
+          "/simulation/catalogue/event-linens.png",
+          "/simulation/catalogue/table-settings.png",
+          "/simulation/catalogue/floral-centrepieces.png"
+        ]
+      },
+      {
+        "id": "TECHNICAL",
+        "title": "Weather, stage and lighting layer",
+        "listingIds": [
+          "SIM-BIZ-021-CAT-003",
+          "SIM-BIZ-021-CAT-018",
+          "SIM-BIZ-021-CAT-013"
+        ],
+        "imagePaths": [
+          "/simulation/catalogue/decorative-lighting.png",
+          "/simulation/catalogue/staging-and-tents.png"
+        ]
+      },
+      {
+        "id": "SERVICE",
+        "title": "Screened catering service zone",
+        "listingIds": [
+          "SIM-BIZ-031-CAT-004",
+          "SIM-BIZ-031-CAT-008"
+        ],
+        "imagePaths": [
+          "/simulation/catalogue/catering-equipment.png"
+        ]
+      }
+    ]
+  },
+  "recoveryTests": [
+    {
+      "id": "STOCK-SUBSTITUTION",
+      "trigger": "The selected gold chairs become unavailable.",
+      "expectedResponse": "Keep the requirement open, show comparable synthetic alternatives and require planner approval before substitution.",
+      "automaticCommitmentAllowed": false
+    },
+    {
+      "id": "WEATHER-FALLBACK",
+      "trigger": "Rain risk exceeds the outdoor-event threshold.",
+      "expectedResponse": "Promote the stretch tent fallback, recalculate layout and cost impact, and request operator approval.",
+      "automaticCommitmentAllowed": false
+    },
+    {
+      "id": "BUDGET-CHANGE",
+      "trigger": "The customer reduces the approved décor budget.",
+      "expectedResponse": "Preserve approved essentials, propose removable enhancements and show the variance before any change.",
+      "automaticCommitmentAllowed": false
+    }
+  ],
+  "result": {
+    "status": "PASSED",
+    "assertions": [
+      "Five synthetic businesses contributed venue, furniture, floral, technical and catering inventory.",
+      "The AI mood-board remains a draft until an operator approves it.",
+      "All catalogue images are generated EventOS simulation assets.",
+      "No enquiry, reservation, order or financial commitment was written to production."
+    ]
+  }
+}
