@@ -225,14 +225,63 @@ describe('MarketplacePublicService', () => {
     );
   });
 
+  it('creates a structured solution request for a marketplace supplier', async () => {
+    prisma.resource.findFirst.mockResolvedValue({
+      id: 'service-1',
+      organizationId: 'org-1',
+    });
+    prisma.marketplaceEnquiry.create.mockResolvedValue({
+      id: 'solution-1',
+      status: 'New',
+      createdAt: new Date('2026-08-11T10:00:00.000Z'),
+    });
+
+    await service.createSolutionRequest({
+      supplierSlug: 'av-solutions',
+      customerName: 'Sarel',
+      customerEmail: 'sarel@example.com',
+      requestTitle: 'AV solution for 500-person conference',
+      serviceCategories: ['Audio visual'],
+      eventType: 'Corporate conference',
+      guestCount: 500,
+      budgetCents: 25000000,
+      desiredOutcomes: ['Clear speech throughout the venue'],
+      message: 'Please propose a complete solution.',
+    });
+
+    expect(prisma.marketplaceEnquiry.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        // Jest's asymmetric matcher is intentionally dynamic in this assertion.
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        data: expect.objectContaining({
+          enquiryType: 'Solution',
+          resourceId: 'service-1',
+          organizationId: 'org-1',
+          requestTitle: 'AV solution for 500-person conference',
+          serviceCategories: ['Audio visual'],
+          guestCount: 500,
+          budgetCents: 25000000,
+        }),
+      }),
+    );
+  });
+
   it('creates a distinct sales opportunity without creating an Event', async () => {
     prisma.membership.findFirst.mockResolvedValue({ id: 'membership-1' });
     prisma.marketplaceEnquiry.findFirst.mockResolvedValue({
       id: 'enquiry-1',
       customerName: 'Sam',
+      requestTitle: 'AV solution for annual conference',
+      eventType: 'Corporate conference',
       eventDate: null,
       eventLocation: null,
       message: 'Need chairs',
+      serviceCategories: ['Audio visual'],
+      guestCount: 500,
+      budgetCents: 25000000,
+      desiredOutcomes: ['Clear speech throughout the venue'],
+      scheduleNotes: 'Load-in from 06:00',
+      accessNotes: 'Use the loading dock',
       resource: { name: 'Gold Chair' },
       salesOpportunity: null,
     });
@@ -250,7 +299,21 @@ describe('MarketplacePublicService', () => {
     );
 
     expect(result).toMatchObject({ id: 'opportunity-1', status: 'New' });
-    expect(prisma.salesOpportunity.create).toHaveBeenCalled();
+    expect(prisma.salesOpportunity.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        // Jest's asymmetric matcher is intentionally dynamic in this assertion.
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        data: expect.objectContaining({
+          marketplaceEnquiryId: 'enquiry-1',
+          title: 'AV solution for annual conference',
+          eventType: 'Corporate conference',
+          estimatedValueCents: 25000000,
+          // Jest's asymmetric matcher is intentionally dynamic in this assertion.
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+          qualificationNotes: expect.stringContaining('Services: Audio visual'),
+        }),
+      }),
+    );
     expect(prisma.event.create).not.toHaveBeenCalled();
   });
 

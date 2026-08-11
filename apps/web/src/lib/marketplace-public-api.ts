@@ -30,6 +30,29 @@ export function createMarketplaceEnquiry(payload: { resourceId: string; customer
   return request<{ id: string; status: string; createdAt: string; message: string }>('/public/marketplace/enquiries', { method: 'POST', body: JSON.stringify(payload) });
 }
 
+export type MarketplaceSolutionRequestInput = {
+  supplierSlug: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone?: string;
+  requestTitle: string;
+  serviceCategories: string[];
+  eventType?: string;
+  eventDate?: string;
+  eventLocation?: string;
+  guestCount?: number;
+  budgetCents?: number;
+  desiredOutcomes?: string[];
+  scheduleNotes?: string;
+  accessNotes?: string;
+  attachmentUrls?: string[];
+  message: string;
+};
+
+export function createMarketplaceSolutionRequest(payload: MarketplaceSolutionRequestInput) {
+  return request<{ id: string; status: string; createdAt: string; message: string }>('/public/marketplace/solution-requests', { method: 'POST', body: JSON.stringify(payload) });
+}
+
 export async function listMarketplaceEnquiries(options: { baseUrl: string; token: string; organizationId: string }) {
   const query = new URLSearchParams({ organizationId: options.organizationId });
   const response = await fetch(`${options.baseUrl.replace(/\/$/, '')}/marketplace/enquiries?${query}`, {

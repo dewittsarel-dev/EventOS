@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  MarketplaceEnquiryType,
   MarketplaceEnquiryStatus,
   MarketplaceMessageAuthorRole,
   Prisma,
@@ -16,6 +17,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMarketplaceEnquiryDto } from './dto/create-marketplace-enquiry.dto';
+import { CreateMarketplaceSolutionRequestDto } from './dto/create-marketplace-solution-request.dto';
 import { FindMarketplaceListingsQueryDto } from './dto/find-marketplace-listings-query.dto';
 import { scoreMarketplaceListing } from './marketplace-listing-search';
 import {
@@ -164,12 +166,55 @@ export class MarketplacePublicService {
     };
   }
 
+  async createSolutionRequest(dto: CreateMarketplaceSolutionRequestDto) {
+    const resource = await this.prisma.resource.findFirst({
+      where: {
+        organization: { slug: dto.supplierSlug },
+        archivedAt: null,
+        visibility: ResourceVisibility.MARKETPLACE,
+        status: { not: ResourceStatus.RETIRED },
+      },
+      select: { id: true, organizationId: true },
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (!resource)
+      throw new NotFoundException('Marketplace supplier not found');
+
+    // The supplier slug identifies the public supplier but is not enquiry data.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { supplierSlug: _supplierSlug, eventDate, ...request } = dto;
+    const enquiry = await this.prisma.marketplaceEnquiry.create({
+      data: {
+        ...request,
+        enquiryType: MarketplaceEnquiryType.Solution,
+        resourceId: resource.id,
+        organizationId: resource.organizationId,
+        eventDate: eventDate ? new Date(eventDate) : undefined,
+      },
+      select: { id: true, status: true, createdAt: true },
+    });
+    return {
+      ...enquiry,
+      message: 'Your solution request has been sent to the supplier.',
+    };
+  }
+
   async findOrganizationEnquiries(userId: string, organizationId: string) {
     await this.ensureOrganizationMembership(userId, organizationId);
     const enquiries = await this.prisma.marketplaceEnquiry.findMany({
       where: { organizationId },
       select: {
         id: true,
+        enquiryType: true,
+        requestTitle: true,
+        serviceCategories: true,
+        eventType: true,
+        guestCount: true,
+        budgetCents: true,
+        desiredOutcomes: true,
+        scheduleNotes: true,
+        accessNotes: true,
+        attachmentUrls: true,
         status: true,
         customerName: true,
         customerEmail: true,
@@ -210,6 +255,16 @@ export class MarketplacePublicService {
 
     return enquiries.map((entry) => ({
       id: entry.id,
+      enquiryType: entry.enquiryType,
+      requestTitle: entry.requestTitle,
+      serviceCategories: entry.serviceCategories,
+      eventType: entry.eventType,
+      guestCount: entry.guestCount,
+      budgetCents: entry.budgetCents,
+      desiredOutcomes: entry.desiredOutcomes,
+      scheduleNotes: entry.scheduleNotes,
+      accessNotes: entry.accessNotes,
+      attachmentUrls: entry.attachmentUrls,
       status: entry.status,
       customerName: entry.customerName,
       customerEmail: entry.customerEmail,
@@ -245,14 +300,32 @@ export class MarketplacePublicService {
     if (enquiry.salesOpportunity) return enquiry.salesOpportunity;
 
     return this.prisma.$transaction(async (tx) => {
+      const qualificationNotes = [
+        enquiry.message,
+        enquiry.serviceCategories?.length
+          ? `Services: ${enquiry.serviceCategories.join(', ')}`
+          : null,
+        enquiry.guestCount ? `Guests: ${enquiry.guestCount}` : null,
+        enquiry.desiredOutcomes?.length
+          ? `Desired outcomes: ${enquiry.desiredOutcomes.join('; ')}`
+          : null,
+        enquiry.scheduleNotes ? `Schedule: ${enquiry.scheduleNotes}` : null,
+        enquiry.accessNotes ? `Access: ${enquiry.accessNotes}` : null,
+      ]
+        .filter(Boolean)
+        .join('\n');
       const opportunity = await tx.salesOpportunity.create({
         data: {
           organizationId,
           marketplaceEnquiryId: enquiry.id,
-          title: `${enquiry.customerName} — ${enquiry.resource?.name ?? 'Marketplace enquiry'}`,
+          title:
+            enquiry.requestTitle ??
+            `${enquiry.customerName} — ${enquiry.resource?.name ?? 'Marketplace enquiry'}`,
+          eventType: enquiry.eventType,
           eventDate: enquiry.eventDate,
           venue: enquiry.eventLocation,
-          qualificationNotes: enquiry.message,
+          estimatedValueCents: enquiry.budgetCents,
+          qualificationNotes,
           createdByUserId: userId,
         },
       });

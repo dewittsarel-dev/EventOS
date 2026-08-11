@@ -32,6 +32,16 @@ export type MarketplaceListingPage = { items: MarketplaceListing[]; total: numbe
 
 export type MarketplaceEnquiry = {
   id: string;
+  enquiryType: 'Product' | 'Solution';
+  requestTitle: string | null;
+  serviceCategories: string[];
+  eventType: string | null;
+  guestCount: number | null;
+  budgetCents: number | null;
+  desiredOutcomes: string[];
+  scheduleNotes: string | null;
+  accessNotes: string | null;
+  attachmentUrls: string[];
   status: 'New' | 'Acknowledged' | 'Converted' | 'Closed';
   customerName: string;
   customerEmail: string;

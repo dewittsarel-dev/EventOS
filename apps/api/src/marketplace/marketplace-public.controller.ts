@@ -18,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { CreateMarketplaceEnquiryDto } from './dto/create-marketplace-enquiry.dto';
+import { CreateMarketplaceSolutionRequestDto } from './dto/create-marketplace-solution-request.dto';
 import { FindMarketplaceListingsQueryDto } from './dto/find-marketplace-listings-query.dto';
 import { MarketplacePublicService } from './marketplace-public.service';
 
@@ -50,5 +51,15 @@ export class MarketplacePublicController {
   })
   createEnquiry(@Body() dto: CreateMarketplaceEnquiryDto) {
     return this.marketplace.createEnquiry(dto);
+  }
+
+  @Post('solution-requests')
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @ApiCreatedResponse({
+    description: 'Solution request accepted for supplier follow-up.',
+  })
+  createSolutionRequest(@Body() dto: CreateMarketplaceSolutionRequestDto) {
+    return this.marketplace.createSolutionRequest(dto);
   }
 }
