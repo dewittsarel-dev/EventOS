@@ -104,10 +104,32 @@ export function productSearchScore(product: SearchableProduct, query: string) {
 
   const searchableTerms = normalizeProductLanguage(product.searchTerms?.join(' ') ?? '');
   if (concept?.related?.some((term) => title.includes(normalizeProductLanguage(term)))) return 350;
+
+  const category = normalizeProductLanguage(product.category);
+  const description = normalizeProductLanguage(product.description);
+  const searchableCorpus = `${title} ${searchableTerms} ${category} ${description}`;
+  const titleWords = new Set(title.split(' '));
+  const termWords = new Set(searchableTerms.split(' '));
+  const categoryWords = new Set(category.split(' '));
+  const descriptionWords = new Set(description.split(' '));
+  const titleMatches = queryWords.filter((word) => titleWords.has(word)).length;
+  const termMatches = queryWords.filter((word) => termWords.has(word)).length;
+  const categoryMatches = queryWords.filter((word) => categoryWords.has(word)).length;
+  const descriptionMatches = queryWords.filter((word) => descriptionWords.has(word)).length;
+  const coveredWords = queryWords.filter((word) => searchableCorpus.split(' ').includes(word)).length;
+  const tokenScore =
+    titleMatches * 90
+    + termMatches * 70
+    + categoryMatches * 40
+    + descriptionMatches * 20
+    + (coveredWords === queryWords.length ? 200 : 0)
+    - penalty;
+
+  if (tokenScore > 0) return tokenScore;
   if (normalizeProductLanguage(`${product.sku} ${product.supplierName}`).includes(normalizedQuery)) return 300;
-  if (normalizeProductLanguage(product.category).includes(normalizedQuery)) return 200;
+  if (category.includes(normalizedQuery)) return 200;
   if (searchableTerms.includes(normalizedQuery)) return 180;
-  if (normalizeProductLanguage(product.description).includes(normalizedQuery)) return 100;
+  if (description.includes(normalizedQuery)) return 100;
   return 0;
 }
 
