@@ -82,6 +82,13 @@ The repository now contains the verified backend architecture from M004 through 
 
 ## EventOS architecture delivery
 
+### Marketplace Intelligence Loop — IN PROGRESS
+
+- The controlling delivery plan is [docs/MARKETPLACE_INTELLIGENCE_DELIVERY_PLAN.md](docs/MARKETPLACE_INTELLIGENCE_DELIVERY_PLAN.md).
+- The north-star workflow is Marketplace discovery through preliminary visual concepts and estimates, controlled client approval, and only then governed ClientOS commercial conversion, execution and finance.
+- Active gate: MI-001 — Shared product meaning between guided supplier entry and all Marketplace discovery paths.
+- A slice is complete only when it advances a defined gate with measurable automated evidence; disconnected UI work does not replace the controlling sequence.
+
 ### M004–M011 Backend Chain — COMPLETE
 
 - Event Design Studio and Requirement Engine.

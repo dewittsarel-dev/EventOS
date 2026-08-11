@@ -103,6 +103,14 @@ Each entry should contain:
   - EventOS may draft but never auto-sign or make an agreement binding without authorized human action.
   - Amendments and electronic-signature integrations can extend the versioned agreement record without creating another commercial source of truth.
 
+## DEC-009 — Marketplace Intelligence Loop Controls Delivery
+
+- Date: 2026-08-11
+- Status: Accepted
+- Context: Supplier entry, Marketplace search, guided event building, mood boards and commercial conversion existed as separate slices, creating a risk of delivery drift without a shared measurable outcome.
+- Decision: The Marketplace Intelligence Loop is the controlling delivery plan. Guided supplier input and all three Marketplace discovery paths must use one Event Product Intelligence Model. Delivery proceeds through measurable discovery, visual concepts, preliminary proposals, customer approval and governed ClientOS commercial conversion.
+- Consequences: ClientOS remains the private source of truth; Marketplace paths converge into one editable concept; search and catalogue quality require automated evidence; preliminary drafts are non-binding; every package must identify the gate it advances.
+
 ## Superseding a Decision
 
 When replacing a decision:

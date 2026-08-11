@@ -1,3 +1,4 @@
+import { enrichProductDiscovery } from './event-product-intelligence';
 import type { SupplierProductCategory } from './supplier-products-types';
 
 export const EVENT_INDUSTRY_TAXONOMY: Record<SupplierProductCategory, string[]> = {
@@ -25,17 +26,5 @@ export type ProductSuggestionInput = {
 };
 
 export function suggestProductDiscovery(input: ProductSuggestionInput) {
-  const terms = [input.productName, input.category, input.subcategory, input.colour, input.material, input.style]
-    .map((value) => value.trim().toLowerCase())
-    .filter(Boolean);
-  const uniqueTerms = [...new Set(terms.flatMap((term) => [term, ...term.split(/\s+/)]))];
-  const description = [input.productName.trim(), input.colour.trim(), input.material.trim(), input.style.trim()]
-    .filter(Boolean)
-    .join(' · ');
-
-  return {
-    description: description ? `${description}. Suitable for event hire and coordinated event designs.` : '',
-    tags: uniqueTerms.slice(0, 12),
-    searchTerms: uniqueTerms.slice(0, 20),
-  };
+  return enrichProductDiscovery(input);
 }
