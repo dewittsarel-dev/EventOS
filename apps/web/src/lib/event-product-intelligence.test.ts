@@ -39,6 +39,31 @@ describe('event product intelligence', () => {
     expect(result.description).toContain('Gold Tiffany Chair');
   });
 
+  it('uses guided supplier classification when a short product name omits the item type', () => {
+    const result = enrichProductDiscovery({
+      productName: 'Gold Tiffany',
+      category: 'Furniture and seating',
+      subcategory: 'Chairs',
+      colour: 'Gold',
+      style: 'Classic',
+    });
+
+    expect(result.concepts).toContain('chair');
+    expect(result.searchTerms).toEqual(
+      expect.arrayContaining(['chair', 'seating', 'gold', 'classic']),
+    );
+  });
+
+  it('does not infer concepts from partial words', () => {
+    const result = enrichProductDiscovery({
+      productName: 'Chairman welcome signage',
+      category: 'Signage and branding',
+      subcategory: 'Welcome signs',
+    });
+
+    expect(result.concepts).not.toContain('chair');
+  });
+
   it('ranks direct tables before accessories and operational equipment', () => {
     const direct = productSearchScore(product('Oak Banquet Table'), 'table');
     const accessory = productSearchScore(product('Charcoal Table Runner'), 'table');

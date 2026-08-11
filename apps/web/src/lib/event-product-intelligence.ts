@@ -75,6 +75,10 @@ function conceptForQuery(query: string) {
   return PRODUCT_CONCEPTS.find((concept) => concept.aliases.some((alias) => normalizeProductLanguage(alias) === normalizedQuery));
 }
 
+function containsNormalizedPhrase(value: string, phrase: string) {
+  return (` ${value} `).includes(` ${phrase} `);
+}
+
 function relationshipPenalty(title: string, concept?: ProductConcept) {
   if (!concept) return 0;
   const words = new Set(normalizeProductLanguage(title).split(' '));
@@ -109,9 +113,11 @@ export function productSearchScore(product: SearchableProduct, query: string) {
 
 export function enrichProductDiscovery(input: ProductIntelligenceInput) {
   const suppliedValues = [input.productName, input.category, input.subcategory, input.colour, input.material, input.style, input.condition];
-  const normalizedName = normalizeProductLanguage(input.productName);
+  const classificationText = normalizeProductLanguage(
+    [input.productName, input.category, input.subcategory].filter(Boolean).join(' '),
+  );
   const matchingConcepts = PRODUCT_CONCEPTS.filter((concept) =>
-    concept.aliases.some((alias) => normalizedName.includes(normalizeProductLanguage(alias))),
+    concept.aliases.some((alias) => containsNormalizedPhrase(classificationText, normalizeProductLanguage(alias))),
   );
   const conceptTerms = matchingConcepts.flatMap((concept) => [...concept.aliases, ...(concept.related ?? [])]);
   const searchTerms = [...new Set([...normalizedTerms(suppliedValues), ...normalizedTerms(input.searchTerms ?? []), ...normalizedTerms(conceptTerms)])];

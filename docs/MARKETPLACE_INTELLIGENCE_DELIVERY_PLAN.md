@@ -110,6 +110,7 @@ Disconnected appearance work, isolated demonstrations and catalogue volume do no
 
 ## Current checkpoint
 
-- Active gate: MI-001 — Shared product meaning.
-- Next gate: MI-002 — Measurable discovery quality.
+- Completed gate: MI-001 — Shared product meaning.
+- Completion evidence: shared supplier-entry and Marketplace vocabulary, singular/plural normalization, direct-item ranking ahead of accessories and operational support, and automated catalogue checks for tables, runners, chairs, forks, glassware, underplates, ottomans and plinths.
+- Active gate: MI-002 — Measurable discovery quality.
 - Product photography can improve evaluation realism, but it does not block the intelligence foundation or automated discovery testing.
