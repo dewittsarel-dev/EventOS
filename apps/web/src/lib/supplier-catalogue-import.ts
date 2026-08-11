@@ -203,6 +203,63 @@ export function extractCsvCatalogue(text: string, sourceName: string): Catalogue
   });
 }
 
+function candidateFromTextBlock(block: string, sourceName: string, sourceRow: number): CatalogueImportCandidate | null {
+  const lines = block.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const productName = lines.find((line) => /[a-zA-Z]{3}/.test(line) && !/^(page|catalogue|price list)/i.test(line)) ?? '';
+  if (!productName) return null;
+
+  const priceLine = lines.find((line) => /(?:R|ZAR|\$)\s*[\d.,]+/i.test(line)) ?? '';
+  const sellingPrice = numberValue(priceLine);
+  const dimensions = lines.find((line) => /\b\d+(?:[.,]\d+)?\s*(?:mm|cm|m)\b/i.test(line)) ?? '';
+  const description = lines.filter((line) => line !== productName && line !== priceLine).slice(0, 4).join(' ');
+  const searchTerms = proposedTerms(`${productName} ${description}`, []);
+
+  return {
+    id: `${sourceName}-${sourceRow}`,
+    sourceRow,
+    selected: true,
+    productName,
+    sku: '',
+    category: categoryFor(`${productName} ${description}`, ''),
+    subcategory: '',
+    description,
+    colour: '',
+    material: '',
+    style: '',
+    dimensions,
+    costPrice: 0,
+    sellingPrice,
+    totalQuantity: undefined,
+    unit: 'Each',
+    availability: 'Available',
+    deliveryAvailable: true,
+    pickupAvailable: true,
+    imageUrls: [],
+    tags: [],
+    searchTerms,
+    issues: [
+      'Cost price requires confirmation.',
+      'Quantity requires confirmation.',
+      ...(sellingPrice === undefined ? ['Selling price was not detected.'] : []),
+      'Document extraction requires supplier review.',
+    ],
+  };
+}
+
+export function extractTextCatalogue(text: string, sourceName: string): CatalogueImportCandidate[] {
+  const normalized = text.replace(/\u0000/g, '').trim();
+  if (!normalized) return [];
+
+  const blocks = normalized
+    .split(/\n\s*\n|\f/)
+    .map((block) => block.trim())
+    .filter(Boolean);
+
+  return blocks
+    .map((block, index) => candidateFromTextBlock(block, sourceName, index + 1))
+    .filter((candidate): candidate is CatalogueImportCandidate => candidate !== null);
+}
+
 export function candidateToPayload(candidate: CatalogueImportCandidate, organizationId: string): SupplierProductPayload {
   const attributes = Object.fromEntries(
     [

@@ -7,4 +7,5 @@ allowBuilds:
   bcrypt: false
   prisma: true
   sharp: true
+  tesseract.js: false
   unrs-resolver: true

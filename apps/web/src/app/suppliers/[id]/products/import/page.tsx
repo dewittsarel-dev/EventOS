@@ -13,9 +13,9 @@ import {
 } from '@/lib/supplier-products-api';
 import {
   candidateToPayload,
-  extractCsvCatalogue,
   type CatalogueImportCandidate,
 } from '@/lib/supplier-catalogue-import';
+import { extractSupplierCatalogue } from '@/lib/supplier-catalogue-extraction';
 import {
   SUPPLIER_PRODUCT_CATEGORIES,
   type SupplierProductAvailability,
@@ -75,35 +75,33 @@ export default function SupplierCatalogueImportPage() {
     if (!files) return;
     setError('');
     setMessage('');
+    setBusy(true);
 
-    for (const file of Array.from(files)) {
-      const id = `${file.name}-${file.lastModified}-${file.size}`;
-      const lower = file.name.toLowerCase();
-      if (lower.endsWith('.csv')) {
-        const extracted = extractCsvCatalogue(await file.text(), file.name);
-        setCandidates((current) => [...current, ...extracted]);
+    try {
+      for (const file of Array.from(files)) {
+        const id = `${file.name}-${file.lastModified}-${file.size}`;
+        const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined;
         setSources((current) => [...current, {
           id,
           name: file.name,
-          kind: 'CSV catalogue',
-          status: `${extracted.length} products extracted for review`,
+          kind: 'Catalogue source',
+          status: file.type.startsWith('image/') ? 'Reading visible text with OCR…' : 'Extracting private catalogue data…',
+          previewUrl,
         }]);
-      } else if (file.type.startsWith('image/')) {
-        setSources((current) => [...current, {
-          id,
-          name: file.name,
-          kind: 'Product image',
-          status: 'Ready for matching during extraction',
-          previewUrl: URL.createObjectURL(file),
-        }]);
-      } else {
-        setSources((current) => [...current, {
-          id,
-          name: file.name,
-          kind: lower.endsWith('.pdf') ? 'PDF catalogue' : 'Spreadsheet',
-          status: 'Queued for document extraction adapter',
-        }]);
+        try {
+          const result = await extractSupplierCatalogue(file);
+          setCandidates((current) => [...current, ...result.candidates]);
+          setSources((current) => current.map((source) => source.id === id
+            ? { ...source, kind: result.kind, status: result.status }
+            : source));
+        } catch (extractionError) {
+          setSources((current) => current.map((source) => source.id === id
+            ? { ...source, status: `Extraction needs manual review: ${extractionError instanceof Error ? extractionError.message : 'Unknown extraction error'}` }
+            : source));
+        }
       }
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -155,8 +153,9 @@ export default function SupplierCatalogueImportPage() {
 
       <section className="rounded-xl border border-zinc-200 bg-white p-5">
         <h2 className="font-semibold">1. Upload existing supplier material</h2>
-        <p className="mt-1 text-sm text-zinc-600">CSV catalogues are extracted immediately. PDF, Excel and product-image files enter the private extraction queue; they are never published directly.</p>
-        <input className="mt-4 block w-full rounded-md border border-dashed border-zinc-300 p-4 text-sm" type="file" multiple accept=".csv,.pdf,.xlsx,.xls,image/*" onChange={(event) => void onFiles(event.target.files)} />
+        <p className="mt-1 text-sm text-zinc-600">CSV and Excel rows, PDF text, and visible text in product images are extracted locally into a private review queue. Nothing is published automatically.</p>
+        <input disabled={busy} className="mt-4 block w-full rounded-md border border-dashed border-zinc-300 p-4 text-sm disabled:opacity-50" type="file" multiple accept=".csv,.pdf,.xlsx,.xls,image/*" onChange={(event) => void onFiles(event.target.files)} />
+        {busy ? <p className="mt-2 text-sm text-amber-700">Extracting catalogue information. OCR may take a little longer for large images.</p> : null}
         {sources.length ? <div className="mt-4 grid gap-3 md:grid-cols-3">{sources.map((source) => (
           <div key={source.id} className="rounded-lg border border-zinc-200 p-3 text-sm">
             {source.previewUrl ? <Image src={source.previewUrl} alt="Private import preview" width={320} height={112} unoptimized className="mb-2 h-28 w-full rounded object-cover" /> : null}
@@ -170,7 +169,7 @@ export default function SupplierCatalogueImportPage() {
           <div><h2 className="font-semibold">2. Import review queue</h2><p className="text-sm text-zinc-600">Correct exceptions and confirm stock, availability and fulfilment before approval.</p></div>
           <p className="text-sm font-medium">{readyCount} ready for approval</p>
         </div>
-        {!candidates.length ? <p className="mt-4 rounded-lg bg-zinc-50 p-4 text-sm text-zinc-500">Upload a CSV catalogue to populate the review queue.</p> : (
+        {!candidates.length ? <p className="mt-4 rounded-lg bg-zinc-50 p-4 text-sm text-zinc-500">Upload a CSV, Excel, PDF, or product image to populate the review queue.</p> : (
           <div className="mt-4 overflow-x-auto"><table className="min-w-[1200px] text-sm"><thead><tr className="border-b text-left text-zinc-500">
             <th className="p-2">Approve</th><th className="p-2">Product</th><th className="p-2">Category</th><th className="p-2">Colour</th><th className="p-2">Dimensions</th><th className="p-2">Cost</th><th className="p-2">Qty</th><th className="p-2">Availability</th><th className="p-2">Delivery</th><th className="p-2">Review</th>
           </tr></thead><tbody>{candidates.map((item) => {

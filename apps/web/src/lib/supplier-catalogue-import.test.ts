@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { candidateToPayload, extractCsvCatalogue, parseCsv } from './supplier-catalogue-import';
+import { candidateToPayload, extractCsvCatalogue, extractTextCatalogue, parseCsv } from './supplier-catalogue-import';
 
 describe('supplier catalogue import', () => {
   it('parses quoted CSV values', () => {
@@ -34,5 +34,24 @@ describe('supplier catalogue import', () => {
       totalQuantity: 12,
       attributes: { material: 'Oak' },
     });
+  });
+
+  it('extracts conservative review candidates from PDF or OCR text without inventing stock', () => {
+    const [candidate] = extractTextCatalogue(
+      'Gold Tiffany Chair\nElegant wedding seating\nR 85.00\n\nOak Banquet Table\n2400 mm x 1000 mm\nZAR 950,00',
+      'supplier.pdf',
+    );
+
+    expect(candidate).toMatchObject({
+      productName: 'Gold Tiffany Chair',
+      category: 'Decor',
+      sellingPrice: 85,
+      totalQuantity: undefined,
+    });
+    expect(candidate.issues).toEqual(expect.arrayContaining([
+      'Cost price requires confirmation.',
+      'Quantity requires confirmation.',
+      'Document extraction requires supplier review.',
+    ]));
   });
 });
