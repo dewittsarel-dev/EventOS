@@ -24,6 +24,12 @@ describe('supplier product Marketplace projection', () => {
       totalQuantity: 120,
       condition: 'Good',
       sellingPrice: 45,
+      leadTimeDays: 2,
+      minimumOrderQuantity: 10,
+      deliveryAvailable: true,
+      pickupAvailable: true,
+      deliveryRadiusKm: 80,
+      deliveryFee: 450,
     });
 
     expect(projection).toMatchObject({
@@ -34,6 +40,10 @@ describe('supplier product Marketplace projection', () => {
       visibility: ResourceVisibility.MARKETPLACE,
       condition: ResourceCondition.GOOD,
       rentalPrice: 45,
+      supplierAvailability: 'Available',
+      leadTimeDays: 2,
+      minimumOrderQuantity: 10,
+      deliveryAvailable: true,
     });
     expect(projection).not.toHaveProperty('costPrice');
     expect(projection).not.toHaveProperty('notes');

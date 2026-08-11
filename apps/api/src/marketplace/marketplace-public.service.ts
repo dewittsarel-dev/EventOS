@@ -12,10 +12,12 @@ import {
   ResourceType,
   ResourceVisibility,
   SalesOpportunityStatus,
+  SupplierProductAvailability,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateMarketplaceEnquiryDto } from './dto/create-marketplace-enquiry.dto';
 import { FindMarketplaceListingsQueryDto } from './dto/find-marketplace-listings-query.dto';
+import { scoreMarketplaceListing } from './marketplace-listing-search';
 import {
   ConvertSalesOpportunityDto,
   UpdateSalesOpportunityDto,
@@ -27,6 +29,9 @@ const publicListingSelect = {
   description: true,
   category: true,
   tags: true,
+  keywords: true,
+  searchPhrases: true,
+  aiSummary: true,
   imageUrls: true,
   resourceType: true,
   quantityMode: true,
@@ -37,6 +42,13 @@ const publicListingSelect = {
   maintenanceQuantity: true,
   rentalPrice: true,
   unit: true,
+  supplierAvailability: true,
+  leadTimeDays: true,
+  minimumOrderQuantity: true,
+  deliveryAvailable: true,
+  pickupAvailable: true,
+  deliveryRadiusKm: true,
+  deliveryFee: true,
   reservations: {
     where: {
       status: { in: ['PENDING', 'RESERVED', 'CONFIRMED', 'DISPATCHED'] },
@@ -72,18 +84,30 @@ export class MarketplacePublicService {
         ? { resourceType: query.resourceType as ResourceType }
         : {}),
       ...(query.supplier ? { organization: { slug: query.supplier } } : {}),
-      ...(query.search
-        ? {
-            OR: [
-              { name: { contains: query.search, mode: 'insensitive' } },
-              { description: { contains: query.search, mode: 'insensitive' } },
-              { category: { contains: query.search, mode: 'insensitive' } },
-              { tags: { has: query.search } },
-              { keywords: { has: query.search } },
-            ],
-          }
-        : {}),
     };
+
+    if (query.search) {
+      const candidates = await this.prisma.resource.findMany({
+        where,
+        select: publicListingSelect,
+        orderBy: [{ updatedAt: 'desc' }, { id: 'asc' }],
+      });
+      const ranked = candidates
+        .map((item) => ({
+          item,
+          score: scoreMarketplaceListing(item, query.search!),
+        }))
+        .filter(({ score }) => score > 0)
+        .sort((left, right) => right.score - left.score);
+      return {
+        items: ranked
+          .slice((page - 1) * limit, page * limit)
+          .map(({ item }) => this.toPublicListing(item)),
+        total: ranked.length,
+        page,
+        limit,
+      };
+    }
 
     const [items, total] = await Promise.all([
       this.prisma.resource.findMany({
@@ -518,13 +542,25 @@ export class MarketplacePublicService {
               item.maintenanceQuantity,
             0,
           );
-    const availabilityStatus =
+    const stockAvailability =
       item.status === ResourceStatus.MAINTENANCE ||
       item.status === ResourceStatus.DAMAGED
         ? 'Unavailable'
         : availableQuantity === null || availableQuantity > 0
           ? 'Available'
           : 'Fully booked';
+    const availabilityStatus =
+      stockAvailability === 'Unavailable' ||
+      stockAvailability === 'Fully booked'
+        ? stockAvailability
+        : item.supplierAvailability === SupplierProductAvailability.Unavailable
+          ? 'Unavailable'
+          : item.supplierAvailability === SupplierProductAvailability.Limited
+            ? 'Limited availability'
+            : item.supplierAvailability ===
+                SupplierProductAvailability.MadeToOrder
+              ? 'Made to order'
+              : 'Available';
 
     return {
       id: item.id,
@@ -542,6 +578,13 @@ export class MarketplacePublicService {
       unitOfMeasure: item.unit,
       resourceType: item.resourceType,
       availabilityStatus,
+      availableQuantity,
+      leadTimeDays: item.leadTimeDays,
+      minimumOrderQuantity: item.minimumOrderQuantity,
+      deliveryAvailable: item.deliveryAvailable,
+      pickupAvailable: item.pickupAvailable,
+      deliveryRadiusKm: item.deliveryRadiusKm,
+      deliveryFee: item.deliveryFee,
     };
   }
 

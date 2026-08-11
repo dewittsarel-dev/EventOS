@@ -13,7 +13,19 @@ export type MarketplaceListing = {
   rentalPrice: number | null;
   unitOfMeasure: string;
   resourceType: string;
-  availabilityStatus: 'Available' | 'Fully booked' | 'Unavailable';
+  availabilityStatus:
+    | 'Available'
+    | 'Limited availability'
+    | 'Made to order'
+    | 'Fully booked'
+    | 'Unavailable';
+  availableQuantity: number | null;
+  leadTimeDays: number | null;
+  minimumOrderQuantity: number | null;
+  deliveryAvailable: boolean | null;
+  pickupAvailable: boolean | null;
+  deliveryRadiusKm: number | null;
+  deliveryFee: number | null;
 };
 
 export type MarketplaceListingPage = { items: MarketplaceListing[]; total: number; page: number; limit: number };

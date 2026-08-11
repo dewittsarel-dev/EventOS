@@ -12,6 +12,7 @@ import {
   ResourceStatus,
   ResourceType,
   ResourceVisibility,
+  SupplierProductAvailability,
   SupplierProductPublicationStatus,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -50,11 +51,17 @@ type MarketplaceProjectionProduct = {
   tags: string[];
   searchTerms: string[];
   imageUrls: string[];
-  availability: string;
+  availability: SupplierProductAvailability;
   unit: string;
   totalQuantity: number | null;
   condition: string | null;
   sellingPrice: number | null;
+  leadTimeDays: number | null;
+  minimumOrderQuantity: number | null;
+  deliveryAvailable: boolean;
+  pickupAvailable: boolean;
+  deliveryRadiusKm: number | null;
+  deliveryFee: number | null;
 };
 
 function resourceTypeFor(category: string): ResourceType {
@@ -103,6 +110,13 @@ export function buildMarketplaceProjection(
     totalQuantity: product.totalQuantity,
     condition: resourceConditionFor(product.condition),
     rentalPrice: product.sellingPrice,
+    supplierAvailability: product.availability,
+    leadTimeDays: product.leadTimeDays,
+    minimumOrderQuantity: product.minimumOrderQuantity,
+    deliveryAvailable: product.deliveryAvailable,
+    pickupAvailable: product.pickupAvailable,
+    deliveryRadiusKm: product.deliveryRadiusKm,
+    deliveryFee: product.deliveryFee,
   };
 }
 

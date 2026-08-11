@@ -45,6 +45,43 @@ describe('MarketplacePublicService', () => {
 
   beforeEach(() => jest.clearAllMocks());
 
+  const publicResource = (overrides: Record<string, unknown> = {}) => ({
+    id: 'item-1',
+    name: 'Gold Chair',
+    description: 'Elegant seating',
+    category: 'Furniture',
+    tags: [],
+    keywords: [],
+    searchPhrases: [],
+    aiSummary: null,
+    imageUrls: [],
+    resourceType: 'ASSET',
+    quantityMode: 'QUANTITY',
+    status: 'AVAILABLE',
+    condition: 'GOOD',
+    totalQuantity: 120,
+    damagedQuantity: 0,
+    maintenanceQuantity: 0,
+    rentalPrice: 30,
+    unit: 'Each',
+    supplierAvailability: 'Available',
+    leadTimeDays: null,
+    minimumOrderQuantity: null,
+    deliveryAvailable: false,
+    pickupAvailable: true,
+    deliveryRadiusKm: null,
+    deliveryFee: null,
+    reservations: [],
+    organization: {
+      tradingName: 'Celebrations',
+      name: 'Celebrations Pty',
+      slug: 'celebrations',
+      logoUrl: null,
+      website: 'https://celebrations.example',
+    },
+    ...overrides,
+  });
+
   it('returns only the explicit public projection', async () => {
     prisma.resource.findMany.mockResolvedValue([
       {
@@ -118,6 +155,49 @@ describe('MarketplacePublicService', () => {
         }),
       }),
     );
+  });
+
+  it('ranks direct product matches before accessories in public search', async () => {
+    prisma.resource.findMany.mockResolvedValue([
+      publicResource({ id: 'runner', name: 'Charcoal Table Runner' }),
+      publicResource({ id: 'table', name: 'Children Event Table' }),
+    ]);
+
+    const result = await service.findListings({
+      page: 1,
+      limit: 24,
+      search: 'tables',
+    });
+
+    expect(result.items.map((item) => item.id)).toEqual(['table', 'runner']);
+    expect(prisma.resource.count).not.toHaveBeenCalled();
+  });
+
+  it('exposes supplier availability and fulfilment guidance after publication', async () => {
+    prisma.resource.findMany.mockResolvedValue([
+      publicResource({
+        supplierAvailability: 'MadeToOrder',
+        leadTimeDays: 14,
+        minimumOrderQuantity: 20,
+        deliveryAvailable: true,
+        pickupAvailable: false,
+        deliveryRadiusKm: 80,
+        deliveryFee: 450,
+      }),
+    ]);
+    prisma.resource.count.mockResolvedValue(1);
+
+    const result = await service.findListings({ page: 1, limit: 24 });
+
+    expect(result.items[0]).toMatchObject({
+      availabilityStatus: 'Made to order',
+      leadTimeDays: 14,
+      minimumOrderQuantity: 20,
+      deliveryAvailable: true,
+      pickupAvailable: false,
+      deliveryRadiusKm: 80,
+      deliveryFee: 450,
+    });
   });
 
   it('creates an enquiry against the published listing owner', async () => {

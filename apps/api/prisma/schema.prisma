@@ -3139,6 +3139,13 @@ model Resource {
   purchaseValue         Float?
   replacementValue      Float?
   rentalPrice           Float?
+  supplierAvailability  SupplierProductAvailability?
+  leadTimeDays          Int?
+  minimumOrderQuantity  Float?
+  deliveryAvailable     Boolean?
+  pickupAvailable       Boolean?
+  deliveryRadiusKm      Float?
+  deliveryFee           Float?
   damagedQuantity       Float                              @default(0)
   maintenanceQuantity   Float                              @default(0)
   notes                 String?
