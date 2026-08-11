@@ -7,6 +7,7 @@ import {
   MarketplaceEnquiryType,
   MarketplaceEnquiryStatus,
   MarketplaceMessageAuthorRole,
+  MarketplacePreliminaryQuoteStatus,
   Prisma,
   ResourceQuantityMode,
   ResourceStatus,
@@ -24,6 +25,7 @@ import {
   ConvertSalesOpportunityDto,
   UpdateSalesOpportunityDto,
 } from './dto/sales-opportunity.dto';
+import { CreateMarketplacePreliminaryQuoteDto } from './dto/marketplace-preliminary-quote.dto';
 
 const publicListingSelect = {
   id: true,
@@ -249,6 +251,39 @@ export class MarketplacePublicService {
           orderBy: { createdAt: 'asc' as const },
           select: { id: true, authorRole: true, body: true, createdAt: true },
         },
+        preliminaryQuotes: {
+          orderBy: { version: 'desc' as const },
+          select: {
+            id: true,
+            version: true,
+            status: true,
+            currency: true,
+            subtotalCents: true,
+            discountCents: true,
+            deliveryFeeCents: true,
+            taxCents: true,
+            totalCents: true,
+            paymentTerms: true,
+            validUntil: true,
+            notes: true,
+            sentAt: true,
+            createdAt: true,
+            updatedAt: true,
+            lines: {
+              orderBy: { sortOrder: 'asc' as const },
+              select: {
+                id: true,
+                description: true,
+                quantity: true,
+                unit: true,
+                unitPriceCents: true,
+                lineTotalCents: true,
+                notes: true,
+                sortOrder: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -283,6 +318,7 @@ export class MarketplacePublicService {
       },
       opportunity: entry.salesOpportunity,
       messages: entry.messages,
+      preliminaryQuotes: entry.preliminaryQuotes,
     }));
   }
 
@@ -581,6 +617,148 @@ export class MarketplacePublicService {
         authorUserId: userId,
         body,
       },
+    });
+  }
+
+  async createPreliminaryQuote(
+    userId: string,
+    enquiryId: string,
+    dto: CreateMarketplacePreliminaryQuoteDto,
+  ) {
+    await this.ensureOrganizationMembership(userId, dto.organizationId);
+    const enquiry = await this.prisma.marketplaceEnquiry.findFirst({
+      where: { id: enquiryId, organizationId: dto.organizationId },
+      select: { id: true },
+    });
+    if (!enquiry) throw new NotFoundException('Marketplace enquiry not found');
+
+    const subtotalCents = dto.lines.reduce(
+      (total, line) => total + Math.round(line.quantity * line.unitPriceCents),
+      0,
+    );
+    const discountCents = dto.discountCents ?? 0;
+    const deliveryFeeCents = dto.deliveryFeeCents ?? 0;
+    const taxCents = dto.taxCents ?? 0;
+    const totalCents = Math.max(
+      subtotalCents - discountCents + deliveryFeeCents + taxCents,
+      0,
+    );
+
+    return this.prisma.$transaction(async (tx) => {
+      const latest = await tx.marketplacePreliminaryQuote.findFirst({
+        where: { enquiryId },
+        orderBy: { version: 'desc' },
+        select: { version: true },
+      });
+      const quote = await tx.marketplacePreliminaryQuote.create({
+        data: {
+          organizationId: dto.organizationId,
+          enquiryId,
+          createdByUserId: userId,
+          version: (latest?.version ?? 0) + 1,
+          currency: dto.currency?.trim().toUpperCase() || 'ZAR',
+          subtotalCents,
+          discountCents,
+          deliveryFeeCents,
+          taxCents,
+          totalCents,
+          paymentTerms: dto.paymentTerms?.trim() || null,
+          validUntil: dto.validUntil ? new Date(dto.validUntil) : null,
+          notes: dto.notes?.trim() || null,
+          lines: {
+            create: dto.lines.map((line, sortOrder) => ({
+              description: line.description.trim(),
+              quantity: line.quantity,
+              unit: line.unit.trim(),
+              unitPriceCents: line.unitPriceCents,
+              lineTotalCents: Math.round(line.quantity * line.unitPriceCents),
+              notes: line.notes?.trim() || null,
+              sortOrder,
+            })),
+          },
+        },
+        include: { lines: { orderBy: { sortOrder: 'asc' } } },
+      });
+      await tx.auditLog.create({
+        data: {
+          action: 'marketplace.preliminary_quote_created',
+          details: JSON.stringify({
+            enquiryId,
+            quoteId: quote.id,
+            version: quote.version,
+          }),
+          userId,
+          organizationId: dto.organizationId,
+        },
+      });
+      return quote;
+    });
+  }
+
+  async sendPreliminaryQuote(
+    userId: string,
+    organizationId: string,
+    enquiryId: string,
+    quoteId: string,
+  ) {
+    await this.ensureOrganizationMembership(userId, organizationId);
+    const quote = await this.prisma.marketplacePreliminaryQuote.findFirst({
+      where: { id: quoteId, enquiryId, organizationId },
+      select: {
+        id: true,
+        version: true,
+        status: true,
+        totalCents: true,
+        currency: true,
+      },
+    });
+    if (!quote) throw new NotFoundException('Preliminary quote not found');
+    if (quote.status !== MarketplacePreliminaryQuoteStatus.Draft) {
+      throw new BadRequestException(
+        'Only a draft preliminary quote can be sent',
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      await tx.marketplacePreliminaryQuote.updateMany({
+        where: {
+          enquiryId,
+          organizationId,
+          status: MarketplacePreliminaryQuoteStatus.Sent,
+          id: { not: quoteId },
+        },
+        data: { status: MarketplacePreliminaryQuoteStatus.Superseded },
+      });
+      const sent = await tx.marketplacePreliminaryQuote.update({
+        where: { id: quoteId },
+        data: {
+          status: MarketplacePreliminaryQuoteStatus.Sent,
+          sentAt: new Date(),
+        },
+        include: { lines: { orderBy: { sortOrder: 'asc' } } },
+      });
+      await tx.marketplaceEnquiryMessage.create({
+        data: {
+          organizationId,
+          enquiryId,
+          authorRole: MarketplaceMessageAuthorRole.Supplier,
+          authorUserId: userId,
+          body: `Preliminary quotation v${quote.version} sent (${quote.currency} ${(quote.totalCents / 100).toFixed(2)}).`,
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          action: 'marketplace.preliminary_quote_sent',
+          details: JSON.stringify({
+            enquiryId,
+            quoteId,
+            version: quote.version,
+          }),
+          userId,
+          organizationId,
+        },
+      });
+      return sent;
     });
   }
 

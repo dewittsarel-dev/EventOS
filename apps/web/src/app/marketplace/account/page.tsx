@@ -7,6 +7,7 @@ import type { MarketplaceCustomerEnquiry, MarketplaceCustomerSession, Marketplac
 import { MarketplaceFooter, MarketplaceHeader } from '@/components/marketplace/marketplace-shell';
 
 const field = 'rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-amber-500';
+const money = new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' });
 
 export default function MarketplaceAccountPage() {
   const [session, setSession] = useState<MarketplaceCustomerSession | null>(() => readMarketplaceCustomerSession());
@@ -113,6 +114,31 @@ export default function MarketplaceAccountPage() {
                 <span className="rounded-full bg-amber-100 px-3 py-1 text-xs">{enquiry.salesOpportunity?.status ?? enquiry.status}</span>
               </div>
               <p className="mt-3 text-sm text-stone-700">{enquiry.message}</p>
+              {enquiry.preliminaryQuotes.length ? (
+                <div className="mt-4 space-y-3">
+                  {enquiry.preliminaryQuotes.map((quote, index) => (
+                    <article key={quote.id} className={`rounded-2xl border p-4 ${index === 0 && quote.status === 'Sent' ? 'border-amber-300 bg-amber-50' : 'border-stone-200 bg-stone-50'}`}>
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">Preliminary estimate · Version {quote.version}</p>
+                          <p className="mt-1 text-xl font-semibold">{money.format(quote.totalCents / 100)}</p>
+                        </div>
+                        <span className="rounded-full bg-white px-2.5 py-1 text-xs">{quote.status === 'Sent' ? 'Current' : 'Previous version'}</span>
+                      </div>
+                      <p className="mt-2 text-xs font-medium text-stone-600">No booking has been made. Prices and availability remain subject to supplier confirmation.</p>
+                      <div className="mt-3 space-y-1 border-t border-stone-200 pt-3 text-sm">
+                        {quote.lines.map((line) => <p key={line.id} className="flex justify-between gap-3"><span>{line.quantity} {line.unit} × {line.description}</span><strong>{money.format(line.lineTotalCents / 100)}</strong></p>)}
+                        {quote.discountCents ? <p className="flex justify-between"><span>Discount</span><span>-{money.format(quote.discountCents / 100)}</span></p> : null}
+                        {quote.deliveryFeeCents ? <p className="flex justify-between"><span>Delivery</span><span>{money.format(quote.deliveryFeeCents / 100)}</span></p> : null}
+                        {quote.taxCents ? <p className="flex justify-between"><span>Tax</span><span>{money.format(quote.taxCents / 100)}</span></p> : null}
+                      </div>
+                      {quote.validUntil ? <p className="mt-3 text-xs text-stone-600">Valid until {new Date(quote.validUntil).toLocaleDateString('en-ZA')}</p> : null}
+                      {quote.paymentTerms ? <p className="mt-1 text-xs text-stone-600">Payment terms: {quote.paymentTerms}</p> : null}
+                      {quote.notes ? <p className="mt-2 rounded-xl bg-white p-3 text-sm text-stone-700">{quote.notes}</p> : null}
+                    </article>
+                  ))}
+                </div>
+              ) : null}
               {enquiry.salesOpportunity?.eventId ? <p className="mt-2 text-sm font-medium text-emerald-700">Confirmed Event reference: {enquiry.salesOpportunity.eventId}</p> : null}
               <div className="mt-4 space-y-2">
                 {enquiry.messages.map((message) => (

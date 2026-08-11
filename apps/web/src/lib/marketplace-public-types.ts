@@ -53,7 +53,38 @@ export type MarketplaceEnquiry = {
   createdAt: string;
   listing: { id: string; name: string };
   opportunity: MarketplaceOpportunity | null;
+  preliminaryQuotes: MarketplacePreliminaryQuote[];
   messages?: Array<{ id: string; authorRole: 'Customer' | 'Supplier' | 'System'; body: string; createdAt: string }>;
+};
+
+export type MarketplacePreliminaryQuoteLine = {
+  id: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  unitPriceCents: number;
+  lineTotalCents: number;
+  notes: string | null;
+  sortOrder: number;
+};
+
+export type MarketplacePreliminaryQuote = {
+  id: string;
+  version: number;
+  status: 'Draft' | 'Sent' | 'Superseded' | 'Withdrawn';
+  currency: string;
+  subtotalCents: number;
+  discountCents: number;
+  deliveryFeeCents: number;
+  taxCents: number;
+  totalCents: number;
+  paymentTerms: string | null;
+  validUntil: string | null;
+  notes: string | null;
+  sentAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lines: MarketplacePreliminaryQuoteLine[];
 };
 
 export type MarketplaceOpportunity = {
@@ -85,5 +116,6 @@ export type MarketplaceCustomerEnquiry = {
   resource: { id: string; name: string } | null;
   salesOpportunity: { status: MarketplaceOpportunity['status']; eventId: string | null } | null;
   messages: Array<{ id: string; authorRole: 'Customer' | 'Supplier' | 'System'; body: string; createdAt: string }>;
+  preliminaryQuotes: MarketplacePreliminaryQuote[];
 };
 export type MarketplaceShortlistItem = { resourceId: string; createdAt: string; listing: MarketplaceListing };

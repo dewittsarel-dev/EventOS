@@ -7,6 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import {
   MarketplaceMessageAuthorRole,
+  MarketplacePreliminaryQuoteStatus,
   ResourceStatus,
   ResourceVisibility,
 } from '@prisma/client';
@@ -96,6 +97,47 @@ export class MarketplaceCustomerService {
         messages: {
           orderBy: { createdAt: 'asc' },
           select: { id: true, authorRole: true, body: true, createdAt: true },
+        },
+        preliminaryQuotes: {
+          where: {
+            status: {
+              in: [
+                MarketplacePreliminaryQuoteStatus.Sent,
+                MarketplacePreliminaryQuoteStatus.Superseded,
+              ],
+            },
+          },
+          orderBy: { version: 'desc' },
+          select: {
+            id: true,
+            version: true,
+            status: true,
+            currency: true,
+            subtotalCents: true,
+            discountCents: true,
+            deliveryFeeCents: true,
+            taxCents: true,
+            totalCents: true,
+            paymentTerms: true,
+            validUntil: true,
+            notes: true,
+            sentAt: true,
+            createdAt: true,
+            updatedAt: true,
+            lines: {
+              orderBy: { sortOrder: 'asc' },
+              select: {
+                id: true,
+                description: true,
+                quantity: true,
+                unit: true,
+                unitPriceCents: true,
+                lineTotalCents: true,
+                notes: true,
+                sortOrder: true,
+              },
+            },
+          },
         },
       },
     });

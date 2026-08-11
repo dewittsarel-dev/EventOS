@@ -109,6 +109,37 @@ export function convertMarketplaceOpportunity(options: PrivateMarketplaceOptions
   return privateMarketplaceRequest<{ opportunity: MarketplaceOpportunity; event: { id: string; title: string; status: string }; contact: { id: string; name: string } }>(options, `/marketplace/opportunities/${opportunityId}/convert-to-event`, { method: 'POST', body: JSON.stringify({ organizationId: options.organizationId, ...input }) });
 }
 
+export type CreateMarketplacePreliminaryQuoteInput = {
+  currency?: string;
+  discountCents?: number;
+  deliveryFeeCents?: number;
+  taxCents?: number;
+  paymentTerms?: string;
+  validUntil?: string;
+  notes?: string;
+  lines: Array<{
+    description: string;
+    quantity: number;
+    unit: string;
+    unitPriceCents: number;
+    notes?: string;
+  }>;
+};
+
+export function createMarketplacePreliminaryQuote(options: PrivateMarketplaceOptions, enquiryId: string, input: CreateMarketplacePreliminaryQuoteInput) {
+  return privateMarketplaceRequest(options, `/marketplace/enquiries/${enquiryId}/preliminary-quotes`, {
+    method: 'POST',
+    body: JSON.stringify({ organizationId: options.organizationId, ...input }),
+  });
+}
+
+export function sendMarketplacePreliminaryQuote(options: PrivateMarketplaceOptions, enquiryId: string, quoteId: string) {
+  return privateMarketplaceRequest(options, `/marketplace/enquiries/${enquiryId}/preliminary-quotes/${quoteId}/send`, {
+    method: 'POST',
+    body: JSON.stringify({ organizationId: options.organizationId }),
+  });
+}
+
 const customerRequest = <T>(token: string, path: string, init?: RequestInit) => request<T>(`/public/marketplace/customer${path}`, { ...init, headers: { Authorization: `Bearer ${token}`, ...(init?.headers || {}) } });
 export const registerMarketplaceCustomer = (input: { email: string; password: string; name: string; phone?: string }) => request<MarketplaceCustomerSession>('/public/marketplace/customer/register', { method: 'POST', body: JSON.stringify(input) });
 export const loginMarketplaceCustomer = (input: { email: string; password: string }) => request<MarketplaceCustomerSession>('/public/marketplace/customer/login', { method: 'POST', body: JSON.stringify(input) });

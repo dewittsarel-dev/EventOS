@@ -666,6 +666,13 @@ enum MarketplaceMessageAuthorRole {
   System
 }
 
+enum MarketplacePreliminaryQuoteStatus {
+  Draft
+  Sent
+  Superseded
+  Withdrawn
+}
+
 enum SalesOpportunityStatus {
   New
   Qualifying
@@ -790,116 +797,118 @@ enum EventResourceOutstandingStatus {
 }
 
 model User {
-  id                               String                       @id @default(uuid())
-  email                            String                       @unique
-  passwordHash                     String?
-  name                             String?
-  createdAt                        DateTime                     @default(now())
-  updatedAt                        DateTime                     @updatedAt
-  memberships                      Membership[]
-  assignedEvents                   Event[]                      @relation("EventAssignedUser")
-  createdTasks                     Task[]                       @relation("TaskCreatedBy")
-  assignedTasks                    Task[]                       @relation("TaskAssignedUser")
-  meetingNotesCreated              MeetingNote[]
-  meetingActionItemsAssigned       MeetingActionItem[]
-  stockMovementsCreated            StockMovement[]
-  purchaseOrdersCreated            PurchaseOrder[]              @relation("PurchaseOrderCreatedBy")
-  purchaseOrdersApproved           PurchaseOrder[]              @relation("PurchaseOrderApprovedBy")
-  goodsReceiptsReceived            GoodsReceipt[]               @relation("GoodsReceiptReceivedBy")
-  eventResourceAllocationsCreated  EventResourceAllocation[]    @relation("EventResourceAllocationCreatedBy")
-  eventResourceAllocationsUpdated  EventResourceAllocation[]    @relation("EventResourceAllocationUpdatedBy")
-  eventResourceOutstandingsCreated EventResourceOutstanding[]   @relation("EventResourceOutstandingCreatedBy")
-  aiDrafts                         AiDraft[]                    @relation("AiDraftCreatedBy")
-  auditLogs                        AuditLog[]
-  outboxEvents                     OutboxEvent[]
-  clientBriefVersionsCreated       ClientBriefVersion[]         @relation("ClientBriefVersionCreatedBy")
-  eventDesignVersionsCreated       EventDesignVersion[]         @relation("EventDesignVersionCreatedBy")
-  eventDesignVersionsApproved      EventDesignVersion[]         @relation("EventDesignVersionApprovedBy")
-  requirementSetsCreated           RequirementSet[]             @relation("RequirementSetCreatedBy")
-  requirementSetsApproved          RequirementSet[]             @relation("RequirementSetApprovedBy")
-  requirementItemChanges           RequirementItemChange[]
-  requirementImpactReportsCreated  RequirementImpactReport[]    @relation("RequirementImpactReportCreatedBy")
-  requirementImpactReportsResolved RequirementImpactReport[]    @relation("RequirementImpactReportResolvedBy")
-  moodBoardsCreated                MoodBoard[]                  @relation("MoodBoardCreatedBy")
-  moodBoardsApproved               MoodBoard[]                  @relation("MoodBoardApprovedBy")
-  moodBoardReviews                 MoodBoardReview[]
-  moodBoardRenderRequestsCreated   MoodBoardRenderRequest[]     @relation("MoodBoardRenderRequestCreatedBy")
-  marketplaceMessagesAuthored      MarketplaceEnquiryMessage[]  @relation("MarketplaceMessageAuthoredByUser")
-  procurementPackagesCreated       ProcurementPackage[]         @relation("ProcurementPackageCreatedBy")
-  procurementSolutionsSelected     ProcurementSolution[]        @relation("ProcurementSolutionSelectedBy")
-  commercialWorkspacesCreated      CommercialWorkspace[]        @relation("CommercialWorkspaceCreatedBy")
-  commercialRfqsApproved           CommercialRfq[]              @relation("CommercialRfqApprovedBy")
-  commercialMessagesAuthored       CommercialMessage[]
-  assetDefinitionsCreated          AssetDefinition[]            @relation("AssetDefinitionCreatedBy")
-  assetInstancesCreated            AssetInstance[]              @relation("AssetInstanceCreatedBy")
-  eventExecutionsCreated           EventExecution[]             @relation("EventExecutionCreatedBy")
-  financeWorkspacesCreated         EventFinanceWorkspace[]      @relation("EventFinanceWorkspaceCreatedBy")
-  contractTemplatesCreated         ContractTemplate[]           @relation("ContractTemplateCreatedBy")
-  contractTemplatesApproved        ContractTemplate[]           @relation("ContractTemplateApprovedBy")
-  commercialAgreementsCreated      CommercialAgreement[]        @relation("CommercialAgreementCreatedBy")
-  commercialAgreementsApproved     CommercialAgreement[]        @relation("CommercialAgreementApprovedBy")
-  commercialAgreementVersions      CommercialAgreementVersion[] @relation("CommercialAgreementVersionCreatedBy")
+  id                                  String                        @id @default(uuid())
+  email                               String                        @unique
+  passwordHash                        String?
+  name                                String?
+  createdAt                           DateTime                      @default(now())
+  updatedAt                           DateTime                      @updatedAt
+  memberships                         Membership[]
+  assignedEvents                      Event[]                       @relation("EventAssignedUser")
+  createdTasks                        Task[]                        @relation("TaskCreatedBy")
+  assignedTasks                       Task[]                        @relation("TaskAssignedUser")
+  meetingNotesCreated                 MeetingNote[]
+  meetingActionItemsAssigned          MeetingActionItem[]
+  stockMovementsCreated               StockMovement[]
+  purchaseOrdersCreated               PurchaseOrder[]               @relation("PurchaseOrderCreatedBy")
+  purchaseOrdersApproved              PurchaseOrder[]               @relation("PurchaseOrderApprovedBy")
+  goodsReceiptsReceived               GoodsReceipt[]                @relation("GoodsReceiptReceivedBy")
+  eventResourceAllocationsCreated     EventResourceAllocation[]     @relation("EventResourceAllocationCreatedBy")
+  eventResourceAllocationsUpdated     EventResourceAllocation[]     @relation("EventResourceAllocationUpdatedBy")
+  eventResourceOutstandingsCreated    EventResourceOutstanding[]    @relation("EventResourceOutstandingCreatedBy")
+  aiDrafts                            AiDraft[]                     @relation("AiDraftCreatedBy")
+  auditLogs                           AuditLog[]
+  outboxEvents                        OutboxEvent[]
+  clientBriefVersionsCreated          ClientBriefVersion[]          @relation("ClientBriefVersionCreatedBy")
+  eventDesignVersionsCreated          EventDesignVersion[]          @relation("EventDesignVersionCreatedBy")
+  eventDesignVersionsApproved         EventDesignVersion[]          @relation("EventDesignVersionApprovedBy")
+  requirementSetsCreated              RequirementSet[]              @relation("RequirementSetCreatedBy")
+  requirementSetsApproved             RequirementSet[]              @relation("RequirementSetApprovedBy")
+  requirementItemChanges              RequirementItemChange[]
+  requirementImpactReportsCreated     RequirementImpactReport[]     @relation("RequirementImpactReportCreatedBy")
+  requirementImpactReportsResolved    RequirementImpactReport[]     @relation("RequirementImpactReportResolvedBy")
+  moodBoardsCreated                   MoodBoard[]                   @relation("MoodBoardCreatedBy")
+  moodBoardsApproved                  MoodBoard[]                   @relation("MoodBoardApprovedBy")
+  moodBoardReviews                    MoodBoardReview[]
+  moodBoardRenderRequestsCreated      MoodBoardRenderRequest[]      @relation("MoodBoardRenderRequestCreatedBy")
+  marketplaceMessagesAuthored         MarketplaceEnquiryMessage[]   @relation("MarketplaceMessageAuthoredByUser")
+  marketplacePreliminaryQuotesCreated MarketplacePreliminaryQuote[] @relation("MarketplacePreliminaryQuoteCreatedBy")
+  procurementPackagesCreated          ProcurementPackage[]          @relation("ProcurementPackageCreatedBy")
+  procurementSolutionsSelected        ProcurementSolution[]         @relation("ProcurementSolutionSelectedBy")
+  commercialWorkspacesCreated         CommercialWorkspace[]         @relation("CommercialWorkspaceCreatedBy")
+  commercialRfqsApproved              CommercialRfq[]               @relation("CommercialRfqApprovedBy")
+  commercialMessagesAuthored          CommercialMessage[]
+  assetDefinitionsCreated             AssetDefinition[]             @relation("AssetDefinitionCreatedBy")
+  assetInstancesCreated               AssetInstance[]               @relation("AssetInstanceCreatedBy")
+  eventExecutionsCreated              EventExecution[]              @relation("EventExecutionCreatedBy")
+  financeWorkspacesCreated            EventFinanceWorkspace[]       @relation("EventFinanceWorkspaceCreatedBy")
+  contractTemplatesCreated            ContractTemplate[]            @relation("ContractTemplateCreatedBy")
+  contractTemplatesApproved           ContractTemplate[]            @relation("ContractTemplateApprovedBy")
+  commercialAgreementsCreated         CommercialAgreement[]         @relation("CommercialAgreementCreatedBy")
+  commercialAgreementsApproved        CommercialAgreement[]         @relation("CommercialAgreementApprovedBy")
+  commercialAgreementVersions         CommercialAgreementVersion[]  @relation("CommercialAgreementVersionCreatedBy")
 
   @@index([email])
 }
 
 model Organization {
-  id                        String                      @id @default(uuid())
-  name                      String
-  slug                      String                      @unique
-  tradingName               String?
-  vatNumber                 String?
-  registrationNumber        String?
-  email                     String?
-  phone                     String?
-  website                   String?
-  physicalAddress           String?
-  postalAddress             String?
-  logoUrl                   String?
-  createdAt                 DateTime                    @default(now())
-  updatedAt                 DateTime                    @updatedAt
-  memberships               Membership[]
-  roles                     Role[]
-  contacts                  Contact[]
-  suppliers                 Supplier[]
-  supplierProducts          SupplierProduct[]
-  supplierCatalogueImports  SupplierCatalogueImport[]
-  events                    Event[]
-  meetingNotes              MeetingNote[]
-  quotations                Quotation[]
-  tasks                     Task[]
-  inventoryItems            InventoryItem[]
-  inventoryCategories       InventoryCategory[]
-  storageLocations          StorageLocation[]
-  stockMovements            StockMovement[]
-  purchaseOrders            PurchaseOrder[]
-  goodsReceipts             GoodsReceipt[]
-  aiDrafts                  AiDraft[]
-  resources                 Resource[]
-  resourceReservations      ResourceReservation[]
-  eventResourceAllocations  EventResourceAllocation[]
-  eventResourceOutstandings EventResourceOutstanding[]
-  auditLogs                 AuditLog[]
-  outboxEvents              OutboxEvent[]
-  clientBriefVersions       ClientBriefVersion[]
-  eventDesignVersions       EventDesignVersion[]
-  requirementSets           RequirementSet[]
-  requirementImpactReports  RequirementImpactReport[]
-  moodBoards                MoodBoard[]
-  moodBoardRenderRequests   MoodBoardRenderRequest[]
-  procurementPackages       ProcurementPackage[]
-  commercialWorkspaces      CommercialWorkspace[]
-  assetDefinitions          AssetDefinition[]
-  assetInstances            AssetInstance[]
-  assetBatches              AssetBatch[]
-  assetKits                 AssetKit[]
-  eventExecutions           EventExecution[]
-  financeWorkspaces         EventFinanceWorkspace[]
-  marketplaceEnquiries      MarketplaceEnquiry[]
-  salesOpportunities        SalesOpportunity[]
-  marketplaceMessages       MarketplaceEnquiryMessage[]
-  contractTemplates         ContractTemplate[]
-  commercialAgreements      CommercialAgreement[]
+  id                           String                        @id @default(uuid())
+  name                         String
+  slug                         String                        @unique
+  tradingName                  String?
+  vatNumber                    String?
+  registrationNumber           String?
+  email                        String?
+  phone                        String?
+  website                      String?
+  physicalAddress              String?
+  postalAddress                String?
+  logoUrl                      String?
+  createdAt                    DateTime                      @default(now())
+  updatedAt                    DateTime                      @updatedAt
+  memberships                  Membership[]
+  roles                        Role[]
+  contacts                     Contact[]
+  suppliers                    Supplier[]
+  supplierProducts             SupplierProduct[]
+  supplierCatalogueImports     SupplierCatalogueImport[]
+  events                       Event[]
+  meetingNotes                 MeetingNote[]
+  quotations                   Quotation[]
+  tasks                        Task[]
+  inventoryItems               InventoryItem[]
+  inventoryCategories          InventoryCategory[]
+  storageLocations             StorageLocation[]
+  stockMovements               StockMovement[]
+  purchaseOrders               PurchaseOrder[]
+  goodsReceipts                GoodsReceipt[]
+  aiDrafts                     AiDraft[]
+  resources                    Resource[]
+  resourceReservations         ResourceReservation[]
+  eventResourceAllocations     EventResourceAllocation[]
+  eventResourceOutstandings    EventResourceOutstanding[]
+  auditLogs                    AuditLog[]
+  outboxEvents                 OutboxEvent[]
+  clientBriefVersions          ClientBriefVersion[]
+  eventDesignVersions          EventDesignVersion[]
+  requirementSets              RequirementSet[]
+  requirementImpactReports     RequirementImpactReport[]
+  moodBoards                   MoodBoard[]
+  moodBoardRenderRequests      MoodBoardRenderRequest[]
+  procurementPackages          ProcurementPackage[]
+  commercialWorkspaces         CommercialWorkspace[]
+  assetDefinitions             AssetDefinition[]
+  assetInstances               AssetInstance[]
+  assetBatches                 AssetBatch[]
+  assetKits                    AssetKit[]
+  eventExecutions              EventExecution[]
+  financeWorkspaces            EventFinanceWorkspace[]
+  marketplaceEnquiries         MarketplaceEnquiry[]
+  salesOpportunities           SalesOpportunity[]
+  marketplaceMessages          MarketplaceEnquiryMessage[]
+  marketplacePreliminaryQuotes MarketplacePreliminaryQuote[]
+  contractTemplates            ContractTemplate[]
+  commercialAgreements         CommercialAgreement[]
 
   @@index([slug])
 }
@@ -3344,22 +3353,22 @@ model InventoryItem {
 }
 
 model MarketplaceEnquiry {
-  id                String                      @id @default(uuid())
+  id                String                        @id @default(uuid())
   organizationId    String
   inventoryItemId   String?
   resourceId        String?
   customerId        String?
-  enquiryType       MarketplaceEnquiryType      @default(Product)
-  status            MarketplaceEnquiryStatus    @default(New)
+  enquiryType       MarketplaceEnquiryType        @default(Product)
+  status            MarketplaceEnquiryStatus      @default(New)
   requestTitle      String?
-  serviceCategories String[]                    @default([])
+  serviceCategories String[]                      @default([])
   eventType         String?
   guestCount        Int?
   budgetCents       Int?
-  desiredOutcomes   String[]                    @default([])
+  desiredOutcomes   String[]                      @default([])
   scheduleNotes     String?
   accessNotes       String?
-  attachmentUrls    String[]                    @default([])
+  attachmentUrls    String[]                      @default([])
   customerName      String
   customerEmail     String
   customerPhone     String?
@@ -3367,14 +3376,15 @@ model MarketplaceEnquiry {
   eventLocation     String?
   quantity          Float?
   message           String
-  createdAt         DateTime                    @default(now())
-  updatedAt         DateTime                    @updatedAt
-  organization      Organization                @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  inventoryItem     InventoryItem?              @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
-  resource          Resource?                   @relation(fields: [resourceId], references: [id], onDelete: Restrict)
-  customer          MarketplaceCustomer?        @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
+  organization      Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  inventoryItem     InventoryItem?                @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  resource          Resource?                     @relation(fields: [resourceId], references: [id], onDelete: Restrict)
+  customer          MarketplaceCustomer?          @relation(fields: [customerId], references: [id], onDelete: SetNull)
   salesOpportunity  SalesOpportunity?
   messages          MarketplaceEnquiryMessage[]
+  preliminaryQuotes MarketplacePreliminaryQuote[]
 
   @@index([organizationId])
   @@index([inventoryItemId])
@@ -3429,6 +3439,51 @@ model MarketplaceEnquiryMessage {
   @@index([enquiryId, createdAt])
   @@index([authorCustomerId])
   @@index([authorUserId])
+}
+
+model MarketplacePreliminaryQuote {
+  id               String                            @id @default(uuid())
+  organizationId   String
+  enquiryId        String
+  createdByUserId  String
+  version          Int
+  status           MarketplacePreliminaryQuoteStatus @default(Draft)
+  currency         String                            @default("ZAR")
+  subtotalCents    Int
+  discountCents    Int                               @default(0)
+  deliveryFeeCents Int                               @default(0)
+  taxCents         Int                               @default(0)
+  totalCents       Int
+  paymentTerms     String?
+  validUntil       DateTime?
+  notes            String?
+  sentAt           DateTime?
+  createdAt        DateTime                          @default(now())
+  updatedAt        DateTime                          @updatedAt
+  organization     Organization                      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  enquiry          MarketplaceEnquiry                @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  createdByUser    User                              @relation("MarketplacePreliminaryQuoteCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+  lines            MarketplacePreliminaryQuoteLine[]
+
+  @@unique([enquiryId, version])
+  @@index([organizationId])
+  @@index([enquiryId, status])
+  @@index([createdByUserId])
+}
+
+model MarketplacePreliminaryQuoteLine {
+  id             String                      @id @default(uuid())
+  quoteId        String
+  description    String
+  quantity       Float
+  unit           String
+  unitPriceCents Int
+  lineTotalCents Int
+  notes          String?
+  sortOrder      Int                         @default(0)
+  quote          MarketplacePreliminaryQuote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@index([quoteId, sortOrder])
 }
 
 model SalesOpportunity {

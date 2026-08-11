@@ -8,6 +8,7 @@ import { listResourceWorkspaceCards, updateResourceMarketplaceVisibility } from 
 import type { ResourceWorkspaceCard } from '@/lib/inventory-types';
 import { listMarketplaceEnquiries, sendMarketplaceEnquiryMessage, updateMarketplaceEnquiryStatus } from '@/lib/marketplace-public-api';
 import type { MarketplaceEnquiry } from '@/lib/marketplace-public-types';
+import { PreliminaryQuotePanel } from './preliminary-quote-panel';
 import { SalesOpportunityPanel } from './sales-opportunity-panel';
 
 export default function MarketplaceManagementPage() {
@@ -214,6 +215,13 @@ export default function MarketplaceManagementPage() {
                 <input required name="body" aria-label={`Message ${entry.customerName}`} placeholder="Reply in the customer workspace" className="min-w-0 flex-1 rounded-lg border border-zinc-300 px-3 py-2 text-sm" />
                 <button className="rounded-lg bg-zinc-950 px-3 py-2 text-xs font-medium text-white">Send message</button>
               </form>
+              <PreliminaryQuotePanel
+                entry={entry}
+                options={{ ...options, organizationId: session.organizationId }}
+                onChanged={async () => {
+                  setEnquiries(await listMarketplaceEnquiries({ ...options, organizationId: session.organizationId }));
+                }}
+              />
               <SalesOpportunityPanel
                 entry={entry}
                 options={{ ...options, organizationId: session.organizationId }}

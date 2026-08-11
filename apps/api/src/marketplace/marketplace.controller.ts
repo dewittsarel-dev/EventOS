@@ -40,6 +40,10 @@ import {
   UpdateSalesOpportunityDto,
 } from './dto/sales-opportunity.dto';
 import { MarketplaceEnquiryMessageDto } from './dto/marketplace-customer.dto';
+import {
+  CreateMarketplacePreliminaryQuoteDto,
+  SendMarketplacePreliminaryQuoteDto,
+} from './dto/marketplace-preliminary-quote.dto';
 
 @ApiTags('marketplace')
 @ApiBearerAuth('access-token')
@@ -100,6 +104,36 @@ export class MarketplaceController {
       organizationId,
       enquiryId,
       dto.body,
+    );
+  }
+
+  @Post('enquiries/:id/preliminary-quotes')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  createPreliminaryQuote(
+    @CurrentUser() user: UserResponseDto,
+    @Param('id', ParseUUIDPipe) enquiryId: string,
+    @Body() dto: CreateMarketplacePreliminaryQuoteDto,
+  ) {
+    return this.marketplacePublicService.createPreliminaryQuote(
+      user.id,
+      enquiryId,
+      dto,
+    );
+  }
+
+  @Post('enquiries/:id/preliminary-quotes/:quoteId/send')
+  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
+  sendPreliminaryQuote(
+    @CurrentUser() user: UserResponseDto,
+    @Param('id', ParseUUIDPipe) enquiryId: string,
+    @Param('quoteId', ParseUUIDPipe) quoteId: string,
+    @Body() dto: SendMarketplacePreliminaryQuoteDto,
+  ) {
+    return this.marketplacePublicService.sendPreliminaryQuote(
+      user.id,
+      dto.organizationId,
+      enquiryId,
+      quoteId,
     );
   }
 
