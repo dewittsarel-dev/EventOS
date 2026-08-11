@@ -585,6 +585,12 @@ enum SupplierProductAvailability {
   MadeToOrder
 }
 
+enum SupplierCatalogueImportStatus {
+  Review
+  Completed
+  Cancelled
+}
+
 enum InventoryItemType {
   Equipment
   Furniture
@@ -852,6 +858,7 @@ model Organization {
   contacts                  Contact[]
   suppliers                 Supplier[]
   supplierProducts          SupplierProduct[]
+  supplierCatalogueImports  SupplierCatalogueImport[]
   events                    Event[]
   meetingNotes              MeetingNote[]
   quotations                Quotation[]
@@ -2984,6 +2991,7 @@ model Supplier {
   quotationLinks          SupplierQuotation[]
   taskLinks               SupplierTask[]
   products                SupplierProduct[]
+  catalogueImports        SupplierCatalogueImport[]
   resources               Resource[]
 
   @@index([organizationId])
@@ -3044,6 +3052,26 @@ model SupplierProduct {
   @@index([active])
   @@index([preferredProduct])
   @@index([publicationStatus])
+}
+
+model SupplierCatalogueImport {
+  id                String                        @id @default(uuid())
+  organizationId    String
+  supplierId        String
+  sourceFiles       Json
+  candidates        Json
+  extractionAdapter String?
+  status            SupplierCatalogueImportStatus @default(Review)
+  createdById       String
+  completedAt       DateTime?
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
+  organization      Organization                  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  supplier          Supplier                      @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([supplierId])
+  @@index([status])
 }
 
 model InventoryCategory {
