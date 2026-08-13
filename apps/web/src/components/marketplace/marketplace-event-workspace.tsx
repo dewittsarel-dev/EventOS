@@ -16,6 +16,9 @@ export function MarketplaceEventWorkspace({
   onUpdate,
   onDiscover,
   onRemoveSelection,
+  onUpdateSelection,
+  onFindReplacement,
+  replacingResourceId,
 }: {
   signedIn: boolean;
   concepts: MarketplaceEventConcept[];
@@ -26,6 +29,9 @@ export function MarketplaceEventWorkspace({
   onUpdate: (input: MarketplaceEventConceptInput) => Promise<void>;
   onDiscover: (request: DiscoveryRequest) => Promise<void>;
   onRemoveSelection: (resourceId: string) => Promise<void>;
+  onUpdateSelection: (resourceId: string, input: { quantity?: number; notes?: string }) => Promise<void>;
+  onFindReplacement: (resourceId: string) => Promise<void>;
+  replacingResourceId: string | null;
 }) {
   const [mode, setMode] = useState<MarketplaceDiscoveryPath>('AiAssistant');
   const [brief, setBrief] = useState('');
@@ -141,7 +147,8 @@ export function MarketplaceEventWorkspace({
               <h3 className="mt-2 text-2xl font-semibold">{active.title}</h3>
               <dl className="mt-5 grid grid-cols-2 gap-3 text-sm"><div><dt className="text-stone-400">Event</dt><dd>{active.eventType || 'Not set'}</dd></div><div><dt className="text-stone-400">Guests</dt><dd>{active.guestCount || 'Not set'}</dd></div><div><dt className="text-stone-400">Location</dt><dd>{active.city || active.area || 'Not set'}</dd></div><div><dt className="text-stone-400">Budget</dt><dd>{active.budgetCents ? `R ${(active.budgetCents / 100).toLocaleString('en-ZA')}` : 'Not set'}</dd></div></dl>
               <div className="mt-6 border-t border-stone-700 pt-5"><p className="font-semibold">Selected for this event ({active.selections.length})</p>
-                <div className="mt-3 space-y-3">{active.selections.length ? active.selections.map((selection) => <div key={selection.id} className="flex items-start justify-between gap-3 rounded-xl bg-white/10 p-3"><div><p className="text-sm font-medium">{selection.listing.title}</p><p className="text-xs text-stone-400">via {selection.discoveryPath.replace(/([A-Z])/g, ' $1').trim()}</p></div><button type="button" onClick={() => void onRemoveSelection(selection.resourceId)} className="text-xs text-stone-300 underline">Remove</button></div>) : <p className="text-sm text-stone-400">Add listings below from any discovery path.</p>}</div>
+                <div className="mt-3 space-y-3">{active.selections.length ? active.selections.map((selection) => <SelectionEditor key={`${selection.id}:${selection.quantity}:${selection.notes ?? ''}`} selection={selection} busy={busy} replacing={replacingResourceId === selection.resourceId} onSave={onUpdateSelection} onReplace={onFindReplacement} onRemove={onRemoveSelection} />) : <p className="text-sm text-stone-400">Add listings below from any discovery path.</p>}</div>
+                <div className="mt-5 border-t border-stone-700 pt-4 text-sm"><div className="flex justify-between"><span className="text-stone-400">Preliminary total</span><strong>{money(active.selections.reduce((total, selection) => total + (selection.listing.rentalPrice ?? 0) * (selection.quantity ?? 1), 0))}</strong></div>{active.selections.some((selection) => selection.listing.rentalPrice === null) ? <p className="mt-1 text-xs text-amber-300">Plus items priced on request. Final supplier quotations may differ.</p> : <p className="mt-1 text-xs text-stone-400">Planning estimate only; not a supplier quotation.</p>}</div>
               </div>
             </aside>
           </div>
@@ -149,4 +156,21 @@ export function MarketplaceEventWorkspace({
       </div>
     </section>
   );
+}
+
+type EventSelection = MarketplaceEventConcept['selections'][number];
+
+function SelectionEditor({ selection, busy, replacing, onSave, onReplace, onRemove }: { selection: EventSelection; busy: boolean; replacing: boolean; onSave: (resourceId: string, input: { quantity?: number; notes?: string }) => Promise<void>; onReplace: (resourceId: string) => Promise<void>; onRemove: (resourceId: string) => Promise<void> }) {
+  const [quantity, setQuantity] = useState(selection.quantity ?? 1);
+  const [notes, setNotes] = useState(selection.notes ?? '');
+  const linePrice = selection.listing.rentalPrice === null ? null : selection.listing.rentalPrice * quantity;
+  return <div className={`rounded-xl p-3 ${replacing ? 'ring-2 ring-amber-300 bg-amber-300/15' : 'bg-white/10'}`}>
+    <div className="flex items-start justify-between gap-3"><div><p className="text-sm font-medium">{selection.listing.title}</p><p className="text-xs text-stone-400">via {selection.discoveryPath.replace(/([A-Z])/g, ' $1').trim()}</p></div><span className="text-xs font-semibold">{linePrice === null ? 'Price on request' : money(linePrice)}</span></div>
+    <div className="mt-3 grid grid-cols-[5rem_1fr] gap-2"><label className="text-xs text-stone-300">Quantity<input aria-label={`Quantity for ${selection.listing.title}`} type="number" min="1" value={quantity} onChange={(event) => setQuantity(Math.max(1, Number(event.target.value) || 1))} className="mt-1 w-full rounded-lg border border-white/20 bg-white/10 px-2 py-1.5 text-white" /></label><label className="text-xs text-stone-300">Planning note<input aria-label={`Note for ${selection.listing.title}`} value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Colour, ribbon, discount request…" className="mt-1 w-full rounded-lg border border-white/20 bg-white/10 px-2 py-1.5 text-white placeholder:text-stone-500" /></label></div>
+    <div className="mt-3 flex flex-wrap gap-3 text-xs"><button disabled={busy} type="button" onClick={() => void onSave(selection.resourceId, { quantity, notes })} className="font-semibold text-amber-300 disabled:opacity-50">Save</button><button disabled={busy} type="button" onClick={() => void onReplace(selection.resourceId)} className="text-stone-300 underline disabled:opacity-50">{replacing ? 'Choosing replacement…' : 'Find replacement'}</button><button disabled={busy} type="button" onClick={() => void onRemove(selection.resourceId)} className="text-stone-300 underline disabled:opacity-50">Remove</button></div>
+  </div>;
+}
+
+function money(value: number) {
+  return new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR' }).format(value);
 }

@@ -20,7 +20,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateMarketplaceEnquiryDto } from './dto/create-marketplace-enquiry.dto';
 import { CreateMarketplaceSolutionRequestDto } from './dto/create-marketplace-solution-request.dto';
 import { FindMarketplaceListingsQueryDto } from './dto/find-marketplace-listings-query.dto';
-import { scoreMarketplaceListing } from './marketplace-listing-search';
+import { rankMarketplaceListing } from './marketplace-listing-search';
 import {
   ConvertSalesOpportunityDto,
   UpdateSalesOpportunityDto,
@@ -99,14 +99,17 @@ export class MarketplacePublicService {
       const ranked = candidates
         .map((item) => ({
           item,
-          score: scoreMarketplaceListing(item, query.search!),
+          discovery: rankMarketplaceListing(item, query.search!),
         }))
-        .filter(({ score }) => score > 0)
-        .sort((left, right) => right.score - left.score);
+        .filter(({ discovery }) => discovery.score > 0)
+        .sort((left, right) => right.discovery.score - left.discovery.score);
       return {
         items: ranked
           .slice((page - 1) * limit, page * limit)
-          .map(({ item }) => this.toPublicListing(item)),
+          .map(({ item, discovery }) => ({
+            ...this.toPublicListing(item),
+            discovery,
+          })),
         total: ranked.length,
         page,
         limit,

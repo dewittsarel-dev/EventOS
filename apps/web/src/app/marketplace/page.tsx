@@ -13,7 +13,9 @@ import {
   listCustomerEventConcepts,
   listMarketplaceListings,
   removeCustomerEventConceptSelection,
+  replaceCustomerEventConceptSelection,
   updateCustomerEventConcept,
+  updateCustomerEventConceptSelection,
 } from '@/lib/marketplace-public-api';
 import { readMarketplaceCustomerSession } from '@/lib/marketplace-customer-session';
 import type { MarketplaceCustomerSession, MarketplaceDiscoveryPath, MarketplaceEventConcept, MarketplaceEventConceptInput, MarketplaceListing } from '@/lib/marketplace-public-types';
@@ -50,6 +52,7 @@ export default function MarketplacePage() {
   const [concepts, setConcepts] = useState<MarketplaceEventConcept[]>([]);
   const [activeConceptId, setActiveConceptId] = useState('');
   const [conceptBusy, setConceptBusy] = useState(false);
+  const [replacingResourceId, setReplacingResourceId] = useState<string | null>(null);
   const activeConcept = concepts.find((concept) => concept.id === activeConceptId) ?? concepts[0] ?? null;
 
   const load = useCallback(async (query = '', categoryFilter = '', typeFilter = '') => {
@@ -124,14 +127,29 @@ export default function MarketplacePage() {
     if (!customerSession || !activeConcept) return;
     setConceptBusy(true);
     try {
-      storeConcept(await addCustomerEventConceptSelection(customerSession.accessToken, activeConcept.id, {
-        resourceId: item.id,
-        discoveryPath: activeConcept.lastDiscoveryPath,
-        quantity: 1,
-      }));
+      if (replacingResourceId) {
+        storeConcept(await replaceCustomerEventConceptSelection(customerSession.accessToken, activeConcept.id, replacingResourceId, { replacementResourceId: item.id, discoveryPath: 'ManualSearch' }));
+        setReplacingResourceId(null);
+      } else {
+        storeConcept(await addCustomerEventConceptSelection(customerSession.accessToken, activeConcept.id, { resourceId: item.id, discoveryPath: activeConcept.lastDiscoveryPath, quantity: 1 }));
+      }
     } finally {
       setConceptBusy(false);
     }
+  }
+
+  async function updateSelection(resourceId: string, input: { quantity?: number; notes?: string }) {
+    if (!customerSession || !activeConcept) return;
+    setConceptBusy(true);
+    try { storeConcept(await updateCustomerEventConceptSelection(customerSession.accessToken, activeConcept.id, resourceId, input)); }
+    finally { setConceptBusy(false); }
+  }
+
+  async function findReplacement(resourceId: string) {
+    const selection = activeConcept?.selections.find((item) => item.resourceId === resourceId);
+    if (!selection) return;
+    setReplacingResourceId(resourceId);
+    await discover({ search: selection.listing.title ?? '', resourceType: selection.listing.resourceType, path: 'ManualSearch' });
   }
 
   async function removeFromConcept(resourceId: string) {
@@ -139,6 +157,7 @@ export default function MarketplacePage() {
     setConceptBusy(true);
     try {
       storeConcept(await removeCustomerEventConceptSelection(customerSession.accessToken, activeConcept.id, resourceId));
+      if (replacingResourceId === resourceId) setReplacingResourceId(null);
     } finally {
       setConceptBusy(false);
     }
@@ -203,6 +222,9 @@ export default function MarketplacePage() {
         onUpdate={updateConcept}
         onDiscover={discover}
         onRemoveSelection={removeFromConcept}
+        onUpdateSelection={updateSelection}
+        onFindReplacement={findReplacement}
+        replacingResourceId={replacingResourceId}
       />
 
       <section className="sticky top-[4.5rem] z-30 border-b border-stone-200 bg-[#fffdf9]/95 px-5 py-3 backdrop-blur-xl md:static md:px-10 md:py-5">
@@ -276,6 +298,16 @@ export default function MarketplacePage() {
             {error}
           </p>
         ) : null}
+        {replacingResourceId && activeConcept ? (
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950">
+            <p>
+              Choose a replacement for <strong>{activeConcept.selections.find((selection) => selection.resourceId === replacingResourceId)?.listing.title}</strong>. Its quantity and planning note will be retained.
+            </p>
+            <button type="button" onClick={() => setReplacingResourceId(null)} className="font-semibold underline">
+              Cancel replacement
+            </button>
+          </div>
+        ) : null}
         {loading ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[1, 2, 3, 4].map((item) => (
@@ -302,7 +334,10 @@ export default function MarketplacePage() {
         ) : null}
         {!loading ? (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {listings.map((item) => (
+            {listings.map((item) => {
+              const selectedInConcept = activeConcept?.selections.some((selection) => selection.resourceId === item.id) ?? false;
+              const isCurrentReplacement = replacingResourceId === item.id;
+              return (
               <article key={item.id} className="group overflow-hidden rounded-3xl border border-stone-200 bg-[#fffdf9] shadow-sm hover:-translate-y-1 hover:shadow-xl hover:shadow-stone-900/10">
                 <div className="aspect-[4/3] overflow-hidden bg-stone-200">{item.primaryPhotoUrl || item.photoUrls[0] ? <img className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]" src={item.primaryPhotoUrl || item.photoUrls[0]} alt={item.title || 'Marketplace item'} /> : <ListingPlaceholder />}</div>
                 <div className="flex min-h-64 flex-col p-5">
@@ -322,6 +357,12 @@ export default function MarketplacePage() {
                     </a>
                   </p>
                   <p className="mt-3 line-clamp-2 min-h-10 text-sm leading-5 text-stone-600">{item.description || 'Contact the supplier for details.'}</p>
+                  {item.discovery ? (
+                    <div className="mt-3 rounded-xl bg-amber-50 px-3 py-2 text-xs text-amber-950">
+                      <p className="font-semibold">{item.discovery.tier}</p>
+                      <p className="mt-0.5 text-amber-800">{item.discovery.reasons.slice(0, 2).join(' · ')}</p>
+                    </div>
+                  ) : null}
                   <div className="mt-auto flex flex-wrap items-end justify-between gap-3 border-t border-stone-100 pt-4">
                     <div className="text-sm">
                       {item.rentalPrice !== null ? (
@@ -335,8 +376,8 @@ export default function MarketplacePage() {
                     </div>
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       {customerSession && activeConcept ? (
-                        <button disabled={conceptBusy || activeConcept.selections.some((selection) => selection.resourceId === item.id)} onClick={() => void addToConcept(item)} className="text-xs font-semibold text-amber-700 disabled:text-emerald-700">
-                          {activeConcept.selections.some((selection) => selection.resourceId === item.id) ? 'In event' : 'Add to event'}
+                        <button disabled={conceptBusy || selectedInConcept} onClick={() => void addToConcept(item)} className="text-xs font-semibold text-amber-700 disabled:text-emerald-700">
+                          {isCurrentReplacement ? 'Current choice' : selectedInConcept ? 'Already in event' : replacingResourceId ? 'Use as replacement' : 'Add to event'}
                         </button>
                       ) : null}
                       {customerSession ? (
@@ -360,7 +401,8 @@ export default function MarketplacePage() {
                   </div>
                 </div>
               </article>
-            ))}
+              );
+            })}
           </div>
         ) : null}
       </section>

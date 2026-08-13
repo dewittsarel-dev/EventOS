@@ -26,6 +26,12 @@ export type MarketplaceListing = {
   pickupAvailable: boolean | null;
   deliveryRadiusKm: number | null;
   deliveryFee: number | null;
+  discovery?: {
+    score: number;
+    tier: 'Exact match' | 'Strong match' | 'Related option';
+    reasons: string[];
+    matchedTerms: string[];
+  };
 };
 
 export type MarketplaceListingPage = { items: MarketplaceListing[]; total: number; page: number; limit: number };

@@ -19,6 +19,8 @@ import {
   MarketplaceCustomerRegisterDto,
   MarketplaceEventConceptSelectionDto,
   MarketplaceEventConceptUpdateDto,
+  ReplaceMarketplaceEventConceptSelectionDto,
+  UpdateMarketplaceEventConceptSelectionDto,
 } from './dto/marketplace-customer.dto';
 import { MarketplacePublicService } from './marketplace-public.service';
 
@@ -251,6 +253,80 @@ export class MarketplaceCustomerService {
     await this.findOwnedConcept(customerId, id);
     await this.prisma.marketplaceEventConceptSelection.deleteMany({
       where: { conceptId: id, resourceId },
+    });
+    return this.eventConcept(customerId, id);
+  }
+
+  async updateEventConceptSelection(
+    customerId: string,
+    id: string,
+    resourceId: string,
+    dto: UpdateMarketplaceEventConceptSelectionDto,
+  ) {
+    await this.findOwnedConcept(customerId, id);
+    const result =
+      await this.prisma.marketplaceEventConceptSelection.updateMany({
+        where: { conceptId: id, resourceId },
+        data: {
+          ...(dto.discoveryPath ? { discoveryPath: dto.discoveryPath } : {}),
+          ...(dto.quantity !== undefined ? { quantity: dto.quantity } : {}),
+          ...(dto.notes !== undefined ? { notes: dto.notes || null } : {}),
+        },
+      });
+    if (result.count === 0)
+      throw new NotFoundException('Event concept selection not found');
+    if (dto.discoveryPath) {
+      await this.prisma.marketplaceEventConcept.update({
+        where: { id },
+        data: { lastDiscoveryPath: dto.discoveryPath },
+      });
+    }
+    return this.eventConcept(customerId, id);
+  }
+
+  async replaceEventConceptSelection(
+    customerId: string,
+    id: string,
+    resourceId: string,
+    dto: ReplaceMarketplaceEventConceptSelectionDto,
+  ) {
+    await this.findOwnedConcept(customerId, id);
+    const selection =
+      await this.prisma.marketplaceEventConceptSelection.findUnique({
+        where: { conceptId_resourceId: { conceptId: id, resourceId } },
+      });
+    if (!selection)
+      throw new NotFoundException('Event concept selection not found');
+    await this.marketplace.findListing(dto.replacementResourceId);
+
+    await this.prisma.marketplaceEventConceptSelection.upsert({
+      where: {
+        conceptId_resourceId: {
+          conceptId: id,
+          resourceId: dto.replacementResourceId,
+        },
+      },
+      create: {
+        conceptId: id,
+        resourceId: dto.replacementResourceId,
+        discoveryPath: dto.discoveryPath,
+        quantity: dto.quantity ?? selection.quantity,
+        notes: dto.notes ?? selection.notes,
+      },
+      update: {
+        discoveryPath: dto.discoveryPath,
+        quantity: dto.quantity ?? selection.quantity,
+        notes: dto.notes ?? selection.notes,
+      },
+    });
+    if (resourceId !== dto.replacementResourceId) {
+      await this.prisma.marketplaceEventConceptSelection.deleteMany({
+        where: { conceptId: id, resourceId },
+      });
+    }
+    await this.prisma.marketplaceEventConcept.update({
+      where: { id },
+      data: { lastDiscoveryPath: dto.discoveryPath },
     });
     return this.eventConcept(customerId, id);
   }

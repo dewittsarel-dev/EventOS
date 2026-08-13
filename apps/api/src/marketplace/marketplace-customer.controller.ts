@@ -22,6 +22,8 @@ import {
   MarketplaceEventConceptSelectionDto,
   MarketplaceEventConceptUpdateDto,
   MarketplaceShortlistDto,
+  ReplaceMarketplaceEventConceptSelectionDto,
+  UpdateMarketplaceEventConceptSelectionDto,
 } from './dto/marketplace-customer.dto';
 import {
   CurrentMarketplaceCustomer,
@@ -177,6 +179,40 @@ export class MarketplaceCustomerController {
       customer.id,
       id,
       resourceId,
+    );
+  }
+
+  @Patch('event-concepts/:id/selections/:resourceId')
+  @UseGuards(MarketplaceCustomerGuard)
+  @ApiBearerAuth('access-token')
+  updateEventConceptSelection(
+    @CurrentMarketplaceCustomer() customer: AuthenticatedMarketplaceCustomer,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('resourceId', ParseUUIDPipe) resourceId: string,
+    @Body() dto: UpdateMarketplaceEventConceptSelectionDto,
+  ) {
+    return this.customers.updateEventConceptSelection(
+      customer.id,
+      id,
+      resourceId,
+      dto,
+    );
+  }
+
+  @Post('event-concepts/:id/selections/:resourceId/replace')
+  @UseGuards(MarketplaceCustomerGuard)
+  @ApiBearerAuth('access-token')
+  replaceEventConceptSelection(
+    @CurrentMarketplaceCustomer() customer: AuthenticatedMarketplaceCustomer,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('resourceId', ParseUUIDPipe) resourceId: string,
+    @Body() dto: ReplaceMarketplaceEventConceptSelectionDto,
+  ) {
+    return this.customers.replaceEventConceptSelection(
+      customer.id,
+      id,
+      resourceId,
+      dto,
     );
   }
 }

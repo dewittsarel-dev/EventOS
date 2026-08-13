@@ -112,3 +112,26 @@ export class MarketplaceEventConceptSelectionDto {
   quantity?: number;
   @Transform(trim) @IsOptional() @IsString() @MaxLength(1000) notes?: string;
 }
+
+export class UpdateMarketplaceEventConceptSelectionDto {
+  @IsOptional()
+  @IsEnum(MarketplaceDiscoveryPath)
+  discoveryPath?: MarketplaceDiscoveryPath;
+  @Type(() => Number)
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(1)
+  quantity?: number;
+  @Transform(trim) @IsOptional() @IsString() @MaxLength(1000) notes?: string;
+}
+
+export class ReplaceMarketplaceEventConceptSelectionDto {
+  @IsUUID() replacementResourceId: string;
+  @IsEnum(MarketplaceDiscoveryPath) discoveryPath: MarketplaceDiscoveryPath;
+  @Type(() => Number)
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(1)
+  quantity?: number;
+  @Transform(trim) @IsOptional() @IsString() @MaxLength(1000) notes?: string;
+}

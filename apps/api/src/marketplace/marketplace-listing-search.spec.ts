@@ -1,4 +1,7 @@
-import { scoreMarketplaceListing } from './marketplace-listing-search';
+import {
+  rankMarketplaceListing,
+  scoreMarketplaceListing,
+} from './marketplace-listing-search';
 
 const listing = (name: string, description = '') => ({
   name,
@@ -30,6 +33,33 @@ describe('Marketplace listing relevance', () => {
       scoreMarketplaceListing(listing('Crystal Drinking Glass'), 'glass'),
     ).toBeGreaterThan(
       scoreMarketplaceListing(listing('Glass Transport Rack'), 'glass'),
+    );
+  });
+
+  it('recognizes common customer synonyms', () => {
+    const result = rankMarketplaceListing(
+      listing('Crystal Tumbler', 'Clear drinking glass for table settings'),
+      'glassware',
+    );
+    expect(result.score).toBeGreaterThan(0);
+    expect(result.reasons).toContain('Recognised related term: tumbler');
+  });
+
+  it('returns customer-facing match explanations', () => {
+    const result = rankMarketplaceListing(
+      {
+        ...listing('Gold Tiffany Chair'),
+        category: 'Furniture and seating',
+        tags: ['gold', 'classic'],
+      },
+      'gold chair',
+    );
+    expect(result.tier).toBe('Exact match');
+    expect(result.reasons).toContain(
+      'All search words appear in the product name',
+    );
+    expect(result.matchedTerms).toEqual(
+      expect.arrayContaining(['gold', 'chair']),
     );
   });
 });
