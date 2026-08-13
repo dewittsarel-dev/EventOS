@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
-import { eventCategories, guidedEventSearchTerms, interpretEventRequest } from '@/lib/marketplace-event-discovery';
+import { combinedEventDiscoveryRequest, guidedEventSearchTerms, interpretEventRequest } from '@/lib/marketplace-event-discovery';
 import type { MarketplaceDiscoveryPath, MarketplaceEventConcept, MarketplaceEventConceptInput } from '@/lib/marketplace-public-types';
 
 type DiscoveryRequest = { search: string; category?: string; resourceType?: string; path: MarketplaceDiscoveryPath };
@@ -48,7 +48,7 @@ export function MarketplaceEventWorkspace({
       requirements: result.categories, searchTerms: result.searchTerms,
     });
     setMessage(result.followUpQuestions.length ? `Saved. Still helpful: ${result.followUpQuestions.join(' ')}` : 'Brief understood and saved to this event.');
-    await onDiscover({ search: result.searchTerms.join(' '), category: result.categories[0], path: 'AiAssistant' });
+    await onDiscover(combinedEventDiscoveryRequest(result.searchTerms, 'AiAssistant'));
   }
 
   async function runGuided(event: FormEvent<HTMLFormElement>) {
@@ -60,7 +60,6 @@ export function MarketplaceEventWorkspace({
     const theme = String(data.get('theme'));
     const requirements = String(data.get('requirements')).split(',').map((value) => value.trim()).filter(Boolean);
     const terms = guidedEventSearchTerms(eventType, style, colours, theme);
-    const categories = eventCategories(eventType);
     await onUpdate({
       lastDiscoveryPath: 'GuidedBuilder', eventType, eventDate: String(data.get('eventDate')) || undefined,
       guestCount: Number(data.get('guestCount')) || undefined, venueStatus: String(data.get('venueStatus')) || undefined,
@@ -71,7 +70,7 @@ export function MarketplaceEventWorkspace({
       requirements, searchTerms: terms,
     });
     setMessage('Guided requirements saved. Recommendations now use the combined event brief.');
-    await onDiscover({ search: terms.join(' '), category: categories[0], path: 'GuidedBuilder' });
+    await onDiscover(combinedEventDiscoveryRequest(terms, 'GuidedBuilder'));
   }
 
   return (

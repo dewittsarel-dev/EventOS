@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { eventCategories, guidedEventSearchTerms, interpretEventRequest } from './marketplace-event-discovery';
+import { combinedEventDiscoveryRequest, eventCategories, guidedEventSearchTerms, interpretEventRequest } from './marketplace-event-discovery';
 
 describe('marketplace event discovery', () => {
   it('interprets a natural-language wedding brief', () => {
@@ -21,5 +21,13 @@ describe('marketplace event discovery', () => {
   it('builds guided style terms and category recommendations', () => {
     expect(guidedEventSearchTerms('wedding', 'Rustic', ['Green'], 'Garden')).toEqual(['wood', 'linen', 'neutral', 'green', 'garden']);
     expect(eventCategories('corporate')).toContain('Technical production');
+  });
+
+  it('keeps combined event discovery open across relevant Marketplace categories', () => {
+    expect(combinedEventDiscoveryRequest(['gold', 'crystal', 'gold', 'velvet'], 'AiAssistant')).toEqual({
+      search: 'gold crystal velvet',
+      path: 'AiAssistant',
+    });
+    expect(combinedEventDiscoveryRequest(['linen', 'garden'], 'GuidedBuilder')).not.toHaveProperty('category');
   });
 });

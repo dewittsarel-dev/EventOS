@@ -71,7 +71,6 @@ export default function SupplierCatalogueImportPage() {
 
   useEffect(() => {
     if (!session.token || !session.organizationId) {
-      setLoadingQueue(false);
       return;
     }
     let active = true;
@@ -134,7 +133,11 @@ export default function SupplierCatalogueImportPage() {
   }
 
   function persistentSources(items = sources) {
-    return items.map(({ previewUrl: _previewUrl, ...source }) => source);
+    return items.map((item) => {
+      const source = { ...item };
+      delete source.previewUrl;
+      return source;
+    });
   }
 
   async function persistQueue(

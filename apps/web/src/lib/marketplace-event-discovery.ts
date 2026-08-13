@@ -1,3 +1,5 @@
+import type { MarketplaceDiscoveryPath } from './marketplace-public-types';
+
 export type MarketplaceDiscoveryMode = 'assistant' | 'guided' | 'catalogue';
 
 export interface EventDiscoveryBrief {
@@ -87,4 +89,14 @@ export function guidedEventSearchTerms(
 
 export function eventCategories(eventType: string) {
   return EVENT_CATEGORY_DEFAULTS[eventType.toLowerCase()] ?? [];
+}
+
+export function combinedEventDiscoveryRequest(
+  searchTerms: string[],
+  path: Extract<MarketplaceDiscoveryPath, 'AiAssistant' | 'GuidedBuilder'>,
+) {
+  return {
+    search: [...new Set(searchTerms.map((term) => term.trim()).filter(Boolean))].join(' '),
+    path,
+  };
 }
