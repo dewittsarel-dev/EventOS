@@ -1,8 +1,9 @@
 'use client';
 
 import Image from 'next/image';
-import type { ChangeEvent, FormEvent, ReactNode } from 'react';
+import { useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 import { EVENT_INDUSTRY_TAXONOMY, suggestProductDiscovery } from '@/lib/event-industry-taxonomy';
+import { readProductNameFromImage } from '@/lib/product-image-name';
 import type { SupplierProductFormValues } from '@/lib/supplier-product-form';
 import { SUPPLIER_PRODUCT_CATEGORIES, SUPPLIER_PRODUCT_UNITS, type SupplierProductCategory, type SupplierProductUnit } from '@/lib/supplier-products-types';
 
@@ -14,6 +15,9 @@ const input = 'mt-1 w-full rounded-md border border-zinc-300 px-3 py-2';
 const label = 'text-sm text-zinc-700';
 
 export function SupplierProductForm({ mode, values, saving, error, success, onChange, onSubmit }: Props) {
+  const [readingName, setReadingName] = useState(false);
+  const [nameSuggestion, setNameSuggestion] = useState('');
+  const [imageMessage, setImageMessage] = useState('');
   const set = <K extends keyof SupplierProductFormValues>(key: K, value: SupplierProductFormValues[K]) => onChange({ ...values, [key]: value });
   const suggest = () => {
     const result = suggestProductDiscovery({ productName: values.productName, category: values.category, subcategory: values.subcategory, colour: values.colour, material: values.material, style: values.style });
@@ -23,13 +27,49 @@ export function SupplierProductForm({ mode, values, saving, error, success, onCh
     const files = [...(event.target.files ?? [])].slice(0, Math.max(0, 8 - values.imageUrls.length));
     const valid = files.filter((file) => file.type.startsWith('image/') && file.size <= 5_000_000);
     const urls = await Promise.all(valid.map((file) => new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.onerror = () => reject(reader.error); reader.readAsDataURL(file); })));
-    set('imageUrls', [...values.imageUrls, ...urls]);
+    const nextImageUrls = [...values.imageUrls, ...urls];
+    onChange({ ...values, imageUrls: nextImageUrls });
     event.target.value = '';
+    if (valid[0]) await detectName(valid[0], nextImageUrls);
+  };
+  const detectName = async (file: File, nextImageUrls: string[]) => {
+    setReadingName(true);
+    setImageMessage('Reading visible text from the first image...');
+    setNameSuggestion('');
+    try {
+      const result = await readProductNameFromImage(file);
+      if (!result.suggestedName) {
+        setImageMessage('No readable product name was found. Enter the name manually below.');
+        return;
+      }
+      setNameSuggestion(result.suggestedName);
+      if (!values.productName.trim()) {
+        onChange({ ...values, imageUrls: nextImageUrls, productName: result.suggestedName });
+        setImageMessage('Product name suggested from the image. Review and correct it below.');
+      } else {
+        setImageMessage('A possible product name was found. Use it only if it is correct.');
+      }
+    } catch {
+      setImageMessage('The image text could not be read. You can continue by entering the name manually.');
+    } finally {
+      setReadingName(false);
+    }
   };
   return <form className="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm" onSubmit={onSubmit}>
     <h2 className="text-lg font-semibold">{mode === 'create' ? 'Create supplier product' : 'Edit supplier product'}</h2>
     <p className="mt-1 text-sm text-zinc-600">Private costs and notes remain in ClientOS. Only approved Marketplace details are published.</p>
-    <Section title="1. Product basics"><div className="grid gap-4 md:grid-cols-2">
+    <Section title="1. Add product images">
+      <div className="rounded-lg bg-amber-50 p-4 text-sm text-zinc-700">
+        <p className="font-medium text-zinc-900">Two simple image options</p>
+        <p className="mt-1"><strong>Plain image:</strong> upload or photograph the item, then enter its name and details manually.</p>
+        <p className="mt-1"><strong>Image with a visible name:</strong> ClientOS reads the image and suggests the product name for you to review.</p>
+      </div>
+      <p className="mt-3 text-sm text-zinc-600">Upload or photograph up to 8 images (maximum 5 MB each). Only the first new image is checked for a visible name.</p>
+      <input aria-label="Product images" className="mt-3" type="file" accept="image/*" capture="environment" multiple onChange={(e)=>void addImages(e)}/>
+      {imageMessage&&<div aria-live="polite" className={`mt-3 rounded-md p-3 text-sm ${readingName?'bg-blue-50 text-blue-800':'bg-zinc-100 text-zinc-700'}`}>{imageMessage}{nameSuggestion&&values.productName.trim()!==nameSuggestion&&<button type="button" className="ml-2 rounded border border-zinc-400 bg-white px-2 py-1 font-medium" onClick={()=>set('productName',nameSuggestion)}>Use “{nameSuggestion}”</button>}</div>}
+      <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">{values.imageUrls.map((url,index)=><div className="relative overflow-hidden rounded-lg border" key={`${url.slice(0,30)}-${index}`}><Image unoptimized src={url} alt={`Product preview ${index+1}`} width={320} height={240} className="h-32 w-full object-cover"/><button type="button" className="absolute right-1 top-1 rounded bg-white px-2 py-1 text-xs" onClick={()=>set('imageUrls',values.imageUrls.filter((_,i)=>i!==index))}>Remove</button></div>)}</div>
+    </Section>
+    <Section title="2. Review product basics"><div className="grid gap-4 md:grid-cols-2">
       <Field text="Product name"><input className={input} required maxLength={180} value={values.productName} onChange={(e)=>set('productName',e.target.value)}/></Field>
       <Field text="SKU"><input className={input} value={values.sku} onChange={(e)=>set('sku',e.target.value)}/></Field>
       <Field text="Category"><select className={input} value={values.category} onChange={(e)=>{ const category=e.target.value as SupplierProductCategory; onChange({...values,category,subcategory:''}); }}>{SUPPLIER_PRODUCT_CATEGORIES.map(v=><option key={v}>{v}</option>)}</select></Field>
@@ -39,7 +79,6 @@ export function SupplierProductForm({ mode, values, saving, error, success, onCh
       {(['colour','material','style'] as const).map(key=><Field key={key} text={key[0].toUpperCase()+key.slice(1)}><input className={input} value={values[key]} onChange={(e)=>set(key,e.target.value)}/></Field>)}
       <Field text="Private internal description" wide><textarea className={`${input} min-h-20`} value={values.description} onChange={(e)=>set('description',e.target.value)}/></Field>
     </div></Section>
-    <Section title="2. Images"><p className="text-sm text-zinc-600">Upload or photograph up to 8 images (maximum 5 MB each).</p><input className="mt-3" type="file" accept="image/*" capture="environment" multiple onChange={(e)=>void addImages(e)}/><div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">{values.imageUrls.map((url,index)=><div className="relative overflow-hidden rounded-lg border" key={`${url.slice(0,30)}-${index}`}><Image unoptimized src={url} alt={`Product preview ${index+1}`} width={320} height={240} className="h-32 w-full object-cover"/><button type="button" className="absolute right-1 top-1 rounded bg-white px-2 py-1 text-xs" onClick={()=>set('imageUrls',values.imageUrls.filter((_,i)=>i!==index))}>Remove</button></div>)}</div></Section>
     <Section title="3. Stock, pricing and fulfilment"><div className="grid gap-4 md:grid-cols-3">
       <Field text="Unit"><select className={input} value={values.unit} onChange={(e)=>set('unit',e.target.value as SupplierProductUnit)}>{SUPPLIER_PRODUCT_UNITS.map(v=><option key={v}>{v}</option>)}</select></Field>
       <Num text="Total quantity" value={values.totalQuantity} change={(v)=>set('totalQuantity',v)}/><Field text="Availability"><select className={input} value={values.availability} onChange={(e)=>set('availability',e.target.value as SupplierProductFormValues['availability'])}>{['Available','Limited','Unavailable','MadeToOrder'].map(v=><option key={v}>{v}</option>)}</select></Field>
