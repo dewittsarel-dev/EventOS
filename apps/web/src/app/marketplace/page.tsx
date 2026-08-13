@@ -2,10 +2,21 @@
 /* eslint-disable @next/next/no-img-element -- supplier image hosts are dynamic */
 
 import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { MarketplaceEventWorkspace } from '@/components/marketplace/marketplace-event-workspace';
 import { MarketplaceFooter, MarketplaceHeader } from '@/components/marketplace/marketplace-shell';
-import { addCustomerShortlist, createCustomerEnquiry, createMarketplaceEnquiry, listMarketplaceListings } from '@/lib/marketplace-public-api';
+import {
+  addCustomerEventConceptSelection,
+  addCustomerShortlist,
+  createCustomerEnquiry,
+  createCustomerEventConcept,
+  createMarketplaceEnquiry,
+  listCustomerEventConcepts,
+  listMarketplaceListings,
+  removeCustomerEventConceptSelection,
+  updateCustomerEventConcept,
+} from '@/lib/marketplace-public-api';
 import { readMarketplaceCustomerSession } from '@/lib/marketplace-customer-session';
-import type { MarketplaceCustomerSession, MarketplaceListing } from '@/lib/marketplace-public-types';
+import type { MarketplaceCustomerSession, MarketplaceDiscoveryPath, MarketplaceEventConcept, MarketplaceEventConceptInput, MarketplaceListing } from '@/lib/marketplace-public-types';
 
 function money(value: number | null) {
   if (value === null) return null;
@@ -36,6 +47,10 @@ export default function MarketplacePage() {
   const [sentReference, setSentReference] = useState('');
   const [customerSession] = useState<MarketplaceCustomerSession | null>(() => readMarketplaceCustomerSession());
   const [savedIds, setSavedIds] = useState<string[]>([]);
+  const [concepts, setConcepts] = useState<MarketplaceEventConcept[]>([]);
+  const [activeConceptId, setActiveConceptId] = useState('');
+  const [conceptBusy, setConceptBusy] = useState(false);
+  const activeConcept = concepts.find((concept) => concept.id === activeConceptId) ?? concepts[0] ?? null;
 
   const load = useCallback(async (query = '', categoryFilter = '', typeFilter = '') => {
     setLoading(true);
@@ -54,6 +69,80 @@ export default function MarketplacePage() {
     const timer = window.setTimeout(() => void load(), 0);
     return () => window.clearTimeout(timer);
   }, [load]);
+
+  useEffect(() => {
+    if (!customerSession) return;
+    let cancelled = false;
+    void listCustomerEventConcepts(customerSession.accessToken)
+      .then((items) => {
+        if (cancelled) return;
+        setConcepts(items);
+        setActiveConceptId((current) => current || items[0]?.id || '');
+      })
+      .catch((cause) => {
+        if (!cancelled) setError(cause instanceof Error ? cause.message : 'Saved events could not be loaded.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [customerSession]);
+
+  function storeConcept(concept: MarketplaceEventConcept) {
+    setConcepts((current) => current.some((item) => item.id === concept.id) ? current.map((item) => item.id === concept.id ? concept : item) : [concept, ...current]);
+    setActiveConceptId(concept.id);
+  }
+
+  async function createConcept(title: string) {
+    if (!customerSession) return;
+    setConceptBusy(true);
+    try {
+      storeConcept(await createCustomerEventConcept(customerSession.accessToken, title));
+    } finally {
+      setConceptBusy(false);
+    }
+  }
+
+  async function updateConcept(input: MarketplaceEventConceptInput) {
+    if (!customerSession || !activeConcept) return;
+    setConceptBusy(true);
+    try {
+      storeConcept(await updateCustomerEventConcept(customerSession.accessToken, activeConcept.id, input));
+    } finally {
+      setConceptBusy(false);
+    }
+  }
+
+  async function discover(input: { search: string; category?: string; resourceType?: string; path: MarketplaceDiscoveryPath }) {
+    setSearch(input.search);
+    setCategory(input.category ?? '');
+    setResourceType(input.resourceType ?? '');
+    await load(input.search, input.category ?? '', input.resourceType ?? '');
+    window.setTimeout(() => document.getElementById('marketplace-catalogue')?.scrollIntoView({ behavior: 'smooth' }), 0);
+  }
+
+  async function addToConcept(item: MarketplaceListing) {
+    if (!customerSession || !activeConcept) return;
+    setConceptBusy(true);
+    try {
+      storeConcept(await addCustomerEventConceptSelection(customerSession.accessToken, activeConcept.id, {
+        resourceId: item.id,
+        discoveryPath: activeConcept.lastDiscoveryPath,
+        quantity: 1,
+      }));
+    } finally {
+      setConceptBusy(false);
+    }
+  }
+
+  async function removeFromConcept(resourceId: string) {
+    if (!customerSession || !activeConcept) return;
+    setConceptBusy(true);
+    try {
+      storeConcept(await removeCustomerEventConceptSelection(customerSession.accessToken, activeConcept.id, resourceId));
+    } finally {
+      setConceptBusy(false);
+    }
+  }
 
   async function submitEnquiry(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -89,7 +178,8 @@ export default function MarketplacePage() {
             className="mx-auto mt-9 flex max-w-2xl flex-col gap-2 rounded-2xl bg-white p-2 shadow-2xl shadow-black/20 sm:flex-row sm:rounded-full"
             onSubmit={(event) => {
               event.preventDefault();
-              void load(search, category, resourceType);
+              if (activeConcept) void updateConcept({ lastDiscoveryPath: 'ManualSearch', searchTerms: search.split(/\s+/).filter(Boolean) });
+              void discover({ search, category, resourceType, path: 'ManualSearch' });
             }}
           >
             <input aria-label="Search Marketplace" className="min-w-0 flex-1 rounded-xl px-4 py-3 text-stone-950 outline-none placeholder:text-stone-400 sm:rounded-full" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search chairs, flowers, tables or themes…" />
@@ -103,6 +193,18 @@ export default function MarketplacePage() {
         </div>
       </section>
 
+      <MarketplaceEventWorkspace
+        signedIn={Boolean(customerSession)}
+        concepts={concepts}
+        active={activeConcept}
+        busy={conceptBusy}
+        onCreate={createConcept}
+        onSelect={setActiveConceptId}
+        onUpdate={updateConcept}
+        onDiscover={discover}
+        onRemoveSelection={removeFromConcept}
+      />
+
       <section className="sticky top-[4.5rem] z-30 border-b border-stone-200 bg-[#fffdf9]/95 px-5 py-3 backdrop-blur-xl md:static md:px-10 md:py-5">
         <div className="mx-auto flex max-w-7xl items-center gap-2 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible md:pb-0">
           <span className="mr-2 text-xs font-semibold uppercase tracking-[0.14em] text-stone-400">Explore</span>
@@ -112,7 +214,8 @@ export default function MarketplacePage() {
               type="button"
               onClick={() => {
                 setCategory(option);
-                void load(search, option, resourceType);
+                if (activeConcept) void updateConcept({ lastDiscoveryPath: 'ManualSearch' });
+                void discover({ search, category: option, resourceType, path: 'ManualSearch' });
               }}
               className={`shrink-0 rounded-full border px-4 py-2 text-sm ${category === option ? 'border-stone-950 bg-stone-950 text-white' : 'border-stone-200 bg-white text-stone-700 hover:border-stone-400 hover:text-stone-950'}`}
             >
@@ -122,7 +225,7 @@ export default function MarketplacePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-5 py-10 md:px-10 md:py-14">
+      <section id="marketplace-catalogue" className="mx-auto max-w-7xl px-5 py-10 md:px-10 md:py-14">
         <div className="mb-5 flex items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">Published supplier catalogue</p>
@@ -231,6 +334,11 @@ export default function MarketplacePage() {
                       )}
                     </div>
                     <div className="flex flex-wrap items-center justify-end gap-2">
+                      {customerSession && activeConcept ? (
+                        <button disabled={conceptBusy || activeConcept.selections.some((selection) => selection.resourceId === item.id)} onClick={() => void addToConcept(item)} className="text-xs font-semibold text-amber-700 disabled:text-emerald-700">
+                          {activeConcept.selections.some((selection) => selection.resourceId === item.id) ? 'In event' : 'Add to event'}
+                        </button>
+                      ) : null}
                       {customerSession ? (
                         <button disabled={savedIds.includes(item.id)} onClick={() => void addCustomerShortlist(customerSession.accessToken, item.id).then(() => setSavedIds((ids) => [...ids, item.id]))} className="text-xs font-medium text-stone-500 disabled:text-emerald-700">
                           {savedIds.includes(item.id) ? 'Saved' : 'Save'}

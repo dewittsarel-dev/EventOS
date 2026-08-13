@@ -12,6 +12,7 @@ vi.mock('@/lib/marketplace-public-api', () => ({
   addCustomerShortlist: vi.fn(),
   createCustomerEnquiry: vi.fn(),
   createMarketplaceEnquiry: vi.fn(),
+  listCustomerEventConcepts: vi.fn().mockResolvedValue([]),
   listMarketplaceListings: vi.fn().mockResolvedValue({
     items: [{ id: 'listing-1', title: 'Tiffany chair', description: null, supplierName: 'Example Supplier', supplierSlug: 'example', categoryName: 'Furniture', supplierLogoUrl: null, supplierWebsite: null, tags: [], photoUrls: [], primaryPhotoUrl: null, rentalPrice: 50, unitOfMeasure: 'each', resourceType: 'RentalItem', availabilityStatus: 'Available' }],
     total: 1,

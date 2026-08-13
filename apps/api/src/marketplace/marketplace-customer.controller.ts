@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   UseGuards,
   UsePipes,
@@ -17,6 +18,9 @@ import {
   MarketplaceCustomerLoginDto,
   MarketplaceCustomerRegisterDto,
   MarketplaceEnquiryMessageDto,
+  MarketplaceEventConceptCreateDto,
+  MarketplaceEventConceptSelectionDto,
+  MarketplaceEventConceptUpdateDto,
   MarketplaceShortlistDto,
 } from './dto/marketplace-customer.dto';
 import {
@@ -108,5 +112,71 @@ export class MarketplaceCustomerController {
     @Param('resourceId', ParseUUIDPipe) resourceId: string,
   ) {
     return this.customers.removeShortlist(customer.id, resourceId);
+  }
+
+  @Get('event-concepts')
+  @UseGuards(MarketplaceCustomerGuard)
+  @ApiBearerAuth('access-token')
+  eventConcepts(
+    @CurrentMarketplaceCustomer() customer: AuthenticatedMarketplaceCustomer,
+  ) {
+    return this.customers.eventConcepts(customer.id);
+  }
+
+  @Post('event-concepts')
+  @UseGuards(MarketplaceCustomerGuard)
+  @ApiBearerAuth('access-token')
+  createEventConcept(
+    @CurrentMarketplaceCustomer() customer: AuthenticatedMarketplaceCustomer,
+    @Body() dto: MarketplaceEventConceptCreateDto,
+  ) {
+    return this.customers.createEventConcept(customer.id, dto);
+  }
+
+  @Get('event-concepts/:id')
+  @UseGuards(MarketplaceCustomerGuard)
+  @ApiBearerAuth('access-token')
+  eventConcept(
+    @CurrentMarketplaceCustomer() customer: AuthenticatedMarketplaceCustomer,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.customers.eventConcept(customer.id, id);
+  }
+
+  @Patch('event-concepts/:id')
+  @UseGuards(MarketplaceCustomerGuard)
+  @ApiBearerAuth('access-token')
+  updateEventConcept(
+    @CurrentMarketplaceCustomer() customer: AuthenticatedMarketplaceCustomer,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: MarketplaceEventConceptUpdateDto,
+  ) {
+    return this.customers.updateEventConcept(customer.id, id, dto);
+  }
+
+  @Post('event-concepts/:id/selections')
+  @UseGuards(MarketplaceCustomerGuard)
+  @ApiBearerAuth('access-token')
+  addEventConceptSelection(
+    @CurrentMarketplaceCustomer() customer: AuthenticatedMarketplaceCustomer,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: MarketplaceEventConceptSelectionDto,
+  ) {
+    return this.customers.addEventConceptSelection(customer.id, id, dto);
+  }
+
+  @Delete('event-concepts/:id/selections/:resourceId')
+  @UseGuards(MarketplaceCustomerGuard)
+  @ApiBearerAuth('access-token')
+  removeEventConceptSelection(
+    @CurrentMarketplaceCustomer() customer: AuthenticatedMarketplaceCustomer,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('resourceId', ParseUUIDPipe) resourceId: string,
+  ) {
+    return this.customers.removeEventConceptSelection(
+      customer.id,
+      id,
+      resourceId,
+    );
   }
 }

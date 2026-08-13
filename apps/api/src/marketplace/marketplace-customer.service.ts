@@ -15,7 +15,10 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   MarketplaceCustomerEnquiryDto,
+  MarketplaceEventConceptCreateDto,
   MarketplaceCustomerRegisterDto,
+  MarketplaceEventConceptSelectionDto,
+  MarketplaceEventConceptUpdateDto,
 } from './dto/marketplace-customer.dto';
 import { MarketplacePublicService } from './marketplace-public.service';
 
@@ -174,6 +177,84 @@ export class MarketplaceCustomerService {
     return listings;
   }
 
+  async eventConcepts(customerId: string) {
+    const concepts = await this.prisma.marketplaceEventConcept.findMany({
+      where: { customerId },
+      orderBy: { updatedAt: 'desc' },
+      include: { selections: { orderBy: { createdAt: 'asc' } } },
+    });
+    return Promise.all(concepts.map((concept) => this.hydrateConcept(concept)));
+  }
+
+  async createEventConcept(
+    customerId: string,
+    dto: MarketplaceEventConceptCreateDto,
+  ) {
+    const concept = await this.prisma.marketplaceEventConcept.create({
+      data: { customerId, title: dto.title },
+      include: { selections: true },
+    });
+    return this.hydrateConcept(concept);
+  }
+
+  async eventConcept(customerId: string, id: string) {
+    const concept = await this.findOwnedConcept(customerId, id);
+    return this.hydrateConcept(concept);
+  }
+
+  async updateEventConcept(
+    customerId: string,
+    id: string,
+    dto: MarketplaceEventConceptUpdateDto,
+  ) {
+    await this.findOwnedConcept(customerId, id);
+    const concept = await this.prisma.marketplaceEventConcept.update({
+      where: { id },
+      data: dto,
+      include: { selections: { orderBy: { createdAt: 'asc' } } },
+    });
+    return this.hydrateConcept(concept);
+  }
+
+  async addEventConceptSelection(
+    customerId: string,
+    id: string,
+    dto: MarketplaceEventConceptSelectionDto,
+  ) {
+    await Promise.all([
+      this.findOwnedConcept(customerId, id),
+      this.marketplace.findListing(dto.resourceId),
+    ]);
+    await this.prisma.marketplaceEventConceptSelection.upsert({
+      where: {
+        conceptId_resourceId: { conceptId: id, resourceId: dto.resourceId },
+      },
+      create: { conceptId: id, ...dto },
+      update: {
+        discoveryPath: dto.discoveryPath,
+        quantity: dto.quantity,
+        notes: dto.notes,
+      },
+    });
+    await this.prisma.marketplaceEventConcept.update({
+      where: { id },
+      data: { lastDiscoveryPath: dto.discoveryPath },
+    });
+    return this.eventConcept(customerId, id);
+  }
+
+  async removeEventConceptSelection(
+    customerId: string,
+    id: string,
+    resourceId: string,
+  ) {
+    await this.findOwnedConcept(customerId, id);
+    await this.prisma.marketplaceEventConceptSelection.deleteMany({
+      where: { conceptId: id, resourceId },
+    });
+    return this.eventConcept(customerId, id);
+  }
+
   async sendMessage(customerId: string, enquiryId: string, body: string) {
     const enquiry = await this.prisma.marketplaceEnquiry.findFirst({
       where: { id: enquiryId, customerId },
@@ -189,6 +270,29 @@ export class MarketplaceCustomerService {
         body,
       },
     });
+  }
+
+  private async findOwnedConcept(customerId: string, id: string) {
+    const concept = await this.prisma.marketplaceEventConcept.findFirst({
+      where: { id, customerId },
+      include: { selections: { orderBy: { createdAt: 'asc' } } },
+    });
+    if (!concept) throw new NotFoundException('Marketplace event not found');
+    return concept;
+  }
+
+  private async hydrateConcept<
+    T extends { selections: Array<{ resourceId: string }> },
+  >(concept: T) {
+    return {
+      ...concept,
+      selections: await Promise.all(
+        concept.selections.map(async (selection) => ({
+          ...selection,
+          listing: await this.marketplace.findListing(selection.resourceId),
+        })),
+      ),
+    };
   }
 
   private session(customer: {

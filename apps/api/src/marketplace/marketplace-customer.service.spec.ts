@@ -1,5 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { MarketplaceCustomerService } from './marketplace-customer.service';
 
@@ -20,6 +24,16 @@ describe('MarketplaceCustomerService', () => {
       findMany: jest.fn(),
     },
     marketplaceEnquiryMessage: { create: jest.fn() },
+    marketplaceEventConcept: {
+      findMany: jest.fn(),
+      create: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+    },
+    marketplaceEventConceptSelection: {
+      upsert: jest.fn(),
+      deleteMany: jest.fn(),
+    },
   };
   const jwt = { sign: jest.fn().mockReturnValue('customer-token') };
   const marketplace = { findListing: jest.fn() };
@@ -94,5 +108,69 @@ describe('MarketplaceCustomerService', () => {
         }),
       }),
     );
+  });
+
+  it('creates a customer-owned event concept', async () => {
+    prisma.marketplaceEventConcept.create.mockResolvedValue({
+      id: 'concept-1',
+      customerId: 'customer-1',
+      title: 'Annual dinner',
+      selections: [],
+    });
+
+    const result = await service.createEventConcept('customer-1', {
+      title: 'Annual dinner',
+    });
+
+    expect(result.id).toBe('concept-1');
+    expect(prisma.marketplaceEventConcept.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          customerId: 'customer-1',
+          title: 'Annual dinner',
+        }),
+      }),
+    );
+  });
+
+  it('adds only published Marketplace listings to a customer-owned concept', async () => {
+    const concept = {
+      id: 'concept-1',
+      customerId: 'customer-1',
+      selections: [],
+    };
+    prisma.marketplaceEventConcept.findFirst.mockResolvedValue(concept);
+    marketplace.findListing.mockResolvedValue({
+      id: 'resource-1',
+      title: 'Gold Tiffany Chair',
+    });
+    prisma.marketplaceEventConceptSelection.upsert.mockResolvedValue({});
+    prisma.marketplaceEventConcept.update.mockResolvedValue({});
+
+    await service.addEventConceptSelection('customer-1', 'concept-1', {
+      resourceId: 'resource-1',
+      discoveryPath: 'GuidedBuilder',
+      quantity: 100,
+    });
+
+    expect(marketplace.findListing).toHaveBeenCalledWith('resource-1');
+    expect(prisma.marketplaceEventConceptSelection.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({
+          conceptId: 'concept-1',
+          resourceId: 'resource-1',
+          discoveryPath: 'GuidedBuilder',
+          quantity: 100,
+        }),
+      }),
+    );
+  });
+
+  it('does not expose another customer event concept', async () => {
+    prisma.marketplaceEventConcept.findFirst.mockResolvedValue(null);
+
+    await expect(
+      service.eventConcept('customer-2', 'concept-1'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 });

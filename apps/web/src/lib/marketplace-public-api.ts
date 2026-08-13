@@ -1,4 +1,4 @@
-import type { MarketplaceCustomer, MarketplaceCustomerEnquiry, MarketplaceCustomerSession, MarketplaceEnquiry, MarketplaceListing, MarketplaceListingPage, MarketplaceOpportunity, MarketplaceShortlistItem } from './marketplace-public-types';
+import type { MarketplaceCustomer, MarketplaceCustomerEnquiry, MarketplaceCustomerSession, MarketplaceEnquiry, MarketplaceEventConcept, MarketplaceEventConceptInput, MarketplaceListing, MarketplaceListingPage, MarketplaceOpportunity, MarketplaceShortlistItem } from './marketplace-public-types';
 
 const apiBaseUrl = () => (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3001').replace(/\/$/, '');
 
@@ -150,6 +150,12 @@ export const sendCustomerEnquiryMessage = (token: string, enquiryId: string, bod
 export const listCustomerShortlist = (token: string) => customerRequest<MarketplaceShortlistItem[]>(token, '/shortlist');
 export const addCustomerShortlist = (token: string, resourceId: string) => customerRequest(token, '/shortlist', { method: 'POST', body: JSON.stringify({ resourceId }) });
 export const removeCustomerShortlist = (token: string, resourceId: string) => customerRequest(token, `/shortlist/${resourceId}`, { method: 'DELETE' });
+export const listCustomerEventConcepts = (token: string) => customerRequest<MarketplaceEventConcept[]>(token, '/event-concepts');
+export const createCustomerEventConcept = (token: string, title: string) => customerRequest<MarketplaceEventConcept>(token, '/event-concepts', { method: 'POST', body: JSON.stringify({ title }) });
+export const getCustomerEventConcept = (token: string, conceptId: string) => customerRequest<MarketplaceEventConcept>(token, `/event-concepts/${conceptId}`);
+export const updateCustomerEventConcept = (token: string, conceptId: string, input: MarketplaceEventConceptInput) => customerRequest<MarketplaceEventConcept>(token, `/event-concepts/${conceptId}`, { method: 'PATCH', body: JSON.stringify(input) });
+export const addCustomerEventConceptSelection = (token: string, conceptId: string, input: { resourceId: string; discoveryPath: MarketplaceEventConcept['lastDiscoveryPath']; quantity?: number; notes?: string }) => customerRequest<MarketplaceEventConcept>(token, `/event-concepts/${conceptId}/selections`, { method: 'POST', body: JSON.stringify(input) });
+export const removeCustomerEventConceptSelection = (token: string, conceptId: string, resourceId: string) => customerRequest<MarketplaceEventConcept>(token, `/event-concepts/${conceptId}/selections/${resourceId}`, { method: 'DELETE' });
 
 export async function sendMarketplaceEnquiryMessage(options: PrivateMarketplaceOptions, enquiryId: string, body: string) {
   return privateMarketplaceRequest(options, `/marketplace/enquiries/${enquiryId}/messages?organizationId=${encodeURIComponent(options.organizationId)}`, { method: 'POST', body: JSON.stringify({ body }) });

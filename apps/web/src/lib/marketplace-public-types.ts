@@ -119,3 +119,51 @@ export type MarketplaceCustomerEnquiry = {
   preliminaryQuotes: MarketplacePreliminaryQuote[];
 };
 export type MarketplaceShortlistItem = { resourceId: string; createdAt: string; listing: MarketplaceListing };
+
+export type MarketplaceDiscoveryPath = 'AiAssistant' | 'GuidedBuilder' | 'ManualSearch';
+
+export type MarketplaceEventConceptSelection = {
+  id: string;
+  conceptId: string;
+  resourceId: string;
+  discoveryPath: MarketplaceDiscoveryPath;
+  quantity: number | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  listing: MarketplaceListing;
+};
+
+export type MarketplaceEventConcept = {
+  id: string;
+  customerId: string;
+  title: string;
+  status: 'Developing' | 'Archived';
+  lastDiscoveryPath: MarketplaceDiscoveryPath;
+  assistantBrief: string | null;
+  eventType: string | null;
+  eventDate: string | null;
+  guestCount: number | null;
+  venueStatus: string | null;
+  venueName: string | null;
+  city: string | null;
+  area: string | null;
+  travelRadiusKm: number | null;
+  setting: string | null;
+  theme: string | null;
+  style: string | null;
+  colours: string[];
+  budgetCents: number | null;
+  allowSubstitutions: boolean;
+  requirements: string[];
+  searchTerms: string[];
+  createdAt: string;
+  updatedAt: string;
+  selections: MarketplaceEventConceptSelection[];
+};
+
+export type MarketplaceEventConceptInput = Partial<Pick<MarketplaceEventConcept,
+  'title' | 'status' | 'lastDiscoveryPath' | 'assistantBrief' | 'eventType' | 'eventDate' |
+  'guestCount' | 'venueStatus' | 'venueName' | 'city' | 'area' | 'travelRadiusKm' | 'setting' |
+  'theme' | 'style' | 'colours' | 'budgetCents' | 'allowSubstitutions' | 'requirements' | 'searchTerms'
+>>;

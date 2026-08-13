@@ -673,6 +673,17 @@ enum MarketplacePreliminaryQuoteStatus {
   Withdrawn
 }
 
+enum MarketplaceEventConceptStatus {
+  Developing
+  Archived
+}
+
+enum MarketplaceDiscoveryPath {
+  AiAssistant
+  GuidedBuilder
+  ManualSearch
+}
+
 enum SalesOpportunityStatus {
   New
   Qualifying
@@ -3174,6 +3185,7 @@ model Resource {
   outstandings          EventResourceOutstanding[]
   marketplaceEnquiries  MarketplaceEnquiry[]
   marketplaceShortlists MarketplaceCustomerShortlistItem[]
+  marketplaceConceptSelections MarketplaceEventConceptSelection[]
 
   @@unique([organizationId, sku])
   @@unique([organizationId, barcode])
@@ -3406,6 +3418,55 @@ model MarketplaceCustomer {
   enquiries    MarketplaceEnquiry[]
   shortlist    MarketplaceCustomerShortlistItem[]
   messages     MarketplaceEnquiryMessage[]        @relation("MarketplaceMessageAuthoredByCustomer")
+  eventConcepts MarketplaceEventConcept[]
+}
+
+model MarketplaceEventConcept {
+  id                String                        @id @default(uuid())
+  customerId        String
+  title             String
+  status            MarketplaceEventConceptStatus @default(Developing)
+  lastDiscoveryPath MarketplaceDiscoveryPath      @default(ManualSearch)
+  assistantBrief    String?
+  eventType         String?
+  eventDate         DateTime?
+  guestCount        Int?
+  venueStatus       String?
+  venueName         String?
+  city              String?
+  area              String?
+  travelRadiusKm    Int?
+  setting           String?
+  theme             String?
+  style             String?
+  colours           String[]                      @default([])
+  budgetCents       Int?
+  allowSubstitutions Boolean                       @default(true)
+  requirements      String[]                      @default([])
+  searchTerms       String[]                      @default([])
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
+  customer          MarketplaceCustomer           @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  selections        MarketplaceEventConceptSelection[]
+
+  @@index([customerId, status, updatedAt])
+}
+
+model MarketplaceEventConceptSelection {
+  id            String                   @id @default(uuid())
+  conceptId     String
+  resourceId    String
+  discoveryPath MarketplaceDiscoveryPath
+  quantity      Float                    @default(1)
+  notes         String?
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
+  concept       MarketplaceEventConcept  @relation(fields: [conceptId], references: [id], onDelete: Cascade)
+  resource      Resource                 @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([conceptId, resourceId])
+  @@index([conceptId, createdAt])
+  @@index([resourceId])
 }
 
 model MarketplaceCustomerShortlistItem {
